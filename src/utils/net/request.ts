@@ -1,0 +1,186 @@
+/**
+ * request.ts
+ * 封装 Axios 请求，处理拦截器、统一头部修饰及 AES/MD5 加密解密逻辑
+ */
+
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
+import { NET_CONFIG, STORAGE_KEYS } from './config'
+import { getApiUrl } from './api'
+import { encryptAES, decryptAES, getUdid, createSiginString } from './encryption'
+import { useUserStore } from '@/stores/userStore'
+
+// 假设我们默认都是加密请求（Swift 中 isEncrypt 默认为 true）
+const DEFAULT_ENCRYPT = true
+
+const service: AxiosInstance = axios.create({
+  baseURL: NET_CONFIG.HOSTROOT,
+  timeout: 15000 // 15s timeout
+})
+
+// 请求拦截器
+service.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // 这里我们约定 config.meta?.isEncrypt 来控制单次请求是否加密，默认为 true
+    const isEncrypt = (config as any).meta?.isEncrypt ?? DEFAULT_ENCRYPT
+
+    // 1. 生成 Nonce
+    const nonce = '902' // Swift 中写死了 902，如果有随机需要可换成随机字符串
+
+    // 2. 如果是加密开启，我们要对 params/data 中的每个 value 进行 AES 加密，key 也要加密
+    // Swift 中是将 GET params(或POST中) 进行了转化: key.aes = value.aes
+    let transParams: Record<string, any> = {}
+
+    // axios 默认 POST 数据在 data 中，GET 数据在 params 中
+    // 这里以统一处理 config.data 充当业务请求体为例：
+    let originParams = (config.method?.toUpperCase() === 'GET' ? config.params : config.data) || {}
+
+    if (isEncrypt) {
+      for (const key in originParams) {
+        if (Object.prototype.hasOwnProperty.call(originParams, key)) {
+          const val = String(originParams[key]).trim() // delBlank
+          transParams[encryptAES(key)] = encryptAES(val)
+        }
+      }
+    } else {
+      transParams = { ...originParams }
+    }
+
+    if (config.method?.toUpperCase() === 'GET') {
+      config.params = transParams
+    } else {
+      config.data = transParams
+    }
+
+    // 保存原始未加密参数用于响应阶段的日志打印
+    (config as any)._originParams = originParams
+
+    // 3. 构建 Headers
+    const userStore = useUserStore()
+    const token = userStore.token
+    const udid = getUdid()
+    // Web端模拟获取一些设备信息
+    const fromDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'WebMobile' : 'WebPC'
+    const deviceVersion = navigator.appVersion
+
+    config.headers.set('DeviceLanguage', navigator.language || 'en')
+    config.headers.set('Language', navigator.language || 'en')
+    config.headers.set('Nonce', nonce)
+    config.headers.set('Version', NET_CONFIG.VERSION)
+    config.headers.set('Udid', udid)
+    config.headers.set('AppId', NET_CONFIG.ID)
+
+    // 生成签名，传入原始参数即可（Swift 中是对转译前的参数做签名的，但签名逻辑中排除了 File 和 s 等等）
+    // 注意：Swift中实际传入 createSiginString 的参数是 transParams!
+    const signature = createSiginString(transParams, nonce, isEncrypt)
+    config.headers.set('Signature', signature)
+
+    config.headers.set('VPN', '0') // Web 端无法检测 VPN
+    config.headers.set('FromDevice', fromDevice)
+    config.headers.set('DeviceVersion', deviceVersion)
+    config.headers.set('LocalCCode', 'CN') // 默认或者根据时区推断
+
+    if (isEncrypt) {
+      config.headers.set('IV', 'v2')
+    }
+    if (token.length > 0) {
+      config.headers.set('Token', token)
+    }
+
+    return config
+  },
+  (error: any) => {
+    return Promise.reject(error)
+  }
+)
+
+// 响应拦截器
+service.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // config 中拿到当时的 isEncrypt
+    const isEncrypt = (response.config as any).meta?.isEncrypt ?? DEFAULT_ENCRYPT
+
+    let resData = response.data
+
+    // 尝试进行 AES 解密 （Swift代码中是把整个data用UTF8转String之后AES解密成JSON字符串）
+    if (isEncrypt && typeof resData === 'string') {
+      try {
+        const decryptedStr = decryptAES(resData)
+        if (decryptedStr) {
+          resData = JSON.parse(decryptedStr)
+        }
+      } catch (err) {
+        console.error('Response decryption failed.', err)
+      }
+    }
+
+    // 格式化打印日志 (仅相对路径、参数、响应结果)
+    const config = response.config
+    
+    // 优先读取我们在发起请求时存入的未加密原始真实路径
+    let path = (config as any).meta?.originalPath
+    if (!path) {
+        const fullUrl = config.url || ''
+        const baseURL = config.baseURL || ''
+        path = fullUrl.startsWith(baseURL) ? fullUrl.substring(baseURL.length) : fullUrl
+    }
+    
+    // 提取参数 (优先真实传递下去的未加密参数 _originParams)
+    let reqData = (config as any)._originParams
+    if (!reqData) {
+        reqData = config.data
+        if (typeof reqData === 'string') {
+            try { reqData = JSON.parse(reqData) } catch {}
+        }
+        if (!reqData) reqData = config.params
+    }
+
+    console.log(`🚀 [API Success] ${path}\n ├── Params:`, reqData, `\n └── Result:`, resData)
+
+    if (resData && typeof resData === 'object' && resData.code !== undefined) {
+      // 这里的结构是 { code: Int/String, data: Any, toast: String }
+      // 后端可能返回字符串形式的 "0"
+      const code = Number(resData.code)
+      // 请求成功
+      return resData
+    }
+  },
+  (error: any) => {
+    console.error('Network Error:', error)
+    return Promise.reject(error)
+  }
+)
+
+/**
+ * 封装后的核心请求方法
+ */
+
+export function post<T = any>(
+  apiEndpoint: string,
+  data?: any,
+  isEncrypt: boolean = DEFAULT_ENCRYPT
+): Promise<any> {
+  const url = getApiUrl(apiEndpoint, isEncrypt)
+
+  return service.request({
+    url,
+    method: 'post',
+    data,
+    meta: { isEncrypt, originalPath: apiEndpoint }
+  } as InternalAxiosRequestConfig & { meta: any })
+}
+
+export function get<T = any>(
+  apiEndpoint: string,
+  params?: any,
+  isEncrypt: boolean = DEFAULT_ENCRYPT
+): Promise<any> {
+  const url = getApiUrl(apiEndpoint, isEncrypt)
+  return service.request({
+    url,
+    method: 'get',
+    params,
+    meta: { isEncrypt, originalPath: apiEndpoint }
+  } as InternalAxiosRequestConfig & { meta: any })
+}
+
+export default service

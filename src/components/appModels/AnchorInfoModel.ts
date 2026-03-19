@@ -1,0 +1,19 @@
+export class AnchorInfoModel {
+    UserId: string = ""
+    Nickname: string = ""
+    HeadImage: string = ""
+    Birthday: string = ""
+    Introduce: string = ""
+    IsHotGirls: string = ""
+    IsNewGirls: string = ""
+    OnlineState: string = ""
+    CallState: string = ""
+    SortState: string = ""
+    Albums: string[] = []
+    AnchorType: string = ""
+    Partners: string = ""
+    Gender: string = ""
+    Country: string = ""
+    CountryCode: string = ""
+    IsLike: boolean = false
+}

@@ -1,0 +1,133 @@
+/**
+ * encryption.ts
+ * 包含 AES 加解密，MD5 签名，以及设备 ID 生成逻辑
+ */
+import CryptoJS from 'crypto-js'
+import { NET_CONFIG, STORAGE_KEYS } from './config'
+
+// 真实使用的 KEY 是32位字符串，所以直接解析可作为 AES-256 的 Key。
+// Swift 中使用了 ECB 模式，不需要 IV。
+const AES_KEY = CryptoJS.enc.Utf8.parse(NET_CONFIG.KEY)
+
+/**
+ * AES 加密
+ * @param word 需要加密的字符串
+ * @returns 加密后的 base64/hex 字符串
+ */
+export function encryptAES(word: string): string {
+  if (!word) return ''
+  // 根据 Swift 源码：明确会在明文后拼接一个 _ID 后缀再进行加密
+  const awaitAesText = word + '_' + NET_CONFIG.ID
+  const srcs = CryptoJS.enc.Utf8.parse(awaitAesText)
+
+  const encrypted = CryptoJS.AES.encrypt(srcs, AES_KEY, {
+    mode: CryptoJS.mode.ECB,
+    padding: CryptoJS.pad.Pkcs7
+  })
+
+  let base64Text = encrypted.toString()
+  // Swift 中对 base64 结果进行了特殊字符替换
+  base64Text = base64Text.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '$')
+
+  return base64Text
+}
+
+/**
+ * AES 解密
+ * @param word 加密过的字符串
+ * @returns 解密出的原始字符串
+ */
+export function decryptAES(word: string): string {
+  if (!word) return ''
+  // 还原真实的 base64 字符，并去除可能存在的转义符和引号
+  let base64Text = word.replace(/-/g, '+').replace(/_/g, '/').replace(/\$/g, '=').replace(/\\/g, '').replace(/"/g, '')
+
+  try {
+    const decrypt = CryptoJS.AES.decrypt(base64Text, AES_KEY, {
+      mode: CryptoJS.mode.ECB,
+      padding: CryptoJS.pad.Pkcs7
+    })
+
+    let result = decrypt.toString(CryptoJS.enc.Utf8).trim()
+
+    // 如果存在后端固定拼接的 ID 后缀，则去除
+    const suffix = '_' + NET_CONFIG.ID
+    if (result.endsWith(suffix)) {
+      result = result.substring(0, result.length - suffix.length)
+    }
+
+    return result
+  } catch (error) {
+    console.error('AES Decrypt Error', error)
+    return ''
+  }
+}
+
+/**
+ * 生成 32 位 MD5
+ * @param word 字符串
+ */
+export function getMD5(word: string): string {
+  // 原生 Swift 的 %02X 是输出大写字母
+  return CryptoJS.MD5(word).toString().toUpperCase()
+}
+
+/**
+ * 获取或生成设备 UDID
+ * @param externalUdid 外部传入的 UDID，如果原生通过 JSBridge 传给 Web 可以用这个参数覆盖缓存。
+ */
+export function getUdid(externalUdid?: string): string {
+  if (externalUdid) {
+    localStorage.setItem(STORAGE_KEYS.UDID, externalUdid)
+    return externalUdid
+  }
+  let udid = localStorage.getItem(STORAGE_KEYS.UDID)
+  if (!udid) {
+    // 生成一个类似 UUID 的随机字符串
+    udid = 'web-' + URL.createObjectURL(new Blob()).slice(-36).replace(/-/g, '') + Date.now().toString(36)
+    localStorage.setItem(STORAGE_KEYS.UDID, udid)
+  }
+  return udid
+}
+
+/**
+ * 生成签名 Signature 字符串。
+ * 逻辑参考 Swift: 
+ * 1. 追加 Nonce
+ * 2. 忽略 "File" 和 "s" (如果加密状态，则是它们的 aes 形式)
+ * 3. 排序 keys
+ * 4. `${Base64(key)}=${Base64(value)}` -> join("&") + "&" + KEY
+ * 5. md5
+ */
+export function createSiginString(
+  params: Record<string, any> = {},
+  nonce: string,
+  isEncrypt: boolean = true
+): string {
+  const mutParams: Record<string, any> = { ...params, Nonce: nonce }
+
+  // 按照升序排序 key
+  const sortedKeys = Object.keys(mutParams).sort()
+
+  const ignoreKeyFile = isEncrypt ? encryptAES('File') : 'File'
+  const ignoreKeyS = isEncrypt ? encryptAES('s') : 's'
+
+  const encodedPairs: string[] = []
+
+  sortedKeys.forEach(key => {
+    if (key !== ignoreKeyFile && key !== ignoreKeyS) {
+      const value = String(mutParams[key])
+
+      // key 和 value 转 base64。CryptoJs.enc.Base64.stringify 接收 WordArray 格式
+      const keyBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(key))
+      const valueBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(value))
+
+      encodedPairs.push(`${keyBase64}=${valueBase64}`)
+    }
+  })
+
+  const encodedPairsString = encodedPairs.join('&')
+  const signString = encodedPairsString + '&' + NET_CONFIG.KEY
+
+  return getMD5(signString)
+}

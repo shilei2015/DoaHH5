@@ -3,7 +3,7 @@
 </script>
 
 <template>
-    <RouterView></RouterView>
+    消息列表
 </template>
 
 <style scoped></style>

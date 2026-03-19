@@ -23,12 +23,10 @@ coverage
 *.tsbuildinfo
 
 # IDE / Editor
-.vscode/*
-!.vscode/extensions.json
-!.vscode/launch.json
-!.vscode/settings.json
-!.vscode/tasks.json
-.idea
+.agents
+.swiftCode
+.vscode/
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
