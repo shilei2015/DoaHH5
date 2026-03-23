@@ -47,9 +47,7 @@ const scrollToCate = (NavId: string, event: Event) => {
 
 const initPageData = async () => {
     await getCateList()
-    isSwitchingCate.value = true;
-    await getAnchorListByNaviId(currentActiveCateId.value)
-    isSwitchingCate.value = false;
+    // selectCategory is called inside getCateList, which handles fetching anchors.
 }
 var currentPage = ref(1)
 const getCateList = async () => {
@@ -186,12 +184,15 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 56px 20px 0 20px;
+    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-left: 20px;
+    padding-right: 20px;
     /* modified to include status bar top empty space */
     margin-bottom: 24px;
 }
 
 .title {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     font-size: 28px;
     font-weight: 800;
     font-style: italic;

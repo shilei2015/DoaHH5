@@ -22,14 +22,15 @@ const getSysInfo = async () => {
         const response = await post(API.sys_info, {})
         const sysInfo: SystemInfoModel = response.data
         console.log(sysInfo.App.CurrState);
-        checkLogin()
+        await checkLogin()
     } catch (error) {
         console.log("error:", error);
     }
 }
 
-const checkLogin = () => {
+const checkLogin = async () => {
     if (userStore.token.length > 0) {
+        await userStore.updateLoginUserInfo()
         toMainTab()
     } else {
         toLogin()

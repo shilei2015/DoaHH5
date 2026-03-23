@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCallStore } from '@/stores/callStore';
 import { AnchorInfoModel } from './appModels/AnchorInfoModel';
 import { getFlagEmoji, getAge } from '@/utils/tools';
+import MOMORTC from '@/utils/MOMORTC';
 
 const props = defineProps<{
     anchor: AnchorInfoModel;
 }>();
+
+const router = useRouter();
+const callStore = useCallStore();
 
 const statusText = computed(() => {
     switch (props.anchor.OnlineState) {
@@ -24,6 +30,10 @@ const statusColors = computed(() => {
         default: return { text: '#fff', dot: '#fff' };
     }
 });
+
+const clickCall = () => {
+    MOMORTC.startAnchorCall(props.anchor.UserId)
+}
 </script>
 
 <template>
@@ -57,7 +67,7 @@ const statusColors = computed(() => {
         </div>
 
         <!-- 跨界悬浮的呼叫按钮 -->
-        <button class="call-btn">
+        <button class="call-btn" @click.stop="clickCall">
             <img src="@/assets/discover/call_btn.svg" alt="Call" />
         </button>
     </div>

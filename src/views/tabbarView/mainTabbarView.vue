@@ -21,7 +21,11 @@ const switchTo = (pageName: string) => {
 
 <template>
     <div class="mainTabView">
-        <RouterView></RouterView>
+        <RouterView v-slot="{ Component }">
+            <KeepAlive>
+                <component :is="Component" />
+            </KeepAlive>
+        </RouterView>
     </div>
     <TabbarItemContainerView :tabbarItemList="tabbarItemList" @emitsSwitchTo="switchTo"></TabbarItemContainerView>
 </template>

@@ -15,5 +15,9 @@ export class AnchorInfoModel {
     Gender: string = ""
     Country: string = ""
     CountryCode: string = ""
+    Age: string = ""
     IsLike: boolean = false
+    VisitorMeNumber: string | null = null
+    LikeMeNumber: string | null = null
+    UserLikeNumber: string | null = null
 }

@@ -42,6 +42,11 @@ const routes = [
         component: () => import("@/views/call/callPage.vue")
     },
     {
+        path: "/video",
+        name: "videoPage",
+        component: () => import("@/views/call/videoPage.vue")
+    },
+    {
         path: "/login",
         name: "login",
         component: () => import("@/views/LoginRegister/Login/loginView.vue")

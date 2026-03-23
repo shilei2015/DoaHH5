@@ -7,7 +7,7 @@ import { post } from '@/utils/net/request';
 import HUD from '@/components/HUD';
 import type { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showImagePreview } from '@/utils/imagePreview';
-import { callAnchor } from '@/utils/MOMORTC';
+import MOMORTC from '@/utils/MOMORTC';
 
 const route = useRoute();
 const router = useRouter();
@@ -140,7 +140,7 @@ const goBack = () => {
                 </button>
 
                 <!-- 视频通话按钮 (居中大尺寸) -->
-                <button class="action-btn call-btn" @click="callAnchor(anchorInfo.UserId)">
+                <button class="action-btn call-btn" @click="MOMORTC.startAnchorCall(anchorInfo.UserId)">
                     <img src="@/assets/profile/video_call_btn.svg" alt="Video Call" />
                 </button>
 

@@ -32,7 +32,7 @@ export const HUD = {
         }
     },
     showToast(message: string, duration = 2000) {
-        if (message && duration > 0) {
+        if (message && message.length > 0 && duration > 0) {
             const hud = initHUD()
             if (hud) {
                 hud.showToast(message, duration)

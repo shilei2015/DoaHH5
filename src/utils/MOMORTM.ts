@@ -1,99 +1,91 @@
-import { ref, onUnmounted } from 'vue';
 import AgoraRTM from 'agora-rtm-sdk';
+import { ref } from 'vue';
+import { useUserStore } from '@/stores/userStore';
+import { NET_CONFIG } from './net/config';
 
-// TODO: Replace with your actual App ID and fetch token dynamically
-const APP_ID = 'YOUR_APP_ID_HERE'; 
+// Singleton client instance
+let rtmClient: any = null;
+const isRtmLoggedIn = ref(false);
 
-export function useMomoRTM(userId: string) {
-    const rtmInfo = ref<{
-        client: any | null,
-        isLoggedIn: boolean
-    }>({
-        client: null,
-        isLoggedIn: false
-    });
-    const messages = ref<{publisher: string, content: string, timestamp: number}[]>([]);
+const APP_ID = NET_CONFIG.SWID;
 
-    const initRTM = async (token = 'YOUR_RTM_TOKEN_HERE') => {
+export function useMomoRTM() {
+    const userStore = useUserStore();
+
+    /**
+     * Initialize and Login RTM
+     */
+    const loginRTM = async (uid: string, token: string) => {
+        if (rtmClient && isRtmLoggedIn.value) return;
+
         try {
-            const client = new AgoraRTM.RTM(APP_ID, userId);
-            
-            // Event Handlers
-            client.addEventListener("message", (event: any) => {
-                messages.value.push({
-                    publisher: event.publisher,
-                    content: event.message,
-                    timestamp: Date.now()
+            if (!rtmClient) {
+                console.log("[RTM] Creating client instance...");
+                rtmClient = new AgoraRTM.RTM(APP_ID, uid, {
+                    encryptionMode: 'NONE',
                 });
-            });
 
-            client.addEventListener("presence", (event: any) => {
-                console.log(`Presence event from ${event.publisher}: ${event.eventType}`);
-            });
+                // Global event listeners
+                rtmClient.addEventListener('message', (event: any) => {
+                    console.log("[RTM] Received Message:", event.message);
+                });
 
-            client.addEventListener("status", (event: any) => {
-                console.log(`RTM connection state changed to: ${event.state}`);
-            });
-            
-            // Login
-            await client.login({ token });
-            rtmInfo.value.client = client;
-            rtmInfo.value.isLoggedIn = true;
-            console.log("Logged into RTM successfully");
-            
-        } catch (err) {
-            console.error("Failed to initialize or login to RTM", err);
-        }
-    };
-
-    const subscribeToChannel = async (channelName: string) => {
-        try {
-            if (!rtmInfo.value.client) return;
-            await rtmInfo.value.client.subscribe(channelName);
-            console.log(`Subscribed to RTM channel: ${channelName}`);
-        } catch (err) {
-            console.error("Failed to subscribe to channel", err);
-        }
-    };
-
-    const publishMessage = async (channelName: string, text: string) => {
-        try {
-            if (!rtmInfo.value.client) return;
-            const payload = JSON.stringify({ type: "text", message: text });
-            await rtmInfo.value.client.publish(channelName, payload, { channelType: 'MESSAGE' });
-            
-            // Also add to local messages array for UI
-            messages.value.push({
-                publisher: userId,
-                content: payload,
-                timestamp: Date.now()
-            });
-        } catch (err) {
-            console.error("Failed to publish message", err);
-        }
-    };
-
-    const logout = async () => {
-        try {
-            if (rtmInfo.value.client) {
-                await rtmInfo.value.client.logout();
-                rtmInfo.value.isLoggedIn = false;
+                rtmClient.addEventListener('status', (event: any) => {
+                    console.log("[RTM] Connection Status Changed:", event.state, event.reason);
+                    if (event.state === 'CONNECTED') {
+                        isRtmLoggedIn.value = true;
+                    } else if (event.state === 'DISCONNECTED') {
+                        isRtmLoggedIn.value = false;
+                    }
+                });
             }
-        } catch (err) {
-            console.error("Failed to logout of RTM", err);
+
+            console.log("[RTM] Logging in with UID:", uid);
+            await rtmClient.login({ token: token });
+            isRtmLoggedIn.value = true;
+            console.log("[RTM] Login Success");
+        } catch (error) {
+            console.error("[RTM] Login Failed:", error);
+            throw error;
         }
     };
 
-    onUnmounted(() => {
-        logout();
-    });
+    /**
+     * Logout RTM
+     */
+    const logoutRTM = async () => {
+        if (!rtmClient) return;
+        try {
+            await rtmClient.logout();
+            isRtmLoggedIn.value = false;
+            console.log("[RTM] Logout Success");
+        } catch (error) {
+            console.error("[RTM] Logout Failed:", error);
+        }
+    };
+
+    /**
+     * Send P2P Message
+     */
+    const sendP2PMessage = async (toUserId: string, message: string) => {
+        if (!rtmClient || !isRtmLoggedIn.value) {
+            console.warn("[RTM] Not logged in, cannot send message");
+            return;
+        }
+        try {
+            const publishOptions = { channelType: 'USER' };
+            await rtmClient.publish(toUserId, message, publishOptions);
+            console.log("[RTM] Message sent to:", toUserId);
+        } catch (error) {
+            console.error("[RTM] Send failure:", error);
+        }
+    };
 
     return {
-        rtmInfo,
-        messages,
-        initRTM,
-        subscribeToChannel,
-        publishMessage,
-        logout
+        loginRTM,
+        logoutRTM,
+        sendP2PMessage,
+        isRtmLoggedIn,
+        rtmClient
     };
 }
