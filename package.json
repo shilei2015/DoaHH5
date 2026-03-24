@@ -18,6 +18,7 @@
     "crypto-js": "^4.2.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
+    "vant": "^4.9.22",
     "vue": "^3.5.29",
     "vue-router": "^4.6.4"
   },

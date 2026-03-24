@@ -6,6 +6,7 @@ import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
 import { type SystemInfoModel } from '@/components/appModels/SystemInfoModel';
 import { useUserStore } from '@/stores/userStore';
+import loginedMissions from '@/utils/loginedMissions';
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -31,11 +32,13 @@ const getSysInfo = async () => {
 const checkLogin = async () => {
     if (userStore.token.length > 0) {
         await userStore.updateLoginUserInfo()
+        loginedMissions.start()
         toMainTab()
     } else {
         toLogin()
     }
 }
+
 onMounted(() => {
     getSysInfo()
 })

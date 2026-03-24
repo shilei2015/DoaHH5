@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/userStore';
 import { getUdid } from '@/utils/net/encryption';
 import logoLogo from '@/assets/launch/loginLogo.png'
 import HUD from '@/components/HUD'
+import loginedMissions from '@/utils/loginedMissions';
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -27,6 +28,7 @@ const loginToSystem = async () => {
             HUD.showToast("Login Successful")
             userStore.token = token
             router.push({ name: "anchorList" })
+            loginedMissions.start()
         } else if (response.code == "10101") {
             toRegisterPage()
         } else {

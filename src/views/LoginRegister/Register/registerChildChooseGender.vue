@@ -15,6 +15,7 @@ import uncheckedIcon from '@/assets/login/uncheckedIcon.svg';
 import { getUdid } from '@/utils/net/encryption';
 import MMHUD from '@/components/HUD'
 import { useUserStore } from '@/stores/userStore';
+import loginedMissions from '@/utils/loginedMissions';
 
 function selectGender(gender: 'male' | 'female') {
     selectedGender.value = gender;
@@ -48,6 +49,7 @@ const register = async () => {
                 const userStore = useUserStore()
                 userStore.token = response.data.Token
                 router.push({ name: "anchorList" })
+                loginedMissions.start()
             }
         } else {
             MMHUD.showToast(response.data.toast)

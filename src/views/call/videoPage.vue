@@ -5,6 +5,7 @@ import { useCallStore } from '@/stores/callStore';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import rtc from '@/utils/MOMORTC';
+import { getFlagEmoji } from '@/utils/tools';
 // 页面挂载时加入频道并发布
 onMounted(async () => {
     try {
@@ -37,7 +38,6 @@ const { currentCallInfo } = storeToRefs(callStore);
 const { userInfo } = storeToRefs(userStore);
 
 const isAudioMuted = ref(false);
-const isVideoMuted = ref(false);
 const coins = computed(() => userInfo.value?.Coins || '0');
 
 // Anchor data from store
@@ -60,8 +60,17 @@ const endCall = () => {
 };
 
 const toggleCamera = () => {
-    console.log("Switch camera (UI Only)");
+    rtc.switchCamera()
 };
+
+const toggleMask = async () => {
+    await rtc.toggleVideoMask(!rtc.isVideoMasked.value);
+};
+
+const reportAnchor = () => {
+
+}
+
 </script>
 
 <template>
@@ -80,16 +89,19 @@ const toggleCamera = () => {
                 <div class="connected-user-info">
                     <img :src="anchor.HeadImage" class="small-avatar" />
                     <div class="connected-details">
-                        <span class="connected-name">{{ anchor.Nickname }}CharlotteCha...</span>
-                        <span class="connected-country">🇧🇷 {{ anchor.Country }}</span>
+                        <span class="connected-name">{{ anchor.Nickname }}</span>
+                        <div class="country-info">
+                            <span class="country-flag">{{ getFlagEmoji("cn") }}</span>
+                            <span class="connected-country">{{ anchor.Country }}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="connected-actions">
-                    <button class="circle-btn">
-                        <span class="icon-text">!</span>
+                    <button class="circle-btn" @click="reportAnchor">
+                        <img src="@/assets/call/videoExport.png" alt="">
                     </button>
                     <button class="circle-btn hangup-btn" @click="endCall">
-                        <span class="icon-text">✕</span>
+                        <img src="@/assets/call/videoClose.png" alt="">
                     </button>
                 </div>
             </div>
@@ -97,13 +109,9 @@ const toggleCamera = () => {
             <!-- Local Video PiP -->
             <div class="local-video-container">
                 <div class="pip-controls">
-                    <button class="pip-btn" @click="isVideoMuted = !isVideoMuted">
-                        <span v-if="isVideoMuted">🚫📷</span>
-                        <span v-else>📷</span>
-                    </button>
-                    <button class="pip-btn" @click="isAudioMuted = !isAudioMuted">
-                        <span v-if="isAudioMuted">🚫🎤</span>
-                        <span v-else>🎤</span>
+                    <button class="pip-btn" @click="toggleMask">
+                        <img v-if="rtc.isVideoMasked.value" src="@/assets/call/video-camare-off.png" alt="">
+                        <img v-else src="@/assets/call/video-camare-on.png" alt="">
                     </button>
                 </div>
                 <div class="local-video" id="local-video">
@@ -123,17 +131,17 @@ const toggleCamera = () => {
 
             <!-- Connected Bottom Bar -->
             <div class="connected-bottom-bar">
-                <button class="circle-btn action-btn" @click="toggleCamera">
-                    <span>🔄</span>
+                <button class="toggleCamare-button" @click="toggleCamera">
+                    <img class="switch-camare" src="@/assets/call/videoSwitchCamare.png" alt="">
                 </button>
                 <div class="message-input-wrapper">
                     <input type="text" placeholder="Message..." class="message-input" />
                 </div>
-                <button class="circle-btn action-btn">
-                    <span>🎁</span>
+                <button class="circle-btn action-btn" style="background-color: rgba(255, 255, 255, 0.25)">
+                    <img src=" @/assets/call/video-gift.png" style="width: 24px; height: 24px;" alt="">
                 </button>
                 <div class="coin-badge connected-coin">
-                    <img src="@/assets/profile/diamond_icon.png" alt="Diamond" class="diamond-icon" />
+                    <img src="@/assets/profile/diamond_icon.svg" alt="Diamond" class="diamond-icon" />
                     <span class="coin-text">{{ coins }}</span>
                     <div class="add-btn">
                         <img src="@/assets/profile/add_icon.svg" alt="Add" class="add-icon" />
@@ -222,6 +230,11 @@ const toggleCamera = () => {
     flex-direction: column;
 }
 
+.country-flag {
+    position: relative;
+    top: 2px;
+}
+
 .connected-name {
     color: white;
     font-size: 16px;
@@ -247,14 +260,17 @@ const toggleCamera = () => {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0);
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    color: white;
     cursor: pointer;
+}
+
+.circle-btn img {
+    width: 100%;
+    height: 100%;
 }
 
 .icon-text {
@@ -267,16 +283,15 @@ const toggleCamera = () => {
     position: absolute;
     top: 120px;
     right: 20px;
-    display: flex;
-    align-items: center;
     z-index: 20;
 }
 
 .pip-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-right: -16px;
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
     z-index: 21;
 }
 
@@ -284,15 +299,23 @@ const toggleCamera = () => {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    background: rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    border: none;
     cursor: pointer;
+}
+
+.text-btn {
+    font-size: 14px;
+    margin-top: 8px;
+    /* Spacing between pip buttons */
+}
+
+.pip-btn img {
+    width: 21px;
+    height: 21px;
 }
 
 .local-video {
@@ -392,9 +415,9 @@ const toggleCamera = () => {
     height: 42px;
     border-radius: 21px;
     padding: 0 8px;
-    background: rgba(25, 25, 25, 0.6);
+    background: rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
     color: white;
     display: flex;
     align-items: center;
@@ -426,5 +449,22 @@ const toggleCamera = () => {
 .add-icon {
     width: 100%;
     height: 100%;
+}
+
+.toggleCamare-button {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.switch-camare {
+    width: 24px;
+    height: 24px;
 }
 </style>

@@ -41,6 +41,7 @@ class RTCService {
     public client: IAgoraRTCClient | null = null;
     public localAudioTrack: IMicrophoneAudioTrack | null = null;
     public localVideoTrack: ICameraVideoTrack | null = null;
+    public isVideoMasked = ref(false);
     public remoteUser = ref<IAgoraRTCRemoteUser | null>(null)
     public remoteVideoTrack = ref<IRemoteVideoTrack | null>(null)
     public remoteOnline = false;
@@ -174,6 +175,11 @@ class RTCService {
                 if (!this.localVideoTrack) {
                     this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
                 }
+                
+                if (this.isVideoMasked.value) {
+                    await this.localVideoTrack.setEnabled(false);
+                }
+                
                 tracks.push(this.localVideoTrack);
             } catch (e) {
                 console.error('[RTC] Create Video Track Failed:', e);
@@ -248,6 +254,20 @@ class RTCService {
             }
         } catch (e) {
             console.error('[RTC] switchCamera failed', e);
+        }
+    }
+
+    /**
+     * 控制本地视频画面开关
+     */
+    public async toggleVideoMask(enable: boolean) {
+        this.isVideoMasked.value = enable;
+        if (!this.client || !this.localVideoTrack) return;
+
+        try {
+            await this.localVideoTrack.setEnabled(!enable);
+        } catch (error) {
+            console.error('[RTC] toggleVideoMask error:', error);
         }
     }
 

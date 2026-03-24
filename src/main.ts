@@ -4,6 +4,9 @@ import router from './router'
 import './assets/global.css'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+// 引入 Vant
+import Vant from 'vant'
+import 'vant/lib/index.css'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -11,6 +14,7 @@ pinia.use(piniaPluginPersistedstate)
 
 app.use(router)
 app.use(pinia)
+app.use(Vant)
 app.mount('#app')
 // 禁用双指缩放手势
 document.addEventListener('gesturestart', function (event) {

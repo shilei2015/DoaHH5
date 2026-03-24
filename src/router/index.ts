@@ -3,6 +3,7 @@ import mainTabView from "@/views/tabbarView/mainTabbarView.vue";
 import anchorList from "@/views/tabbarSubViews/anchorList.vue";
 import messageList from "@/views/tabbarSubViews/messageList.vue";
 import userCenter from "@/views/tabbarSubViews/userCenter.vue";
+import messageDetail from "@/views/message/ChatDetail/ChatDetailPage.vue"
 const routes = [
     {
         path: "/",
@@ -22,7 +23,7 @@ const routes = [
             {
                 path: "message",
                 component: messageList,
-                name: "messageList"
+                name: "messageList",
             },
             {
                 path: "user",
@@ -30,6 +31,11 @@ const routes = [
                 name: "userCenter"
             }
         ],
+    },
+    {
+        path: "/message/detail",
+        component: messageDetail,
+        name: "messageDetail",
     },
     {
         path: "/anchorProfile",

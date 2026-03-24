@@ -3,6 +3,8 @@ import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useCallStore } from '@/stores/callStore';
 import { storeToRefs } from 'pinia';
+import { useUserStore } from '@/stores/userStore';
+import { getFlagEmoji } from '@/utils/tools';
 
 const router = useRouter();
 const route = useRoute();
@@ -33,6 +35,8 @@ const anchor = computed(() => {
 const callCoins = computed(() => currentCallInfo.value?.LiveCoins || '0');
 const oldCoins = computed(() => currentCallInfo.value?.LiveOriginalCoins || '');
 const isFreeCall = computed(() => Number(currentCallInfo.value?.LiveFreeTime || 0) > 0);
+
+const currentCoins = ref(useUserStore().userInfo?.Coins)
 
 const totalTime = 30;
 const countdown = ref(totalTime);
@@ -86,7 +90,7 @@ onUnmounted(() => {
             <!-- Coin Balance (Placeholder for actual balance, currently showing price/info) -->
             <div class="coin-badge">
                 <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="diamond-icon" />
-                <span class="coin-text">{{ callCoins }}</span>
+                <span class="coin-text">{{ currentCoins }}</span>
                 <div class="add-btn">
                     <img src="@/assets/setting/ic_wallet_bg.svg" alt="Add" class="add-icon" />
                 </div>
@@ -103,7 +107,7 @@ onUnmounted(() => {
                         <div class="name-age">{{ anchor.Nickname }}<span v-if="anchor.Age">, {{ anchor.Age }}</span>
                         </div>
                         <div class="country-row">
-                            <span v-if="anchor.CountryCode" class="flag">{{ anchor.CountryCode }}</span>
+                            <span v-if="anchor.CountryCode" class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
                             <span class="country-text">{{ anchor.Country || 'Unknown' }}</span>
                         </div>
                     </div>
@@ -136,7 +140,7 @@ onUnmounted(() => {
                         <div class="name-age">{{ anchor.Nickname }}<span v-if="anchor.Age">, {{ anchor.Age }}</span>
                         </div>
                         <div class="country-row">
-                            <span v-if="anchor.CountryCode" class="flag">{{ anchor.CountryCode }}</span>
+                            <span v-if="anchor.CountryCode" class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
                             <span class="country-text">{{ anchor.Country || 'Unknown' }}</span>
                         </div>
                     </div>
@@ -166,7 +170,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Pagination dots placeholder -->
-        <div class="pagination-dots">
+        <!-- <div class="pagination-dots">
             <span class="dot active"></span>
             <span class="dot"></span>
             <span class="dot"></span>
@@ -175,7 +179,7 @@ onUnmounted(() => {
             <span class="dot"></span>
             <span class="dot"></span>
             <span class="dot"></span>
-        </div>
+        </div> -->
     </div>
 </template>
 
