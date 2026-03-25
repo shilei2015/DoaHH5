@@ -8,6 +8,7 @@ import HUD from '@/components/HUD';
 import type { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showImagePreview } from '@/utils/imagePreview';
 import MOMORTC from '@/utils/MOMORTC';
+import { generateSessionId } from '@/utils/msg/MessageModel';
 
 const route = useRoute();
 const router = useRouter();
@@ -88,6 +89,15 @@ const goBack = () => {
     router.back();
 };
 
+const goMessage = () => {
+    router.push({
+        name: "messageDetail",
+        query: {
+            userId: anchorInfo.value?.UserId || "",
+        }
+    })
+}
+
 </script>
 
 <template>
@@ -133,7 +143,7 @@ const goBack = () => {
             <!-- 底部浮动按钮区 -->
             <div class="action-buttons">
                 <!-- 私信按钮 -->
-                <button class="action-btn msg-btn">
+                <button class="action-btn msg-btn" @click="goMessage">
                     <div class="msg-circle">
                         <img src="@/assets/profile/msg_icon.svg" alt="Message" />
                     </div>

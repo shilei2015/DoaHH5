@@ -1,81 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { getChatRecordManager } from '@/utils/msg/ChatRecordManager'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-
-interface Message {
-    id: number
-    name: string
-    avatar: string
-    time: string
-    previewText: string
-    unread: number
-    isOnline: boolean
-    isSystem?: boolean
-}
-
-const mockList = ref<Message[]>([
-    {
-        id: 1,
-        name: 'AppName',
-        avatar: 'http://localhost:3845/assets/dfddb16dc2affcf02c60df18ea4949cf1f2ec921.png',
-        time: '16:23',
-        previewText: 'This is a system message',
-        unread: 2,
-        isOnline: false,
-        isSystem: true
-    },
-    {
-        id: 2,
-        name: 'jimmy',
-        avatar: 'http://localhost:3845/assets/52e50bd1f0a6f8e12efbd541e6bf735bbaf1a585.png',
-        time: '01.12 16:23',
-        previewText: 'Hello. Nice to meet you Hello. Nic...',
-        unread: 99,
-        isOnline: true
-    },
-    {
-        id: 3,
-        name: 'jimmy',
-        avatar: 'http://localhost:3845/assets/abc06e1c08a727603cd5aae8a8ccaea0bc345181.png',
-        time: '01.12 16:23',
-        previewText: 'Hello. Nice to meet you Hello. Nic...',
-        unread: 9,
-        isOnline: false
-    },
-    {
-        id: 4,
-        name: 'jimmy',
-        avatar: 'http://localhost:3845/assets/3366119f805883418aefe774a7f19dd880d2b8b0.png',
-        time: '01.12 16:23',
-        previewText: 'Hello. Nice to meet you Hello. Nice to ...',
-        unread: 0,
-        isOnline: true
-    },
-    {
-        id: 5,
-        name: 'jimmy',
-        avatar: 'http://localhost:3845/assets/3618bab534e88de8645d5d6aef74e2048725df77.png',
-        time: '01.12 16:23',
-        previewText: 'Hello. Nice to meet you Hello. Nice to ...',
-        unread: 0,
-        isOnline: false
-    }
-])
+import type { LHMsgChat } from '@/utils/msg/ChatModel'
+import { formatTimestamp } from '@/utils/tools'
 
 const router = useRouter()
+const chatManager = getChatRecordManager()
 
-const onClearAll = () => {
-    mockList.value = []
+const onClearAll = async () => {
+    // 这里的 Clear All 通常建议是“全部标记为已读”
+    await chatManager.resetAllUnread()
 }
 
-const onDelete = (id: number) => {
-    mockList.value = mockList.value.filter(item => item.id !== id)
+const onDelete = async (chat: LHMsgChat) => {
+    await chatManager.removeRecord(chat, true)
 }
 
-const onClickChat = (msg: Message) => {
-    console.log('onClickChat', msg)
-    router.push({ name: "messageDetail" })
+const onClickChat = async (chat: LHMsgChat) => {
+    console.log('onClickChat', chat)
+    // 进入聊天前清除未读
+    await chatManager.resetUnread(chat.chatId)
+    // 跳转详情且传递必要的参数
+    router.push({
+        name: "messageDetail",
+        query: {
+            userId: chat.userId
+        }
+    })
 }
+
+const chatList = chatManager.chatList
+
+onMounted(async () => {
+    await chatManager.initialize();
+})
+
 </script>
 
 <template>
@@ -84,39 +44,32 @@ const onClickChat = (msg: Message) => {
         <header class="header">
             <h1 class="title">Messages</h1>
             <button class="clear-btn" @click="onClearAll">
-                <svg class="icon-clear" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path d="M7 16H17V20C17 21.1046 16.1046 22 15 22H9C7.89543 22 7 21.1046 7 20V16Z" fill="#000" />
-                    <path d="M12 2V16" stroke="#000" stroke-width="2" stroke-linecap="round" />
-                    <path d="M8 8V12" stroke="#000" stroke-width="2" stroke-linecap="round" />
-                    <path d="M16 8V12" stroke="#000" stroke-width="2" stroke-linecap="round" />
-                    <path d="M4 14H20" stroke="#000" stroke-width="2" stroke-linecap="round" />
-                </svg>
+                <img src="@/assets/message/msg-list-clear-unread.svg" alt="">
                 <span class="clear-text">Clear All</span>
             </button>
         </header>
 
         <!-- 列表区 -->
         <main class="list-wrapper">
-            <van-swipe-cell v-for="msg in mockList" :key="msg.id" class="message-item-wrapper">
-                <div class="message-item" @click="onClickChat(msg)">
+            <van-swipe-cell v-for="chat in chatList" :key="chat.chatId" class="message-item-wrapper">
+                <div class="message-item" @click="onClickChat(chat)">
                     <!-- 头像区 -->
                     <div class="avatar-area">
-                        <img class="avatar" :src="msg.avatar" alt="avatar" />
-                        <div v-if="msg.isOnline" class="status-dot online"></div>
-                        <!-- 如果还需要其他状态圆点，可借助 css class 动态渲染 -->
+                        <img class="avatar" :src="chat.user?.HeadImage" />
+                        <div v-if="chat.user?.OnlineState" class="status-dot online"></div>
                     </div>
 
                     <!-- 内容区 -->
                     <div class="content-area">
                         <div class="content-top">
-                            <span class="user-name">{{ msg.name }}</span>
-                            <span class="time-text">{{ msg.time }}</span>
+                            <span class="user-name">{{ chat.user?.Nickname || 'User' }}</span>
+                            <span class="time-text">{{ formatTimestamp(chat.lastTime * 1000, 'MM.DD HH:mm') }}</span>
                         </div>
                         <div class="content-bottom">
-                            <p class="msg-preview">{{ msg.previewText }}</p>
-                            <div v-if="msg.unread > 0" class="unread-badge" :class="{ 'badge-more': msg.unread >= 99 }">
-                                {{ msg.unread > 99 ? '99+' : msg.unread }}
+                            <p class="msg-preview">{{ chat.lastText }}</p>
+                            <div v-if="chat.unreadCount > 0" class="unread-badge"
+                                :class="{ 'badge-more': chat.unreadCount >= 99 }">
+                                {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
                             </div>
                         </div>
                     </div>
@@ -125,7 +78,7 @@ const onClickChat = (msg: Message) => {
                 <!-- 右滑显示的删除按钮选项 -->
                 <template #right>
                     <div class="delete-btn-wrapper">
-                        <button class="delete-btn" @click="onDelete(msg.id)">
+                        <button class="delete-btn" @click="onDelete(chat)">
                             <van-icon name="delete-o" size="24" color="#fff" />
                         </button>
                     </div>

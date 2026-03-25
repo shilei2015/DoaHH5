@@ -1,32 +1,83 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { MessageModel } from '@/utils/msg/MessageModel';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { MessageSendStatus, TranslateState, type LHMessage } from '@/utils/msg/MessageModel';
+import { useUserStore } from '@/stores/userStore';
+import { translateText } from '@/utils/tools';
 
 const props = defineProps<{
-    msg: MessageModel;
+    msg: LHMessage;
 }>();
 
-// Assuming ID "1" is the current user (Alice) and all others are the conversation partner.
-const isMe = computed(() => props.msg.id === '1');
+const msg = computed(() => props.msg);
+const userStore = useUserStore();
+const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
+const emit = defineEmits<{
+    (e: 'clickSendFaild', msg: LHMessage): void
+}>()
+
+const translateMessage = async () => {
+    switch (msg.value.translateState) {
+        case TranslateState.Noyet:
+            msg.value.translateState = TranslateState.Translating
+            let result = await translateText(msg.value.textMessage ?? "")
+            if (result) {
+                msg.value.transLateTextMessage = result
+                msg.value.translateState = TranslateState.Translated
+            } else {
+                msg.value.translateState = TranslateState.Noyet
+            }
+            break
+        case TranslateState.Translating:
+            break
+        case TranslateState.Translated:
+            msg.value.translateState = TranslateState.Noyet
+            break
+        case undefined:
+            break
+    }
+}
+
+onMounted(() => {
+    if (msg.value.translateState == undefined) {
+        msg.value.translateState = TranslateState.Noyet
+    }
+})
+
+watch(() => props.msg.sendStatus, (val) => {
+    console.log(`[ChatTextMessageView] status changed for ${props.msg.messageId}: ${val}`);
+})
+
 </script>
 
 <template>
     <div :class="['contentView', isMe ? 'me' : 'other']">
         <div v-if="!isMe" class="userAvatar">
-            <img :src="msg.avatar" alt="" class="avatarImg">
+            <img :src="msg.fromUser?.HeadImage ?? ''" alt="" class="avatarImg">
         </div>
 
         <div class="messageContainer">
+            <div v-if="msg.sendStatus == MessageSendStatus.Failed && isMe" class="sendFaildView"
+                @click="emit('clickSendFaild', props.msg)">
+                <img src="@/assets/message/msg-send-fail.svg" alt="">
+            </div>
             <div class="bubbleView">
                 <div class="messageText">
                     {{ msg.textMessage }}
                 </div>
+                <div v-if="msg.translateState != TranslateState.Noyet" class="translateContianer">
+                    <div class="line"></div>
+                    <van-loading class="translateingLoading" v-if="msg.translateState == TranslateState.Translating" />
+                    <div v-else class="translateMessageText">{{ msg.transLateTextMessage }}</div>
+                </div>
             </div>
             <!-- Future placeholders for translate/status -->
-            <div class="metaView">
-                <div v-if="false" class="translateView"></div>
-                <div v-if="false" class="sendFaildView"></div>
+
+            <div v-if="!isMe" class="translateView" @click="translateMessage">
+                <img v-if="msg.translateState != TranslateState.Noyet" src="@/assets/message/msg-translate-on.svg"
+                    alt="" class="translateIcon">
+                <img v-else src="@/assets/message/msg-translate-off.svg" alt="" class="translateIcon">
             </div>
+
         </div>
     </div>
 </template>
@@ -49,7 +100,7 @@ const isMe = computed(() => props.msg.id === '1');
     height: 36px;
     flex-shrink: 0;
     position: relative;
-    bottom: 4px;
+    /* bottom: 4px; */
 }
 
 .avatarImg {
@@ -62,8 +113,9 @@ const isMe = computed(() => props.msg.id === '1');
 
 .messageContainer {
     display: flex;
-    flex-direction: column;
-    max-width: 75%;
+    flex-direction: row;
+    align-items: flex-end;
+    max-width: 100%;
     margin: 0 10px;
 }
 
@@ -101,16 +153,41 @@ const isMe = computed(() => props.msg.id === '1');
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-.metaView {
-    display: flex;
-    margin-top: 4px;
-}
-
 .sendFaildView {
-    /* Potential error icon styling */
+    width: 16px;
+    height: 16px;
+    position: relative;
+    bottom: 4px;
+    right: 10px;
 }
 
-.translateView {
-    /* Potential translate button styling */
+.translateView img {
+    position: relative;
+    left: 10px;
+    width: 20px;
+    height: 20px;
+}
+
+.translateContianer {
+    padding: 8px 0px 0px 0px;
+}
+
+.translateContianer .line {
+    width: 100%;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin-bottom: 8px;
+}
+
+.translateMessageText {
+    font-size: 14px;
+    font-weight: 510;
+    line-height: 22px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.translateingLoading {
+    width: 16px;
+    height: 16px;
 }
 </style>

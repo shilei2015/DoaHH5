@@ -4,6 +4,8 @@ import anchorList from "@/views/tabbarSubViews/anchorList.vue";
 import messageList from "@/views/tabbarSubViews/messageList.vue";
 import userCenter from "@/views/tabbarSubViews/userCenter.vue";
 import messageDetail from "@/views/message/ChatDetail/ChatDetailPage.vue"
+import { useUserStore } from "@/stores/userStore";
+import LoginedMissions from "@/utils/loginedMissions";
 const routes = [
     {
         path: "/",
@@ -80,5 +82,26 @@ const router = createRouter({
     history: createWebHistory(),
     routes
 })
+
+// Navigation Guard
+router.beforeEach(async (to, from, next) => {
+    const userStore = useUserStore();
+    const publicPages = ['/login', '/register', '/'];
+    const authRequired = !publicPages.includes(to.path);
+
+    // 1. Check if token exists
+    if (authRequired && !userStore.token) {
+        console.warn("[Router] No token found, redirecting to login");
+        return next('/login');
+    }
+
+    // 2. If token exists, ensure RTM and DB are initialized
+    if (userStore.token) {
+        // Quietly start background missions (idempotent)
+        await LoginedMissions.start();
+    }
+
+    next();
+});
 
 export default router

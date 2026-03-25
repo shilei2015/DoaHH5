@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { MessageModel } from '@/utils/msg/MessageModel';
+import type { LHMessage } from '@/utils/msg/MessageModel';
 import { formatTimestamp } from '@/utils/tools';
 
 const props = defineProps<{
-    msg: MessageModel;
+    timestamp: number;
 }>();
 </script>
 
 <template>
     <div class="timeView">
         <span class="timeLabel">
-            {{ formatTimestamp(msg.timeMessage?.getTime(), 'YYYY-MM-DD HH:mm') }}
+            {{ formatTimestamp(timestamp * 1000, 'YYYY-MM-DD HH:mm') }}
         </span>
     </div>
 </template>

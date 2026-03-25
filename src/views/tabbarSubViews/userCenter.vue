@@ -35,8 +35,11 @@ const menuItems = [
     { id: 4, title: 'Settings', icon: icMenuSettings }
 ];
 
+
 const handleEdit = () => {
-    console.log('Edit profile');
+    userStore.token = ""
+    userStore.rtmToken = ""
+    userStore.userInfo = null
 };
 </script>
 
@@ -125,13 +128,17 @@ const handleEdit = () => {
 .user-center-page {
     position: relative;
     width: 100%;
-    height: 100vh; /* 设定固定高度，填满屏幕 */
-    overflow-y: auto; /* 开启内部垂直滚动 */
-    -webkit-overflow-scrolling: touch; /* 增强 iOS 上的滚动顺滑感 */
+    height: 100vh;
+    /* 设定固定高度，填满屏幕 */
+    overflow-y: auto;
+    /* 开启内部垂直滚动 */
+    -webkit-overflow-scrolling: touch;
+    /* 增强 iOS 上的滚动顺滑感 */
     background-color: #F2F1F4;
     overflow-x: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    padding-bottom: 90px; /* 预留底部 TabBar 的空间，以免最底部内容被挡住 */
+    padding-bottom: 90px;
+    /* 预留底部 TabBar 的空间，以免最底部内容被挡住 */
     box-sizing: border-box;
 }
 

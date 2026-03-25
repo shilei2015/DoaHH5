@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { computed } from 'vue';
 import { MessageSendStatus, type LHMessage } from '@/utils/msg/MessageModel';
 import { useUserStore } from '@/stores/userStore';
+import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
+
+/**
+ * ChatGifMessageView.vue
+ * 专门用于在聊天列表中渲染 GIF 或 SVGA 动效礼物的消息单元格
+ */
 
 const props = defineProps<{
     msg: LHMessage;
@@ -14,30 +20,7 @@ const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void
 }>()
 
-// --- Image URL Handling ---
-const objectUrl = ref<string>('');
-const isImageLoading = ref(true);
-
-const displayUrl = computed(() => {
-    if (props.msg.localBlob) {
-        // Create object URL for local blob if it doesn't already exist
-        if (!objectUrl.value) {
-            objectUrl.value = URL.createObjectURL(props.msg.localBlob);
-        }
-        return objectUrl.value;
-    }
-    return props.msg.imageObj?.urlString ?? '';
-});
-
-const onImageLoad = () => {
-    isImageLoading.value = false;
-}
-
-onUnmounted(() => {
-    if (objectUrl.value) {
-        URL.revokeObjectURL(objectUrl.value);
-    }
-});
+const gifUrl = computed(() => props.msg.imageObj?.urlString ?? '');
 </script>
 
 <template>
@@ -50,14 +33,13 @@ onUnmounted(() => {
                 @click="emit('clickSendFaild', props.msg)">
                 <img src="@/assets/message/msg-send-fail.svg" alt="">
             </div>
-            <div class="imageBubble">
-                <!-- Loading Spinner -->
-                <div v-if="isImageLoading && displayUrl" class="loadingOverlay">
-                    <van-loading type="spinner" size="24px" color="#FF1AD0" />
-                </div>
-                <!-- Actual Image -->
-                <img v-if="displayUrl" :src="displayUrl" @load="onImageLoad"
-                    :style="{ opacity: isImageLoading ? 0 : 1 }" class="sharedImage">
+            <div class="gifBubble">
+                <AnimationPlayer 
+                    v-if="gifUrl"
+                    :src="gifUrl" 
+                    :loop="true" 
+                    class="sharedGif" 
+                />
             </div>
         </div>
     </div>
@@ -103,37 +85,26 @@ onUnmounted(() => {
     align-items: flex-end;
 }
 
-.imageBubble {
+.gifBubble {
     position: relative;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
-    background-color: #f0f0f0;
-    line-height: 0;
-    min-width: 120px;
-    min-height: 160px;
+    background-color: transparent;
+    width: 100px;
+    height: 100px;
 }
 
-.loadingOverlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
+.sharedGif {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
-.sharedImage {
-    width: 120px;
-    height: 160px;
-    display: block;
-    object-fit: cover;
-    transition: opacity 0.3s ease;
-}
-
-.other .imageBubble {
+.other .gifBubble {
     border-bottom-left-radius: 0px;
 }
 
-.me .imageBubble {
+.me .gifBubble {
     border-bottom-right-radius: 0px;
 }
 

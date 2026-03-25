@@ -1,21 +1,35 @@
 <script setup lang="ts">
 
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, watch, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import type { mainTabbarConfig } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import { mainTabbarConfigList } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import TabbarItemContainerView from '@/views/tabbarView/tabbarItemContainerView.vue';
 
 const router = useRouter()
+const route = useRoute()
 
 const tabbarItemList = ref<mainTabbarConfig[]>(mainTabbarConfigList)
 
-const switchTo = (pageName: string) => {
+const syncTabState = (pageName: string | null | undefined) => {
+    if (!pageName) return;
     tabbarItemList.value.forEach(item => {
         item.isSelected = item.name === pageName
     })
+}
+
+const switchTo = (pageName: string) => {
+    syncTabState(pageName)
     router.push({ name: pageName })
 }
+
+watch(() => route.name, (newPath) => {
+    syncTabState(newPath as string)
+}, { immediate: true })
+
+onMounted(() => {
+    syncTabState(route.name as string)
+})
 
 </script>
 

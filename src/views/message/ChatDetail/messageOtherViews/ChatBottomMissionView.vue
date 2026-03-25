@@ -8,30 +8,32 @@ export interface MissionData {
     }
     giftMission: {
         completed: boolean;
+        show: boolean;
         giftIcon: string;
         giftPrice: string;
     }
-    clickMission: (type: MissionType) => void;
 }
 
 const props = defineProps<{
     missionData: MissionData;
 }>();
 
-const missionData = reactive<MissionData>(props.missionData)
+const emit = defineEmits<{
+    (e: 'clickMission', type: MissionType): void
+}>()
 
 </script>
 
 <template>
     <div class="viewContent">
-        <div v-if="!missionData.helloMission.completed" class="helloView"
-            @click="missionData.clickMission(MissionType.hello)">👋 say hello</div>
-        <div v-if="!missionData.giftMission.completed" class="sendGiftView"
-            @click="missionData.clickMission(MissionType.gift)">
-            <img class="giftIcon" :src="missionData.giftMission.giftIcon" alt="">
+        <div v-if="!props.missionData.helloMission.completed" class="helloView"
+            @click="emit('clickMission', MissionType.hello)">👋 say hello</div>
+        <div v-if="!props.missionData.giftMission.completed && props.missionData.giftMission.show" class="sendGiftView"
+            @click="emit('clickMission', MissionType.gift)">
+            <img class="giftIcon" :src="props.missionData.giftMission.giftIcon" alt="">
             <span class="sendTitle">send gift</span>
             <img class="diamondTag" src="@/assets/profile/diamond_icon.svg" alt="">
-            <span class="diamondCount">{{ missionData.giftMission.giftPrice }}</span>
+            <span class="diamondCount">{{ props.missionData.giftMission.giftPrice }}</span>
         </div>
     </div>
 </template>
@@ -51,7 +53,7 @@ const missionData = reactive<MissionData>(props.missionData)
     background-color: #fff;
     border-radius: 20px;
     padding: 12px;
-    height: 40px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -66,5 +68,19 @@ const missionData = reactive<MissionData>(props.missionData)
 .diamondTag {
     width: 20px;
     height: 20px;
+}
+
+.sendTitle,
+.helloView {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+    font-weight: 510;
+}
+
+.diamondCount {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 14px;
+    font-weight: 510;
+    color: #FF5290;
 }
 </style>

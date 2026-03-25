@@ -1,13 +1,23 @@
+import { TranslateState } from './msg/MessageModel';
 import AgoraRTM from 'agora-rtm-sdk';
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { NET_CONFIG } from './net/config';
+import { getMessageManager } from '@/utils/msg/MessageManager';
+import { createUUID, MessageType, type LHMessage } from '@/utils/msg/MessageModel';
+import type { RTMClient, RTMEvents } from 'agora-rtm-sdk';
+import loginedMissions from './loginedMissions';
 
 // Singleton client instance
-let rtmClient: any = null;
+let rtmClient: RTMClient | null = null;
 const isRtmLoggedIn = ref(false);
 
 const APP_ID = NET_CONFIG.SWID;
+
+interface MOMORtmMessage {
+    type: string
+    message: Object
+}
 
 export function useMomoRTM() {
     const userStore = useUserStore();
@@ -26,9 +36,7 @@ export function useMomoRTM() {
                 });
 
                 // Global event listeners
-                rtmClient.addEventListener('message', (event: any) => {
-                    console.log("[RTM] Received Message:", event.message);
-                });
+                rtmClient.addEventListener('message', handleMessageasync);
 
                 rtmClient.addEventListener('status', (event: any) => {
                     console.log("[RTM] Connection Status Changed:", event.state, event.reason);
@@ -38,6 +46,10 @@ export function useMomoRTM() {
                         isRtmLoggedIn.value = false;
                     }
                 });
+                rtmClient.addEventListener("tokenPrivilegeWillExpire", async () => {
+                    await userStore.updateRTMToken()
+                    await rtmClient?.renewToken(userStore.rtmToken)
+                })
             }
 
             console.log("[RTM] Logging in with UID:", uid);
@@ -49,6 +61,9 @@ export function useMomoRTM() {
             throw error;
         }
     };
+
+
+
 
     /**
      * Logout RTM
@@ -64,27 +79,30 @@ export function useMomoRTM() {
         }
     };
 
-    /**
-     * Send P2P Message
-     */
-    const sendP2PMessage = async (toUserId: string, message: string) => {
-        if (!rtmClient || !isRtmLoggedIn.value) {
-            console.warn("[RTM] Not logged in, cannot send message");
-            return;
-        }
+    const handleMessageasync = async (event: any) => {
+
         try {
-            const publishOptions = { channelType: 'USER' };
-            await rtmClient.publish(toUserId, message, publishOptions);
-            console.log("[RTM] Message sent to:", toUserId);
-        } catch (error) {
-            console.error("[RTM] Send failure:", error);
+            // Assuming payload structure follows previous implementation
+            const payload: MOMORtmMessage = JSON.parse(event.message);
+            console.log("[RTM] Received Message:", payload);
+            if (payload.type === 'ChatMessage' || payload.type !== undefined) {
+                // Unified handling: if nested 'message' exists (Swift logic) use it, else use payload directly
+                const message: LHMessage = payload.message as LHMessage
+                message.serverReceivedTs = event.timestamp / 1000
+                message.isRead = false
+                message.translateState = TranslateState.Noyet
+                console.log("[RTM] Covert to Message:", message);
+                const manager = getMessageManager();
+                await manager.processIncomingMessage(message);
+            }
+        } catch (err) {
+            console.error("[RTM] Failed to parse and store incoming message", err);
         }
-    };
+    }
 
     return {
         loginRTM,
         logoutRTM,
-        sendP2PMessage,
         isRtmLoggedIn,
         rtmClient
     };

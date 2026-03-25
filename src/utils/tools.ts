@@ -1,3 +1,6 @@
+import { API } from "./net/api";
+import { post } from "./net/request";
+
 /**
  * 根据国家代码获取对应的国旗 Emoji
  * 逻辑同步自 Swift 版本 String+Extension.swift -> flageEmoji()
@@ -101,4 +104,22 @@ export function getAge(timestamp: string | number | undefined | null): number {
     return age < 0 ? 0 : age;
 }
 
+/**
+ * 获取翻译的目标语言代码，将浏览器语言映射为后端需要的格式
+ * @returns 语言代码 (如 "zh_Hant_TW", "zh_Hans_CN", "en")
+ */
+export function getTranslateTargetLanguage(): string {
+    const lang = (navigator.language || 'en').toLowerCase();
+    // if (lang.includes('tw') || lang.includes('hk')) return 'zh_Hant_TW';
+    // if (lang.includes('zh')) return 'zh_Hans_CN';
+    return lang
+}
 
+export async function translateText(text: string, to?: string): Promise<string | null> {
+    const targetLang = to || getTranslateTargetLanguage();
+    let res = await post(API.translate_text, { Text: text, To: targetLang })
+    if (res.code == "0") {
+        return res.data.TransResult
+    }
+    return null
+}

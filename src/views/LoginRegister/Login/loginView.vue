@@ -24,9 +24,11 @@ const loginToSystem = async () => {
         const response = await post(API.login, params)
         HUD.hideLoading()
         const token = response.data?.Token
-        if (response.code == "0" && token && token.length > 0) {
+        const rtmToken = response.data?.RtmToken
+        if (response.code == "0" && token && token.length > 0 && rtmToken && rtmToken.length > 0) {
             HUD.showToast("Login Successful")
             userStore.token = token
+            userStore.rtmToken = rtmToken
             router.push({ name: "anchorList" })
             loginedMissions.start()
         } else if (response.code == "10101") {

@@ -42,15 +42,16 @@ const register = async () => {
             UdId: getUdid(),
             Gender: genderInt
         }
+        const userStore = useUserStore()
         const response = await post(API.register, params)
         MMHUD.hideLoading()
-        if (response.code == "0") {
-            if (response.data?.Token) {
-                const userStore = useUserStore()
-                userStore.token = response.data.Token
-                router.push({ name: "anchorList" })
-                loginedMissions.start()
-            }
+        const token = response.data.Token
+        const rtmToken = response.data?.RtmToken
+        if (response.code == "0" && token && token.length > 0 && rtmToken && rtmToken.length > 0) {
+            userStore.token = token
+            userStore.rtmToken = rtmToken
+            router.push({ name: "anchorList" })
+            loginedMissions.start()
         } else {
             MMHUD.showToast(response.data.toast)
         }
