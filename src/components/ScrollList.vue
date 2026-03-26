@@ -15,6 +15,7 @@ const emit = defineEmits<{
 }>();
 
 // ======== 下拉刷新与上拉加载逻辑 ========
+const containerRef = ref<HTMLElement | null>(null);
 const pullDistance = ref(0);
 const startY = ref(0);
 const REFRESH_THRESHOLD = 60; // 触发刷新的下拉高度 (px)
@@ -22,7 +23,8 @@ const REFRESH_THRESHOLD = 60; // 触发刷新的下拉高度 (px)
 // 触摸事件 (用于计算下拉)
 const handleTouchStart = (e: TouchEvent) => {
     if (props.refreshing) return;
-    if (window.scrollY <= 0) {
+    const scrollTop = containerRef.value?.scrollTop ?? 0;
+    if (scrollTop <= 0) {
         startY.value = e.touches[0]?.clientY || 0;
     } else {
         startY.value = 0; // 若不在顶部则不处理下拉
@@ -64,9 +66,13 @@ watch(() => props.refreshing, (newVal) => {
 });
 
 // 滚动到底部事件 (用于计算加载更多)
+// 监听容器自身滚动，因为父级使用了 height:100vh + overflow-y:auto，
+// 滚动不在 window 上发生。
 const handleScroll = () => {
     if (props.loading || props.refreshing || props.finished) return;
-    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    const el = containerRef.value;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
     // 距离底部少于 150px 时触发加载更多
     if (scrollTop + clientHeight >= scrollHeight - 150) {
         emit('update:loading', true);
@@ -75,16 +81,17 @@ const handleScroll = () => {
 };
 
 onMounted(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    containerRef.value?.addEventListener('scroll', handleScroll, { passive: true });
 });
 
 onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll);
+    containerRef.value?.removeEventListener('scroll', handleScroll);
 });
 </script>
 
 <template>
     <div 
+        ref="containerRef"
         class="scroll-list-container"
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove"
@@ -127,6 +134,11 @@ onUnmounted(() => {
 <style scoped>
 .scroll-list-container {
     width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
 
 .pull-container {

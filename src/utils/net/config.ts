@@ -25,7 +25,7 @@ export const NET_CONFIG = {
   get KEY() {
     return this.releaseVersion
       ? 'DFF904182066F07FE9ABA02294D82E4C'
-      : 'A868484DA1938A75AB3A7275A00097FB'
+      : 'BCDCF2E69B7894B08879C14B564DA0E4'
   },
 
   get SWID() {
@@ -34,7 +34,7 @@ export const NET_CONFIG = {
       : 'a80d13923822432cad427f4ce5d186e5'
   },
 
-  ID: '1042',
+  ID: '1034',
   VERSION: '1.0.0', // TODO: 可替换为项目的动态版本号
 }
 

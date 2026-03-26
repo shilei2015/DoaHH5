@@ -10,27 +10,32 @@ const routes = [
     {
         path: "/",
         name: "launch",
-        component: () => import("@/views/Launch/launchPage.vue")
+        component: () => import("@/views/Launch/launchPage.vue"),
+        meta: { depth: 10 }
     },
     {
         path: "/tab",
         name: "mainTabView",
         component: mainTabView,
+        meta: { depth: 20 },
         children: [
             {
                 path: "",
                 component: anchorList,
-                name: "anchorList"
+                name: "anchorList",
+                meta: { depth: 20 }
             },
             {
                 path: "message",
                 component: messageList,
                 name: "messageList",
+                meta: { depth: 20 }
             },
             {
                 path: "user",
                 component: userCenter,
-                name: "userCenter"
+                name: "userCenter",
+                meta: { depth: 20 }
             }
         ],
     },
@@ -38,41 +43,49 @@ const routes = [
         path: "/message/detail",
         component: messageDetail,
         name: "messageDetail",
+        meta: { depth: 30 }
     },
     {
         path: "/anchorProfile",
         name: "AnchorProfile",
-        component: () => import("@/views/AnchorProfile/AnchorProfile.vue")
+        component: () => import("@/views/AnchorProfile/AnchorProfile.vue"),
+        meta: { depth: 30 }
     },
     {
         path: "/call",
         name: "callPage",
-        component: () => import("@/views/call/callPage.vue")
+        component: () => import("@/views/call/callPage.vue"),
+        meta: { depth: 40 }
     },
     {
         path: "/video",
         name: "videoPage",
-        component: () => import("@/views/call/videoPage.vue")
+        component: () => import("@/views/call/videoPage.vue"),
+        meta: { depth: 40 }
     },
     {
         path: "/login",
         name: "login",
-        component: () => import("@/views/LoginRegister/Login/loginView.vue")
+        component: () => import("@/views/LoginRegister/Login/loginView.vue"),
+        meta: { depth: 10 }
     },
     {
         path: "/register",
         name: "register",
         component: () => import("@/views/LoginRegister/Register/register.vue"),
+        meta: { depth: 10 },
         children: [
             {
                 path: "",
                 name: "selecteGender",
                 component: () => import("@/views/LoginRegister/Register/registerChildChooseGender.vue"),
+                meta: { depth: 10 }
             },
             {
                 path: "inputCode",
                 name: "inputCode",
                 component: () => import("@/views/LoginRegister/Register/registerChildInputCode.vue"),
+                meta: { depth: 11 }
             }
         ]
     }

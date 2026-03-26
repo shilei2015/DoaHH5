@@ -4,7 +4,7 @@ import msgReport from '@/assets/message/msg-report.svg'
 import msgTranslateOff from '@/assets/message/msg-translate-off.svg'
 import msgTranslateOn from '@/assets/message/msg-translate-on.svg'
 import back from "@/assets/comm/comm-back.png"
-import { generateSessionId, MessageType, MessageSendStatus, type LHMessage } from '@/utils/msg/MessageModel';
+import { generateSessionId, MessageType, MessageSendStatus, type LHMessage, createGifMessage } from '@/utils/msg/MessageModel';
 import { getMessageManager } from '@/utils/msg/MessageManager';
 import { getChatRecordManager } from '@/utils/msg/ChatRecordManager';
 import { useMomoRTM } from '@/utils/MOMORTM';
@@ -26,6 +26,7 @@ import { API } from '@/utils/net/api';
 import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
 import ChatGiftPicker from './messageOtherViews/ChatGiftPicker.vue';
 import { showModal } from '@/utils/tools/modalService';
+import { showFullScreenAnimation } from '@/utils/tools/animationService';
 
 const router = useRouter();
 const route = useRoute();
@@ -103,6 +104,9 @@ const handleSendSuccessMessage = (message: LHMessage) => {
   if (index !== -1) {
     msgList.value[index] = { ...msgList.value[index], sendStatus: MessageSendStatus.Success } as LHMessage;
   }
+  if (message.msgType == MessageType.Animation) {
+    showFullScreenAnimation(message.imageObj?.urlString || '');
+  }
 }
 
 const handleWillSaveMessage = (message: LHMessage) => {
@@ -142,8 +146,10 @@ const onClickMission = async (type: MissionType) => {
     await onSendText();
   } else if (type === MissionType.gift) {
     if (missionData.giftMission.completed) return;
+    if (helloGift.value) {
+      await onSendGift(helloGift.value)
+    }
     missionData.giftMission.completed = true;
-    // showToast("Gift mission completed!");
   }
 
   // Persistent save to DB
@@ -155,11 +161,6 @@ const onClickMission = async (type: MissionType) => {
 }
 
 const onSendGift = async (gift: ChatGiftModel) => {
-  if (Number(userCoins.value) < Number(gift.Coins)) {
-    showToast("Insufficient diamonds");
-    return;
-  }
-
   const msg = messageManager.newGifMessage(
     gift.GiftId,
     gift.Gif,
@@ -169,10 +170,14 @@ const onSendGift = async (gift: ChatGiftModel) => {
     { Nickname: partnerName.value, HeadImage: partnerAvatar.value, UserId: targetUserId.value } as any
   );
 
-  msgList.value.push(msg);
-  scrollToBottom();
 
-  await messageManager.sendMessage(msg);
+  await messageManager.messagePlant(msg, true);
+
+  try {
+    await messageManager.sendMessage(msg);
+  } catch (err) {
+    console.error("Send failed:", err);
+  }
 }
 
 const openGiftPicker = () => {

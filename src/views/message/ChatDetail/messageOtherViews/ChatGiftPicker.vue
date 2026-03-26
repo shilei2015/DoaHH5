@@ -5,6 +5,7 @@ import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
 import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
+import { showFullScreenAnimation } from '@/utils/tools/animationService';
 
 /**
  * ChatGiftPicker.vue
@@ -27,12 +28,14 @@ const selectedGiftId = ref<string | null>(null);
 
 const selectGift = (gift: ChatGiftModel) => {
     selectedGiftId.value = gift.GiftId;
+    onSendGift()
 };
 
 const onSendGift = () => {
     const gift = gifts.value.find(g => g.GiftId === selectedGiftId.value);
     if (gift) {
         emit('send', gift);
+        emit('close')
     }
 };
 
@@ -40,8 +43,6 @@ const loadGifts = async () => {
     const res = await post(API.list_gif);
     if (res.code === "0" && res.data.List) {
         gifts.value = res.data.List;
-        console.log(gifts);
-
     }
 }
 
@@ -72,7 +73,8 @@ onMounted(() => {
                 <div v-for="gift in gifts" :key="gift.GiftId" class="gift-item"
                     :class="{ 'selected': selectedGiftId === gift.GiftId }" @click="selectGift(gift)">
                     <div class="gift-img-wrap">
-                        <AnimationPlayer :src="gift.Gif" />
+                        <!-- <AnimationPlayer src="/test.zz" :loop="true" /> -->
+                        <img :src="gift.Image" class="gift-img" alt="gift" />
                     </div>
                     <div class="gift-info">
                         <img src="@/assets/profile/diamond_icon.svg" class="price-icon" alt="price" />

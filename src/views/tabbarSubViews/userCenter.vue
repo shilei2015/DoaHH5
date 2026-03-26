@@ -3,6 +3,7 @@ import { onActivated } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { getFlagEmoji } from '@/utils/tools';
+import { showCoinShop } from '@/utils/tools/shopService';
 
 // 导入从 Figma 下载到 setting 文件夹的真实切图
 import meBg from '@/assets/setting/me_bg.png';
@@ -100,7 +101,7 @@ const handleEdit = () => {
                 <!-- Get More Button using Figma background asset -->
                 <div class="get-more-wrap">
                     <img :src="icGetMoreBg" alt="" class="get-more-bg" />
-                    <button class="get-more-btn">
+                    <button class="get-more-btn" @click="showCoinShop()">
                         <span>Get More</span>
                         <img :src="icArrowWhite" alt="" class="arrow-white" />
                     </button>
@@ -158,7 +159,6 @@ const handleEdit = () => {
 
 .content {
     position: relative;
-    z-index: 1;
     padding: 20px;
     padding-top: calc(20px + env(safe-area-inset-top));
 }

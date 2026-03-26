@@ -4,7 +4,7 @@ import SVGAComponent from './SVGAComponent.vue';
 
 /**
  * AnimationPlayer.vue
- * 混合格式统一播放器：自动识别 .svga 或 .gif 并选择最优渲染引擎
+ * 统一播放器：自动识别 SVGA/ZZ 或 普通图片（PNG/JPG/GIF）并选择最优渲染引擎
  */
 
 const props = defineProps<{
@@ -15,21 +15,20 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'finished'): void;
+  (e: 'load'): void; // 图片加载完成事件，透传给父组件
 }>();
 
-// 自动处理 URL 协议，尝试解决混合内容 (Mixed Content) 拦截问题
 const processedSrc = computed(() => {
   if (!props.src) return '';
-  if (props.src.startsWith('http://')) {
-    return props.src.replace('http://', 'https://');
-  }
   return props.src;
 });
 
-// 简单的后缀识别逻辑
+// 识别是否为 SVGA 资源
 const isSVGA = computed(() => {
   const url = processedSrc.value;
-  return url && (url.toLowerCase().endsWith('.svga') || url.toLowerCase().endsWith('.zz'));
+  if (!url) return false;
+  const cleanPath = (url.split('?')[0] || '').toLowerCase();
+  return cleanPath.endsWith('.svga') || cleanPath.endsWith('.zz');
 });
 
 // 处理 SVGA 循环次数类型
@@ -43,17 +42,11 @@ const svgaLoopCount = computed(() => {
 <template>
   <div class="animation-player-wrap">
     <!-- SVGA 渲染路径 -->
-    <SVGAComponent 
-      v-if="isSVGA" 
-      :url="processedSrc" 
-      :loop="svgaLoopCount" 
-      :clears-after-stop="props.clearsAfterStop"
-      @finished="emit('finished')" 
-      class="renderer-full" 
-    />
+    <SVGAComponent v-if="isSVGA" :url="processedSrc" :loop="svgaLoopCount" :clears-after-stop="props.clearsAfterStop"
+      @finished="emit('finished')" class="renderer-full" />
 
-    <!-- GIF 渲染路径 -->
-    <img v-else :src="processedSrc" class="renderer-full gif-img" alt="animation" />
+    <!-- 普通图片及 GIF 渲染路径 -->
+    <img v-else :src="processedSrc" class="renderer-full image-item" @load="emit('load')" alt="animation" />
   </div>
 </template>
 
@@ -70,10 +63,12 @@ const svgaLoopCount = computed(() => {
 .renderer-full {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
-.gif-img {
+.image-item {
   display: block;
+  width: 100%;
+  height: 100%;
 }
 </style>

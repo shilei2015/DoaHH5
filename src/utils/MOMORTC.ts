@@ -18,6 +18,7 @@ import { isCallChain } from 'typescript';
 import { } from 'agora-rtc-sdk-ng';
 import { LHTimer } from './Timer';
 import { useUserStore } from '@/stores/userStore';
+import { showCoinShop } from './tools/shopService';
 
 const AGORA_APP_ID = NET_CONFIG.SWID;
 AgoraRTC.setLogLevel(2);
@@ -175,11 +176,11 @@ class RTCService {
                 if (!this.localVideoTrack) {
                     this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
                 }
-                
+
                 if (this.isVideoMasked.value) {
                     await this.localVideoTrack.setEnabled(false);
                 }
-                
+
                 tracks.push(this.localVideoTrack);
             } catch (e) {
                 console.error('[RTC] Create Video Track Failed:', e);
@@ -393,7 +394,7 @@ class RTCService {
             }
             const res = await post(API.video_charging, params)
             if (res.code == "10103") {
-                //TODO: 余额不足后期接入充值大弹窗
+                showCoinShop()
                 return ChargeResult.NeedCoins
             } else if (res.code != "0") {
                 return ChargeResult.Faild
@@ -419,10 +420,8 @@ class RTCService {
         if (Math.floor(totalTime) % 60 === 59) {
             this.chargeCall(this._currentCallInfo.LiveId).then(res => {
                 if (res === ChargeResult.NeedCoins) {
-                    HUD.showToast("金币不足，已挂断");
                     this.endStreamSession("扣费失败，金币不足", EndLiveEndState.notCoins);
                 } else if (res === ChargeResult.Faild) {
-                    HUD.showToast("扣费网络异常");
                     this.endStreamSession("扣费请求失败", EndLiveEndState.unkonw);
                 }
             });

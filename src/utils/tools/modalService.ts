@@ -11,7 +11,7 @@ let container: HTMLElement | null = null;
 interface ModalOptions {
     position?: 'bottom' | 'center' | 'top' | 'left' | 'right';
     round?: boolean;
-    // ... 其他基于 van-popup 的透传属性
+    customStyle?: Record<string, string>;
 }
 
 /**
@@ -55,22 +55,28 @@ export function showModal(
         render(vnode, container);
     };
 
-    // 4. 构建 VNode 并初始渲染
-    const vnode = h(BasePopup, {
-        show: true,
+    // 4. Build the vnode factory
+    const createVNode = (visible: boolean) => h(BasePopup, {
+        show: visible,
         ...options,
         'onUpdate:show': (val: boolean) => {
             if (!val) close();
         }
     }, {
-        // 使用插槽渲染业务组件
         default: () => h(markRaw(component), {
             ...props,
-            onClose: close, // 约定：子组件只需发出 close 事件即能自我关闭
+            onClose: close,
         })
     });
 
-    render(vnode, container);
+    // 5. First render with show=false, then flip to true on next frame
+    //    so Vant Popup can animate the enter transition.
+    render(createVNode(false), container);
+    requestAnimationFrame(() => {
+        if (container) {
+            render(createVNode(true), container);
+        }
+    });
 
     return { close };
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { MessageSendStatus, type LHMessage } from '@/utils/msg/MessageModel';
 import { useUserStore } from '@/stores/userStore';
 import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
@@ -7,6 +7,7 @@ import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
 /**
  * ChatGifMessageView.vue
  * 专门用于在聊天列表中渲染 GIF 或 SVGA 动效礼物的消息单元格
+ * 样式与 ChatImageMessageView 保持高度一致
  */
 
 const props = defineProps<{
@@ -15,12 +16,17 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
+const isImageLoading = ref(true);
 
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void
 }>()
 
 const gifUrl = computed(() => props.msg.imageObj?.urlString ?? '');
+
+const onGifLoad = () => {
+    isImageLoading.value = false;
+}
 </script>
 
 <template>
@@ -33,13 +39,9 @@ const gifUrl = computed(() => props.msg.imageObj?.urlString ?? '');
                 @click="emit('clickSendFaild', props.msg)">
                 <img src="@/assets/message/msg-send-fail.svg" alt="">
             </div>
-            <div class="gifBubble">
-                <AnimationPlayer 
-                    v-if="gifUrl"
-                    :src="gifUrl" 
-                    :loop="true" 
-                    class="sharedGif" 
-                />
+            <div class="imageBubble">
+                <!-- 直接展示 SVGA 动画，不再等待加载事件 -->
+                <AnimationPlayer v-if="gifUrl" :src="gifUrl" :loop="true" class="sharedImage" />
             </div>
         </div>
     </div>
@@ -85,26 +87,38 @@ const gifUrl = computed(() => props.msg.imageObj?.urlString ?? '');
     align-items: flex-end;
 }
 
-.gifBubble {
+.imageBubble {
     position: relative;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
-    background-color: transparent;
-    width: 100px;
-    height: 100px;
+    background-color: #f0f0f0;
+    line-height: 0;
+    width: 120px;
+    height: 160px;
 }
 
-.sharedGif {
+.loadingOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.sharedImage {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    display: block;
+    object-fit: cover;
+    transition: opacity 0.3s ease;
+    background-color: #fff;
 }
 
-.other .gifBubble {
+.other .imageBubble {
     border-bottom-left-radius: 0px;
 }
 
-.me .gifBubble {
+.me .imageBubble {
     border-bottom-right-radius: 0px;
 }
 

@@ -1,3 +1,9 @@
+<script lang="ts">
+export default {
+    name: "mainTabbarView"
+}
+</script>
+
 <script setup lang="ts">
 
 import { ref, watch, onMounted } from 'vue';
@@ -34,25 +40,23 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="mainTabView">
-        <RouterView v-slot="{ Component }">
-            <KeepAlive>
-                <component :is="Component" />
-            </KeepAlive>
-        </RouterView>
+    <div class="main-tabbar-root">
+        <div class="mainTabView">
+            <RouterView v-slot="{ Component, route }">
+                <KeepAlive>
+                    <component :is="Component" :key="route.fullPath" />
+                </KeepAlive>
+            </RouterView>
+        </div>
+        <TabbarItemContainerView :tabbarItemList="tabbarItemList" @emitsSwitchTo="switchTo"></TabbarItemContainerView>
     </div>
-    <TabbarItemContainerView :tabbarItemList="tabbarItemList" @emitsSwitchTo="switchTo"></TabbarItemContainerView>
 </template>
 
 <style scoped>
 .mainTabView {
-    position: relative;
     width: 100%;
-    background-color: orchid;
-    bottom: 88px;
-    top: 0;
-    left: 0;
-    right: 0;
+    height: 100vh;
+    overflow: hidden;
     z-index: 0;
 }
 </style>

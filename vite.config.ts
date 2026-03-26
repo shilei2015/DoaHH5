@@ -7,6 +7,10 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
+  assetsInclude: [
+    'svga',
+    'zz'
+  ],
   plugins: [
     vue(),
     vueDevTools(),

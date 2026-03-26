@@ -60,7 +60,10 @@ export const API = {
   vipDayGet: 'userVipGiveCoins',
   userFlyer: 'userFlyer',
   kfUserList: 'anchorList',
-  userAlbums: 'toUserAlbums'
+  userAlbums: 'toUserAlbums',
+  coin_products: 'pCVListV1',
+  coin_recommend: 'userRecommendCoinsV1',
+  pay: 'unifiedOrder',
 } as const
 
 // 根据加密标识返回最终请求URL

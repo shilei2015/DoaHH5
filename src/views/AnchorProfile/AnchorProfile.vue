@@ -47,7 +47,6 @@ const handleImageClick = (index: number) => {
 };
 
 const fetchAnchorData = async (userId: string) => {
-    HUD.showLoading();
     try {
         const res = await post(API.user_info, { UserId: userId, Visitor: "1" });
         if (res.code === "0") {
@@ -57,7 +56,6 @@ const fetchAnchorData = async (userId: string) => {
             anchorInfo.value = anchor;
         }
     } finally {
-        HUD.hideLoading();
     }
 }
 
@@ -101,87 +99,98 @@ const goMessage = () => {
 </script>
 
 <template>
-    <div class="profile-page" v-if="anchorInfo">
+    <div class="profile-page">
+        <template v-if="anchorInfo">
 
-        <!-- 顶部导航栏 -->
-        <div class="nav-bar">
-            <button class="icon-btn" @click="goBack">
-                <img src="@/assets/profile/close_icon.svg" alt="Close" />
-            </button>
-            <div class="title-area">
-                <div class="name-age">{{ anchorInfo.Nickname }}, {{ getAge(anchorInfo.Birthday) }}</div>
-                <div class="status-row">
-                    <span class="flag">{{ getFlagEmoji(anchorInfo.CountryCode) }}</span>
-                    <span class="country">{{ anchorInfo.Country }}</span>
-                    <span class="dot" :class="statusInfo.colorClass">·</span>
-                    <span class="online-status" :class="statusInfo.colorClass">
-                        {{ statusInfo.text }}
+            <!-- 顶部导航栏 -->
+            <div class="nav-bar">
+                <button class="icon-btn" @click="goBack">
+                    <img src="@/assets/profile/close_icon.svg" alt="Close" />
+                </button>
+                <div class="title-area">
+                    <div class="name-age">{{ anchorInfo.Nickname }}, {{ getAge(anchorInfo.Birthday) }}</div>
+                    <div class="status-row">
+                        <span class="flag">{{ getFlagEmoji(anchorInfo.CountryCode) }}</span>
+                        <span class="country">{{ anchorInfo.Country }}</span>
+                        <span class="dot" :class="statusInfo.colorClass">·</span>
+                        <span class="online-status" :class="statusInfo.colorClass">
+                            {{ statusInfo.text }}
+                        </span>
+                    </div>
+                </div>
+                <button class="icon-btn">
+                    <img src="@/assets/profile/report_icon.svg" alt="Report" />
+                </button>
+            </div>
+
+            <!-- 中间大图封面区 (轮播相册) -->
+            <div class="cover-section">
+                <div class="carousel-container" @scroll="handleScroll">
+                    <img v-for="(imgUrl, index) in displayAlbums" :key="index" :src="imgUrl" class="carousel-slide"
+                        alt="Cover" @click="handleImageClick(index)" />
+                </div>
+
+                <div class="cover-gradient"></div>
+
+                <!-- 轮播指示器 -->
+                <div class="pagination-dots" v-if="displayAlbums.length > 1">
+                    <span v-for="(_, index) in displayAlbums" :key="index" class="dot"
+                        :class="{ active: activeIndex === index }">
                     </span>
                 </div>
+
+                <!-- 底部浮动按钮区 -->
+                <div class="action-buttons">
+                    <!-- 私信按钮 -->
+                    <button class="action-btn msg-btn" @click="goMessage">
+                        <div class="msg-circle">
+                            <img src="@/assets/profile/msg_icon.svg" alt="Message" />
+                        </div>
+                    </button>
+
+                    <!-- 视频通话按钮 (居中大尺寸) -->
+                    <button class="action-btn call-btn" @click="MOMORTC.startAnchorCall(anchorInfo.UserId)">
+                        <img src="@/assets/profile/video_call_btn.svg" alt="Video Call" />
+                    </button>
+
+                    <!-- 心形关注按钮 -->
+                    <button class="action-btn heart-btn" @click="likeAnchor">
+                        <div class="heart-circle">
+                            <img v-if="anchorInfo.IsLike" src="@/assets/profile/heart_liked.svg" />
+                            <img v-else src="@/assets/profile/heart_icon.png" alt="Favorite" />
+                        </div>
+                    </button>
+                </div>
             </div>
-            <button class="icon-btn">
-                <img src="@/assets/profile/report_icon.svg" alt="Report" />
-            </button>
-        </div>
 
-        <!-- 中间大图封面区 (轮播相册) -->
-        <div class="cover-section">
-            <div class="carousel-container" @scroll="handleScroll">
-                <img v-for="(imgUrl, index) in displayAlbums" :key="index" :src="imgUrl" class="carousel-slide"
-                    alt="Cover" @click="handleImageClick(index)" />
+            <!-- 底部资料区 -->
+            <div class="about-section">
+                <h2 class="about-title">About me</h2>
+                <p class="about-desc">
+                    {{ anchorInfo.Introduce || "" }}
+                </p>
             </div>
 
-            <div class="cover-gradient"></div>
-
-            <!-- 轮播指示器 -->
-            <div class="pagination-dots" v-if="displayAlbums.length > 1">
-                <span v-for="(_, index) in displayAlbums" :key="index" class="dot"
-                    :class="{ active: activeIndex === index }">
-                </span>
+        </template>
+        <template v-else>
+            <!-- Lightweight loading state for smooth transition -->
+            <div class="inner-loading">
+                <van-loading type="spinner" color="#FF1AD0" />
             </div>
-
-            <!-- 底部浮动按钮区 -->
-            <div class="action-buttons">
-                <!-- 私信按钮 -->
-                <button class="action-btn msg-btn" @click="goMessage">
-                    <div class="msg-circle">
-                        <img src="@/assets/profile/msg_icon.svg" alt="Message" />
-                    </div>
-                </button>
-
-                <!-- 视频通话按钮 (居中大尺寸) -->
-                <button class="action-btn call-btn" @click="MOMORTC.startAnchorCall(anchorInfo.UserId)">
-                    <img src="@/assets/profile/video_call_btn.svg" alt="Video Call" />
-                </button>
-
-                <!-- 心形关注按钮 -->
-                <button class="action-btn heart-btn" @click="likeAnchor">
-                    <div class="heart-circle">
-                        <img v-if="anchorInfo.IsLike" src="@/assets/profile/heart_liked.svg" />
-                        <img v-else src="@/assets/profile/heart_icon.png" alt="Favorite" />
-                    </div>
-                </button>
-            </div>
-        </div>
-
-        <!-- 底部资料区 -->
-        <div class="about-section">
-            <h2 class="about-title">About me</h2>
-            <p class="about-desc">
-                {{ anchorInfo.Introduce || "" }}
-            </p>
-        </div>
-
+        </template>
     </div>
 </template>
 
 <style scoped>
 .profile-page {
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
     background-color: white;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     /* 适配 iOS 安全区域 */
     padding-top: 54px;
 }
@@ -438,5 +447,13 @@ const goMessage = () => {
     color: #4d4d4d;
     line-height: 22px;
     font-weight: 510;
+}
+
+.inner-loading {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
 }
 </style>

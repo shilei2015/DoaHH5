@@ -152,27 +152,26 @@ onMounted(() => {
                 <div class="cate-spinner"></div>
             </div>
 
-        </ScrollList>
+            <!-- 底部预留 Tabbar 空间，作为内容的一部分以优化滚动感受 -->
+            <div class="bottom-placeholder"></div>
 
-        <!-- 底部预留 Tabbar 空间 (移出 ScrollList 防止其遮挡加载指示器) -->
-        <div class="tabbar-spacer"></div>
+        </ScrollList>
     </div>
 </template>
 
 <style scoped>
 .anchor-list-page {
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
     background-image: url('@/assets/discover/discoverBackground.png');
     background-size: cover;
     background-position: top center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    /* background: linear-gradient(180deg, #ffeef8 0%, #f2f1f4 20%, #f2f1f4 100%); */
     display: flex;
     flex-direction: column;
     scrollbar-width: none;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .anchor-list-page::-webkit-scrollbar {
@@ -263,9 +262,10 @@ onMounted(() => {
     padding: 0 2px;
 }
 
-/* 底部防遮挡 */
-.tabbar-spacer {
-    height: 110px;
+/* 底部防遮挡占位 */
+.bottom-placeholder {
+    height: 100px;
+    width: 100%;
     flex-shrink: 0;
 }
 

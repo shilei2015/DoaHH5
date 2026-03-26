@@ -84,6 +84,8 @@ onMounted(async () => {
                     </div>
                 </template>
             </van-swipe-cell>
+            <!-- 底部预留 Tabbar 空间 -->
+            <div class="bottom-placeholder"></div>
         </main>
     </div>
 </template>
@@ -91,7 +93,7 @@ onMounted(async () => {
 <style scoped>
 .message-page {
     background-color: #f2f1f4;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -106,7 +108,7 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 56px 20px 20px;
+    padding: calc(20px + env(safe-area-inset-top)) 20px 20px;
     /* Offset for mobile status bar */
 }
 
@@ -147,7 +149,6 @@ onMounted(async () => {
     border-radius: 24px 24px 0 0;
     overflow-y: auto;
     padding-top: 15px;
-    padding-bottom: 90px;
 }
 
 .message-item-wrapper {
@@ -283,5 +284,10 @@ onMounted(async () => {
     cursor: pointer;
     padding: 0;
     box-shadow: 0 4px 10px rgba(255, 77, 79, 0.2);
+}
+
+.bottom-placeholder {
+    height: 100px;
+    width: 100%;
 }
 </style>
