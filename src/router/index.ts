@@ -88,6 +88,57 @@ const routes = [
                 meta: { depth: 11 }
             }
         ]
+    },
+    {
+        path: "/profile/edit",
+        name: "EditProfile",
+        component: () => import("@/views/profile/EditProfilePage.vue"),
+        meta: { depth: 30 }
+    },
+    {
+        path: "/profile/like-me",
+        name: "LikeMe",
+        component: () => import("@/views/profile/UserListPage.vue"),
+        props: { title: 'See who liked me', apiType: 'list_like_me' },
+        meta: { depth: 30 }
+    },
+    {
+        path: "/profile/visitor",
+        name: "Visitor",
+        component: () => import("@/views/profile/UserListPage.vue"),
+        props: { title: 'Visitors', apiType: 'list_visitor_me' },
+        meta: { depth: 30 }
+    },
+    {
+        path: "/profile/my-likes",
+        name: "MyLikes",
+        component: () => import("@/views/profile/UserListPage.vue"),
+        props: { title: 'Girls I like', apiType: 'list_my_like' },
+        meta: { depth: 30 }
+    },
+    {
+        path: "/setting",
+        name: "Setting",
+        component: () => import("@/views/setting/SettingPage.vue"),
+        meta: { depth: 30 }
+    },
+    {
+        path: "/setting/account",
+        name: "Account",
+        component: () => import("@/views/setting/AccountPage.vue"),
+        meta: { depth: 40 }
+    },
+    {
+        path: "/setting/blacklist",
+        name: "Blacklist",
+        component: () => import("@/views/setting/BlacklistPage.vue"),
+        meta: { depth: 40 }
+    },
+    {
+        path: "/setting/feedback",
+        name: "Feedback",
+        component: () => import("@/views/setting/FeedbackPage.vue"),
+        meta: { depth: 30 }
     }
 ]
 

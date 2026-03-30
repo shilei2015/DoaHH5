@@ -35,7 +35,7 @@ export const NET_CONFIG = {
   },
 
   ID: '1034',
-  VERSION: '1.0.0', // TODO: 可替换为项目的动态版本号
+  VERSION: '1.0.7', // TODO: 可替换为项目的动态版本号
 }
 
 // 本地设备缓存常量

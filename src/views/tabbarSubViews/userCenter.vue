@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onActivated } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { getFlagEmoji } from '@/utils/tools';
@@ -7,7 +8,6 @@ import { showCoinShop } from '@/utils/tools/shopService';
 
 // 导入从 Figma 下载到 setting 文件夹的真实切图
 import meBg from '@/assets/setting/me_bg.png';
-import defaultAvatar from '@/assets/setting/default_avatar.png';
 import icEdit from '@/assets/setting/ic_edit.svg';
 import icDiamond from '@/assets/setting/ic_diamond.png';
 import icWalletBg from '@/assets/setting/ic_wallet_bg.svg';
@@ -23,6 +23,7 @@ import icArrowRight from '@/assets/setting/ic_arrow_right.png';
 
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
+const router = useRouter();
 
 onActivated(() => {
     userStore.updateLoginUserInfo();
@@ -30,18 +31,34 @@ onActivated(() => {
 
 // 菜单项配置
 const menuItems = [
-    { id: 1, title: 'See who liked me', icon: icMenuLiked },
-    { id: 2, title: 'See who visited me', icon: icMenuVisited },
-    { id: 3, title: 'Feedback', icon: icMenuFeedback },
-    { id: 4, title: 'Settings', icon: icMenuSettings }
+    { id: 1, title: 'See who liked me', icon: icMenuLiked, route: '/profile/like-me' },
+    { id: 2, title: 'See who visited me', icon: icMenuVisited, route: '/profile/visitor' },
+    { id: 3, title: 'Feedback', icon: icMenuFeedback, route: '/setting/feedback' },
+    { id: 4, title: 'Settings', icon: icMenuSettings, route: '/setting' }
 ];
+
+const onMenuItemClick = (item: any) => {
+    if (item.route) {
+        router.push(item.route);
+    }
+};
 
 
 const handleEdit = () => {
-    userStore.token = ""
-    userStore.rtmToken = ""
-    userStore.userInfo = null
+    router.push('/profile/edit');
 };
+
+const goLikeMe = () => {
+    router.push({ name: "LikeMe" })
+}
+
+const goVisitor = () => {
+    router.push({ name: "Visitor" })
+}
+
+const goMyLikes = () => {
+    router.push({ name: "MyLikes" })
+}
 </script>
 
 <template>
@@ -64,7 +81,7 @@ const handleEdit = () => {
             <!-- User Info Section -->
             <section class="user-info">
                 <div class="avatar-container">
-                    <img :src="userInfo?.HeadImage || defaultAvatar" alt="Avatar" class="avatar-img" />
+                    <img :src="userInfo?.HeadImage" alt="Avatar" class="avatar-img" />
                 </div>
                 <h2 class="nickname">{{ userInfo?.Nickname || 'Nickname' }}</h2>
                 <div class="location-badge">
@@ -75,15 +92,15 @@ const handleEdit = () => {
 
             <!-- Statistics Grid -->
             <div class="stats-card">
-                <div class="stat-box">
+                <div class="stat-box" @click="goLikeMe">
                     <span class="stats-label">Liked me</span>
                     <span class="stats-num">{{ userInfo?.LikeMeNumber }}</span>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" @click="goVisitor">
                     <span class="stats-label">Visitors</span>
                     <span class="stats-num">{{ userInfo?.VisitorMeNumber }}</span>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" @click="goMyLikes">
                     <span class="stats-label">Girls I like</span>
                     <span class="stats-num">{{ userInfo?.UserLikeNumber }}</span>
                 </div>
@@ -99,18 +116,17 @@ const handleEdit = () => {
                     <span class="balance">{{ userInfo?.Coins }}</span>
                 </div>
                 <!-- Get More Button using Figma background asset -->
-                <div class="get-more-wrap">
+                <div class="get-more-wrap" @click="showCoinShop()">
                     <img :src="icGetMoreBg" alt="" class="get-more-bg" />
-                    <button class="get-more-btn" @click="showCoinShop()">
+                    <button class="get-more-btn">
                         <span>Get More</span>
                         <img :src="icArrowWhite" alt="" class="arrow-white" />
                     </button>
                 </div>
             </div>
 
-            <!-- List Menu -->
             <div class="menu-container">
-                <div v-for="(item, index) in menuItems" :key="item.id" class="menu-row">
+                <div v-for="(item, index) in menuItems" :key="item.id" class="menu-row" @click="onMenuItemClick(item)">
                     <div class="menu-item-content">
                         <img :src="item.icon" alt="" class="menu-icon" />
                         <span class="menu-title">{{ item.title }}</span>

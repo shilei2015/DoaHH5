@@ -48,7 +48,6 @@ const isRound = computed(() => props.round !== false);
 .base-popup-container {
   border-radius: 24px 24px 0 0;
   overflow: hidden;
-  background-color: #fff;
 }
 
 /* When round=false, remove all border-radius for full-screen modal */
@@ -66,8 +65,5 @@ const isRound = computed(() => props.round !== false);
     width: 100%;
     display: flex;
     flex-direction: column;
-    /* Safe area bottom padding */
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
 }
 </style>

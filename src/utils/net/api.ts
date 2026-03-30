@@ -40,7 +40,7 @@ export const API = {
   tac_out_start: 'matchOutStart',
   daily_info: 'lastSignIn',
   dally_checkIn: 'signIn',
-  specail_lto: 'ltoCoinsV2',
+  specail_lto: 'ltoCoinsV3',
   app_version: 'getNewVersion',
   stay_time: 'buryingPoint',
   list_top_user: 'hotGirls',

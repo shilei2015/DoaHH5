@@ -7,6 +7,7 @@ import { post } from '@/utils/net/request';
 import { onMounted } from 'vue';
 import HUD from '@/components/HUD';
 import { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
+import { showCheckIn } from '@/utils/tools/missionService';
 
 class AnchorCate {
     NavId: string = ""
@@ -22,8 +23,11 @@ class AnchorCate {
 const categories = ref<AnchorCate[]>([]);
 
 const anchors = ref<AnchorInfoModel[]>([]);
-
 const isSwitchingCate = ref(false);
+
+const handleOpenCheckIn = () => {
+    showCheckIn();
+};
 
 const selectCategory = (NavId: string) => {
     categories.value.forEach(c => c.active = false);
@@ -124,11 +128,11 @@ onMounted(() => {
     <div class="anchor-list-page">
         <!-- 通用的下达拉刷新组件 -->
         <ScrollList v-model:refreshing="isRefreshing" v-model:loading="isLoadingMore" :finished="isFinished"
-            @refresh="handleRefresh" @load-more="handleLoadMore">
+            :isEmpty="anchors.length === 0 && !isRefreshing" @refresh="handleRefresh" @load-more="handleLoadMore">
             <!-- 顶部标题栏 -->
             <div class="header">
                 <h1 class="title">Discover</h1>
-                <button class="daily-bonus-btn">
+                <button class="daily-bonus-btn" @click="handleOpenCheckIn">
                     <span class="bonus-icon">🎁</span>
                     <span class="bonus-text">Daily Bonus</span>
                 </button>
@@ -180,6 +184,8 @@ onMounted(() => {
 
 /* 顶部标题栏 */
 .header {
+    position: relative;
+    z-index: 2; /* 确保高于下拉刷新的指示器 */
     display: flex;
     justify-content: space-between;
     align-items: center;

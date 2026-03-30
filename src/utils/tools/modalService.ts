@@ -39,7 +39,7 @@ export function showModal(
     // 3. 定义辅助函数用于关闭弹窗并播放退出动画
     const close = () => {
         if (!container) return;
-        
+
         const vnode = h(BasePopup, {
             show: false, // 设为 false 触发 Vant 动画
             ...options,

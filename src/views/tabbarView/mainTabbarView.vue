@@ -11,6 +11,7 @@ import { useRouter, useRoute } from 'vue-router';
 import type { mainTabbarConfig } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import { mainTabbarConfigList } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import TabbarItemContainerView from '@/views/tabbarView/tabbarItemContainerView.vue';
+import LimitOfferPage from './LimitOfferPage.vue';
 
 const router = useRouter()
 const route = useRoute()
@@ -49,6 +50,7 @@ onMounted(() => {
             </RouterView>
         </div>
         <TabbarItemContainerView :tabbarItemList="tabbarItemList" @emitsSwitchTo="switchTo"></TabbarItemContainerView>
+        <LimitOfferPage class="limitOffer"></LimitOfferPage>
     </div>
 </template>
 
@@ -58,5 +60,13 @@ onMounted(() => {
     height: 100vh;
     overflow: hidden;
     z-index: 0;
+}
+
+.limitOffer {
+    height: 86px;
+    position: fixed;
+    bottom: calc(88px + 21px);
+    left: 17px;
+    right: 17px;
 }
 </style>
