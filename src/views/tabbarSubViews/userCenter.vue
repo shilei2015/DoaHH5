@@ -107,7 +107,7 @@ const goMyLikes = () => {
             </div>
 
             <!-- Wallet Banner -->
-            <div class="wallet-banner">
+            <div class="wallet-banner" @click="showCoinShop()">
                 <div class="wallet-left">
                     <div class="diamond-icon-wrap">
                         <img :src="icWalletBg" alt="" class="wallet-bg-icon" />
@@ -116,7 +116,7 @@ const goMyLikes = () => {
                     <span class="balance">{{ userInfo?.Coins }}</span>
                 </div>
                 <!-- Get More Button using Figma background asset -->
-                <div class="get-more-wrap" @click="showCoinShop()">
+                <div class="get-more-wrap">
                     <img :src="icGetMoreBg" alt="" class="get-more-bg" />
                     <button class="get-more-btn">
                         <span>Get More</span>

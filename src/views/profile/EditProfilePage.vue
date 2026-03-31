@@ -1,43 +1,74 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { 
-  Popup as VanPopup, 
-  Field as VanField, 
-  Cell as VanCell, 
-  CellGroup as VanCellGroup, 
-  Uploader as VanUploader, 
-  Picker as VanPicker, 
-  Icon as VanIcon 
+import {
+  Popup as VanPopup,
+  Field as VanField,
+  Cell as VanCell,
+  CellGroup as VanCellGroup,
+  Uploader as VanUploader,
+  Picker as VanPicker,
+  Icon as VanIcon,
+  Icon
 } from 'vant';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { ossUploadService } from '@/utils/net/OSSUploadService';
+import { showLoadingToast, closeToast } from 'vant';
+import { post } from '@/utils/net/request';
+import { API } from '@/utils/net/api';
 
 // Assets
 import backIcon from '@/assets/comm/comm-back.png';
-import addIcon from '@/assets/profile/add_icon.svg';
-import closeIcon from '@/assets/profile/close_icon.svg';
+import { getAge } from '@/utils/tools';
+import { getFlagEmoji } from '@/utils/tools';
+import HUD from '@/components/HUD';
 
+interface ProfileFormData {
+  nickname?: string;
+  age?: number;
+  gender?: 'Male' | 'Female';
+  countryCode?: string;
+  country?: string;
+  aboutMe?: string;
+  avatar?: string;
+  albums?: string[];
+}
+
+interface CountryModel {
+  Key: string
+  Value: string
+}
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
 
 // Form data (reactive)
-const formData = ref({
-  nickname: userInfo.value?.Nickname || 'John Doe',
-  age: 24,
+const formData = ref<ProfileFormData>({
+  nickname: userInfo.value?.Nickname,
+  age: getAge(userInfo.value?.Birthday),
   gender: userInfo.value?.Gender === '1' ? 'Male' : 'Female',
-  country: userInfo.value?.Country || 'United States',
-  aboutMe: userInfo.value?.Introduce || 'I love traveling and meeting new people. Feel free to message me!',
-  avatar: userInfo.value?.HeadImage || ''
+  countryCode: userInfo.value?.CountryCode,
+  country: userInfo.value?.Country,
+  aboutMe: userInfo.value?.Introduce,
+  avatar: userInfo.value?.HeadImage,
+  albums: userInfo.value?.Albums ?? []
 });
 
-// Photo album state
-const album = ref([
-  { id: 1, url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&h=200&fit=crop' },
-  { id: 2, url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&h=200&fit=crop' },
-  { id: 3, url: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&h=200&fit=crop' }
-]);
+// Photo album state (using Vant Uploader structure)
+const albumList = ref<any[]>([]);
+// 存储初始数据快照，用于对比差异
+let initialDataSnapshot = "";
+// 记录本地选中的头像文件
+let avatarFile: File | null = null;
+// Uploader 引用，用于手动点击触发
+const avatarUploaderRef = ref();
+
+const triggerChooseAvatar = () => {
+  // 通过 Ref 找到 Uploader 内部隐藏的 input 选择框并触发
+  const input = avatarUploaderRef.value?.$el?.querySelector('input');
+  input?.click();
+};
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -47,32 +78,138 @@ const emit = defineEmits<{
 // Picker states
 const showGenderPicker = ref(false);
 const showAgePicker = ref(false);
+const showNicknamePopup = ref(false);
+const tempNickname = ref('');
+const showCountryPicker = ref(false);
+
 const genderOptions = ['Male', 'Female', 'Other'];
 const ageOptions = Array.from({ length: 100 }, (_, i) => i + 18);
 
 // UI Handlers
-const onSave = () => {
-  console.log('Save profile', formData.value);
-  emit('save', formData.value);
-  router.back();
+const openNicknameEdit = () => {
+  tempNickname.value = formData.value.nickname || '';
+  showNicknamePopup.value = true;
 };
 
-const deletePhoto = (id: number) => {
-  album.value = album.value.filter(p => p.id !== id);
+const onNicknameConfirm = () => {
+  formData.value.nickname = tempNickname.value;
+  showNicknamePopup.value = false;
+};
+const onSave = async () => {
+  try {
+    HUD.showLoading()
+    // 0. 处理头像上传：如果当前头像是本地预览路径 (blob:)，则进行上传
+    if (formData.value.avatar && formData.value.avatar.startsWith('blob:') && avatarFile) {
+      formData.value.avatar = await ossUploadService.uploadImage(avatarFile);
+      avatarFile = null; // 上传完清空
+    }
+
+    // 1. 处理相册混合上传：将还没上传的本地文件上传到服务器
+    const uploadPromises = albumList.value.map(async (item) => {
+      // 如果存在 file 对象，说明是新选的本地图片，需要上传
+      if (item.file) {
+        return await ossUploadService.uploadImage(item.file);
+      }
+      // 否则是服务器返回的旧图片，直接保留 url
+      return item.url;
+    });
+
+    const albumUrls = await Promise.all(uploadPromises);
+    formData.value.albums = albumUrls.filter(Boolean);
+
+    // 2. 对比差异，只提取修改过的字段
+    const original = JSON.parse(initialDataSnapshot) as ProfileFormData;
+    const current = formData.value;
+    const changedData: Partial<ProfileFormData> = {};
+
+    // 基础字段对比
+    if (current.nickname !== original.nickname) changedData.nickname = current.nickname;
+    if (current.age !== original.age) changedData.age = current.age;
+    if (current.aboutMe !== original.aboutMe) changedData.aboutMe = current.aboutMe;
+    if (current.avatar !== original.avatar) changedData.avatar = current.avatar;
+
+    // 国家代码通常成对出现
+    if (current.countryCode !== original.countryCode) {
+      changedData.countryCode = current.countryCode;
+      changedData.country = current.country;
+    }
+
+    // 数组对比
+    if (JSON.stringify(current.albums) !== JSON.stringify(original.albums)) {
+      changedData.albums = current.albums;
+    }
+
+    // 如果没有任何变化，直接返回
+    if (Object.keys(changedData).length === 0) {
+      console.log('No changes detected, skipping save.');
+      router.back();
+      return;
+    }
+
+    console.log('Final changed data to save:', changedData);
+
+    // 3. 将前端字段映射为后端 API 字段
+    const params: any = {};
+    if (changedData.nickname) params.Nickname = changedData.nickname;
+    if (changedData.aboutMe) params.Introduce = changedData.aboutMe;
+    if (changedData.avatar) params.HeadImage = changedData.avatar;
+    if (changedData.albums) params.Albums = JSON.stringify(changedData.albums);
+    if (changedData.countryCode) {
+      params.CountryCode = changedData.countryCode;
+      params.Country = changedData.country;
+    }
+    // 年龄处理：将年龄转换为出生年份的时间戳 (Birthday)
+    if (changedData.age) {
+      const currentYear = new Date().getFullYear();
+      const birthYear = currentYear - changedData.age;
+      // 默认取该年 1 月 1 日的时间戳 (秒级)
+      params.Birthday = (Math.floor(new Date(birthYear, 0, 1).getTime() / 1000)).toString()
+    }
+
+    // 4. 调用接口保存
+    const res = await post(API.edit_profile, params);
+    HUD.hideLoading()
+    if (res.code === 0 || res.code === "0") {
+      // 5. 成功后更新全局 Store 里的用户信息
+      router.back();
+    } else {
+      HUD.showToast(res.data.Toast)
+    }
+  } catch (error) {
+    HUD.showToast("Upload error")
+  }
 };
 
-const addPhoto = () => {
-  // Mock add photo
-  album.value.push({
-    id: Date.now(),
-    url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&h=200&fit=crop'
-  });
-};
 
-const onAvatarRead = (file: any) => {
-  // Mock upload
+const countryList = ref<CountryModel[]>([])
+const getCountryList = async () => {
+  const res = await post(API.country_list, {});
+  if (res.code == "0") {
+    countryList.value = res.data.Country;
+  }
+}
+
+const clickGender = () => {
+  showCountryPicker.value = true
+  if (countryList.value.length == 0) {
+    getCountryList()
+  }
+}
+const onAvatarRead = async (file: any) => {
+  // 设置本地预览路径，不立即上传
   formData.value.avatar = URL.createObjectURL(file.file);
+  // 暂存文件对象，点击保存时再统一上传
+  avatarFile = file.file;
 };
+
+onMounted(() => {
+  // 初始化预览：将字符串数组转为对象数组
+  if (userInfo.value?.Albums) {
+    albumList.value = userInfo.value.Albums.map(url => ({ url }));
+  }
+  // 记录初始数据快照（深拷贝）
+  initialDataSnapshot = JSON.stringify(formData.value);
+});
 
 </script>
 
@@ -90,27 +227,20 @@ const onAvatarRead = (file: any) => {
     <div class="content">
       <!-- Avatar Section -->
       <section class="avatar-section">
-        <div class="avatar-wrapper">
+        <!-- 隐身 Uploader，仅作为功能组件引用 -->
+        <van-uploader ref="avatarUploaderRef" :after-read="onAvatarRead" style="display: none" />
+
+        <div class="avatar-wrapper" @click="triggerChooseAvatar">
           <div class="avatar-image">
-            <img v-if="formData.avatar" :src="formData.avatar" alt="Avatar" />
-            <div v-else class="avatar-placeholder">
-              <van-icon name="user-o" size="40" color="#999" />
-            </div>
-            <!-- Edit overlay -->
-            <van-uploader :after-read="onAvatarRead" class="avatar-uploader">
-              <div class="camera-btn">
-                <van-icon name="photograph" color="#fff" size="14" />
-              </div>
-            </van-uploader>
+            <img :src="formData.avatar" />
+          </div>
+          <div class="camera-btn">
+            <img src="@/assets/profile/profile-change-avatar.svg" />
           </div>
         </div>
-        <div class="nickname-field">
-          <input 
-            v-model="formData.nickname" 
-            class="nickname-input" 
-            placeholder="Input Nickname"
-          />
-          <van-icon name="edit" size="16" color="#999" />
+        <div class="nickname-field" @click="openNicknameEdit">
+          <span class="nickname-text">{{ formData.nickname || 'Input Nickname' }}</span>
+          <img class="editName" src="@/assets/profile/profile-change-name.svg" />
         </div>
       </section>
 
@@ -119,10 +249,10 @@ const onAvatarRead = (file: any) => {
         <van-cell-group inset :border="false">
           <van-cell title="Age" :value="formData.age" is-link @click="showAgePicker = true" />
           <van-cell title="Gender" :value="formData.gender" is-link @click="showGenderPicker = true" />
-          <van-cell title="Country" is-link>
+          <van-cell title="Country" is-link @click="clickGender">
             <template #value>
               <div class="country-value">
-                <span class="flag-icon">🇺🇸</span>
+                <span class="flag-icon">{{ getFlagEmoji(formData.countryCode) }}</span>
                 <span>{{ formData.country }}</span>
               </div>
             </template>
@@ -130,51 +260,60 @@ const onAvatarRead = (file: any) => {
         </van-cell-group>
       </section>
 
-      <!-- Album Section -->
+      <!-- Album Section (Feedback Style) -->
       <section class="album-section">
         <h2 class="section-title">Album</h2>
-        <div class="photos-grid">
-          <div v-for="photo in album" :key="photo.id" class="photo-item">
-            <img :src="photo.url" alt="Photo" />
-            <div class="delete-btn" @click="deletePhoto(photo.id)">
-              <img :src="closeIcon" alt="Delete" />
+        <van-uploader v-model="albumList" multiple :max-count="6" :preview-size="['106px', '141px']"
+          class="media-uploader">
+          <div class="upload-placeholder">
+            <div class="add-box">
+              <img src="@/assets/setting/setting-feedback-add.svg" alt="Add" />
             </div>
           </div>
-          <!-- Add photo button -->
-          <div v-if="album.length < 9" class="add-photo-btn" @click="addPhoto">
-            <img :src="addIcon" alt="Add" />
-          </div>
-        </div>
+        </van-uploader>
       </section>
 
       <!-- About Me Section -->
       <section class="about-section">
         <h2 class="section-title">About Me</h2>
         <div class="textarea-wrapper">
-          <textarea 
-            v-model="formData.aboutMe" 
-            placeholder="Write something about yourself..."
-            maxlength="200"
-          ></textarea>
+          <textarea v-model="formData.aboutMe" placeholder="Write something about yourself..."
+            maxlength="200"></textarea>
         </div>
       </section>
     </div>
 
     <!-- Pickers -->
     <van-popup v-model:show="showGenderPicker" position="bottom" round>
-      <van-picker
-        :columns="genderOptions.map(text => ({ text, value: text }))"
+      <van-picker :columns="genderOptions.map(text => ({ text, value: text }))"
         @confirm="({ selectedOptions }) => { formData.gender = selectedOptions[0].text; showGenderPicker = false }"
-        @cancel="showGenderPicker = false"
-      />
+        @cancel="showGenderPicker = false" />
     </van-popup>
 
     <van-popup v-model:show="showAgePicker" position="bottom" round>
-      <van-picker
-        :columns="ageOptions.map(num => ({ text: num.toString(), value: num }))"
+      <van-picker :columns="ageOptions.map(num => ({ text: num.toString(), value: num }))"
         @confirm="({ selectedOptions }) => { formData.age = Number(selectedOptions[0].text); showAgePicker = false }"
-        @cancel="showAgePicker = false"
-      />
+        @cancel="showAgePicker = false" />
+    </van-popup>
+
+    <van-popup v-model:show="showCountryPicker" position="bottom" round>
+      <van-loading v-if="countryList.length == 0" />
+      <van-picker v-else :columns="countryList.map(country => ({ text: country.Value, value: country.Key }))"
+        @confirm="({ selectedOptions }) => { formData.countryCode = selectedOptions[0].value; formData.country = selectedOptions[0].text; showCountryPicker = false }"
+        @cancel="showCountryPicker = false" />
+    </van-popup>
+
+    <!-- Nickname Editor Popup -->
+    <van-popup v-model:show="showNicknamePopup" position="bottom" round class="nickname-edit-popup">
+      <div class="popup-header">
+        <span class="popup-cancel" @click="showNicknamePopup = false">Cancel</span>
+        <span class="popup-title">Edit Nickname</span>
+        <span class="popup-confirm" @click="onNicknameConfirm">Done</span>
+      </div>
+      <div class="popup-content">
+        <van-field v-model="tempNickname" maxlength="20" placeholder="Please input nickname" autofocus :border="false"
+          class="nickname-field-input" />
+      </div>
     </van-popup>
   </div>
 </template>
@@ -183,11 +322,10 @@ const onAvatarRead = (file: any) => {
 .edit-profile-page {
   width: 100%;
   height: 100vh;
-  background-color: #F8F9FB; /* Light grey bg */
+  background-color: #F8F9FB;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Header */
@@ -211,7 +349,6 @@ const onAvatarRead = (file: any) => {
 
 .back-btn img {
   width: 100%;
-  height: auto;
 }
 
 .title {
@@ -221,13 +358,19 @@ const onAvatarRead = (file: any) => {
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #FF5290 0%, #B847FF 100%);
+  width: 86px;
+  height: 38px;
+  background: linear-gradient(135deg, #FED627 0%, #FF1AD0 100%);
   color: #fff;
   border: none;
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Content */
@@ -255,8 +398,8 @@ const onAvatarRead = (file: any) => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  border: 4px solid #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  /* border: 4px solid #fff; */
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
   overflow: hidden;
   position: relative;
   background-color: #f0f0f0;
@@ -276,19 +419,23 @@ const onAvatarRead = (file: any) => {
   justify-content: center;
 }
 
-.avatar-uploader {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
+/* 隐藏 Uploader 默认样式，利用其插槽传递功能 */
+.avatar-uploader-custom :deep(.van-uploader__input-wrapper) {
+  display: block;
+  width: 100%;
+}
+
+.avatar-uploader-custom :deep(.van-uploader__input) {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .camera-btn {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
+  bottom: 0;
+  right: 0;
   width: 28px;
   height: 28px;
-  background-color: #5B47FF;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -298,19 +445,69 @@ const onAvatarRead = (file: any) => {
 }
 
 .nickname-field {
+  position: relative;
+  /* left: 12px; */
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  flex-direction: row;
+  gap: 4px;
+  margin-top: 16px;
 }
 
-.nickname-input {
-  border: none;
+.nickname-text {
   font-size: 18px;
   font-weight: 600;
-  text-align: center;
   color: #1A1A1A;
-  width: auto;
-  max-width: 200px;
+}
+
+.editName {
+  width: 16px;
+  height: 16px;
+}
+
+/* Edit Popup Styles */
+.nickname-edit-popup {
+  padding: 0 0 20px 0;
+  background-color: #F8F9FB;
+}
+
+.popup-header {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background-color: #fff;
+  border-bottom: 1px solid #F1F2F3;
+}
+
+.popup-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.popup-cancel {
+  font-size: 14px;
+  color: #999;
+}
+
+.popup-confirm {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FF1AD0;
+  /* 采用保存按钮渐变的主色调 */
+}
+
+.popup-content {
+  padding: 20px 16px;
+}
+
+.nickname-field-input {
+  background-color: #fff !important;
+  border-radius: 12px;
+  padding: 12px 16px;
 }
 
 /* Details Section */
@@ -332,18 +529,10 @@ const onAvatarRead = (file: any) => {
   font-weight: 500;
 }
 
-.country-value {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-}
+/* ====================================================== */
+/* Album Section (Shared Styles with Feedback) */
+/* ====================================================== */
 
-.flag-icon {
-  font-size: 18px;
-}
-
-/* Album Section */
 .album-section {
   background-color: #fff;
   margin-top: 12px;
@@ -357,60 +546,59 @@ const onAvatarRead = (file: any) => {
   margin-bottom: 12px;
 }
 
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+/* 删除按钮居中加粗美化 */
+:deep(.van-uploader__preview-delete) {
+  width: 20px !important;
+  height: 20px !important;
+  top: 4px !important;
+  right: 4px !important;
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  transform: none !important;
 }
 
-.photo-item {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  overflow: hidden;
-  background-color: #f0f0f0;
+:deep(.van-uploader__preview-delete-icon) {
+  font-size: 16px !important;
+  color: #fff !important;
+  transform: none !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  left: 2.5px !important;
+  top: 2.2px !important;
+  font-weight: 800 !important;
 }
 
-.photo-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.upload-placeholder {
+  width: 106px;
+  height: 141px;
 }
 
-.delete-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  padding: 4px;
-  background-color: rgba(0,0,0,0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.delete-btn img {
-  width: 100%;
-  height: 100%;
-}
-
-.add-photo-btn {
-  aspect-ratio: 1;
-  border: 2px dashed #E5E7EB;
+.add-box {
+  width: 106px;
+  height: 141px;
+  border: 1px dashed #EBECED;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
-.add-photo-btn img {
-  width: 32px;
-  height: 32px;
+.add-box img {
+  width: 24px;
+  height: 24px;
   opacity: 0.5;
 }
+
+:deep(.van-uploader__preview-image) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ====================================================== */
 
 /* About Section */
 .about-section {
@@ -434,9 +622,5 @@ textarea {
   font-size: 14px;
   color: #1A1A1A;
   resize: none;
-}
-
-textarea::placeholder {
-  color: #999;
 }
 </style>

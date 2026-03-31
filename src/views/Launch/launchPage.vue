@@ -20,12 +20,11 @@ const toMainTab = () => {
 }
 const getSysInfo = async () => {
     try {
-        const response = await post(API.sys_info, {})
-        const sysInfo: SystemInfoModel = response.data
-        console.log(sysInfo.App.CurrState);
+        // 调用 store 中的初始化（如果守卫已调用，这里会秒回）
+        await userStore.initSystemInfo()
         await checkLogin()
     } catch (error) {
-        console.log("error:", error);
+        console.error("Launch setup failed:", error);
     }
 }
 

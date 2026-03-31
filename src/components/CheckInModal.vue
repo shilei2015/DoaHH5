@@ -13,6 +13,8 @@ import checkinGiftBig from '@/assets/checkIn/checkin-gift-big.svg'
 import checkinGiftSmall from '@/assets/checkIn/checkin-gift-normal.svg'
 import type { CheckInInfoModel } from './appModels/ChcekInInfoModel';
 import HUD from './HUD';
+import { showModal } from '@/utils/tools/modalService';
+import SignInSuccessModal from './modal/SignInSuccessModal.vue';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -70,6 +72,15 @@ const handleCheckIn = async () => {
       checkInInfo.value.IsSignIn = "1"
       checkInInfo.value.CSDay = (Number(checkInInfo.value.CSDay) + 1).toString()
       userStore.updateLoginUserInfo();
+      showModal(SignInSuccessModal, { diamonds: response.data.GrantCoins }, {
+        position: 'center',
+        round: false, // 签到弹窗通常是无背景或透明背景的
+        customStyle: {
+          background: 'transparent', // 关键：设为透明，只保留组件内容
+          border: 'none',
+          boxShadow: 'none'
+        }
+      })
       fetchCheckInData();
       emit('check-in-success');
     } else {
@@ -144,7 +155,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <button class="submit-btn" :disabled="checkInInfo?.IsSignIn != '1'"
+        <button class="submit-btn" :disabled="checkInInfo?.IsSignIn != '0'"
           :class="{ 'already-checked': checkInInfo?.IsSignIn == '0' }" @click="handleCheckIn">
           {{ checkInInfo?.IsSignIn == '1' ? 'Checked in' : 'Check in' }}
         </button>

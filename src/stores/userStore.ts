@@ -29,7 +29,22 @@ export const useUserStore = defineStore('useUserStore', () => {
             rtmToken.value = res.data.RtmToken
         }
     }
-    return { token, rtmToken, userInfo, updateLoginUserInfo, getUserInfoById, updateRTMToken }
+    const isAppInitialized = ref(false)
+    const initSystemInfo = async () => {
+        if (isAppInitialized.value) return
+        try {
+            await post(API.sys_info, {})
+            isAppInitialized.value = true
+        } catch (error) {
+            console.error('[UserStore] initSystemInfo failed:', error)
+        }
+    }
+    const logout = () => {
+        token.value = ""
+        userInfo.value = null
+        rtmToken.value = ""
+    }
+    return { token, rtmToken, userInfo, isAppInitialized, updateLoginUserInfo, getUserInfoById, updateRTMToken, initSystemInfo, logout }
 },
     {
         persist: true

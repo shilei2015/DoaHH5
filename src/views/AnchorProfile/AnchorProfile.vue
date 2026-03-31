@@ -9,6 +9,7 @@ import type { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showImagePreview } from '@/utils/imagePreview';
 import MOMORTC from '@/utils/MOMORTC';
 import { generateSessionId } from '@/utils/msg/MessageModel';
+import { showUserActionModal } from '@/utils/tools/modalService';
 
 const route = useRoute();
 const router = useRouter();
@@ -96,6 +97,10 @@ const goMessage = () => {
     })
 }
 
+const clickActionMore = () => {
+    showUserActionModal(route.query.id as string, {})
+}
+
 </script>
 
 <template>
@@ -118,7 +123,7 @@ const goMessage = () => {
                         </span>
                     </div>
                 </div>
-                <button class="icon-btn">
+                <button class="icon-btn" @click="clickActionMore">
                     <img src="@/assets/profile/report_icon.svg" alt="Report" />
                 </button>
             </div>

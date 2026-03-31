@@ -8,6 +8,11 @@ import { NET_CONFIG, STORAGE_KEYS } from './config'
 import { getApiUrl } from './api'
 import { encryptAES, decryptAES, getUdid, createSiginString } from './encryption'
 import { useUserStore } from '@/stores/userStore'
+import router from '@/router'
+import loginedMissions from '../loginedMissions'
+
+// 用于取消所有请求的控制器集合
+const pendingRequests = new Set<AbortController>()
 
 // 假设我们默认都是加密请求（Swift 中 isEncrypt 默认为 true）
 const DEFAULT_ENCRYPT = true
@@ -20,7 +25,13 @@ const service: AxiosInstance = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 这里我们约定 config.meta?.isEncrypt 来控制单次请求是否加密，默认为 true
+    // 1. 处理请求取消控制器
+    const abortController = new AbortController()
+    config.signal = abortController.signal
+    pendingRequests.add(abortController);
+    (config as any)._abortController = abortController
+
+    // 约定 config.meta?.isEncrypt 来控制单次请求是否加密，默认为 true
     const isEncrypt = (config as any).meta?.isEncrypt ?? DEFAULT_ENCRYPT
 
     // 1. 生成 Nonce
@@ -136,15 +147,51 @@ service.interceptors.response.use(
 
     console.log(`🚀 [API Success] ${path}\n ├── Params:`, reqData, `\n └── Result:`, resData)
 
+    // 从待处理集合中移除
+    if ((config as any)._abortController) {
+      pendingRequests.delete((config as any)._abortController)
+    }
+
     if (resData && typeof resData === 'object' && resData.code !== undefined) {
       // 这里的结构是 { code: Int/String, data: Any, toast: String }
-      // 后端可能返回字符串形式的 "0"
       const code = Number(resData.code)
+      
+      // 处理登录失效或未登录
+      if (code === 1) {
+        console.error('[API] Login invalid (code 1), logging out...')
+        
+        // 1. 取消所有正在进行的请求
+        pendingRequests.forEach(ctrl => ctrl.abort())
+        pendingRequests.clear()
+
+        // 2. 清除状态
+        const userStore = useUserStore()
+        userStore.logout()
+        loginedMissions.stop()
+
+        // 3. 跳转登录页
+        router.push('/login')
+        
+        // 返回一个永远 pending 的 promise，防止后续业务处理继续执行
+        return new Promise(() => {})
+      }
+
       // 请求成功
       return resData
     }
   },
   (error: any) => {
+    // 处理请求取消的情况
+    if (error.name === 'CanceledError' || error.name === 'AbortError') {
+      console.warn('[API] Request canceled:', error.config?.url)
+      return new Promise(() => {}) // 返回 pending 状态
+    }
+
+    // 从集合中移除
+    if (error.config && error.config._abortController) {
+      pendingRequests.delete(error.config._abortController)
+    }
+
     console.error('Network Error:', error)
     return Promise.reject(error)
   }

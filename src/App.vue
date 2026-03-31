@@ -1,10 +1,30 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
 const transitionName = ref('push');
+
+// --- 权限检查逻辑 ---
+const checkDevicePermissions = async () => {
+    try {
+        // 请求摄像头和麦克风权限
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        // 成功获取后立即释放资源，否则指示灯会常亮
+        stream.getTracks().forEach(track => track.stop());
+        console.log("[Permission] Camera & Microphone accessed successfully.");
+    } catch (error) {
+        console.error("[Permission] Denied or device error:", error);
+    }
+}
+
+onMounted(() => {
+    checkDevicePermissions();
+})
 
 // --- 右滑返回逻辑 ---
 const startX = ref(0);

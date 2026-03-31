@@ -111,9 +111,12 @@ class RTCService {
             }
         });
 
-        client.on('user-unpublished', (user: IAgoraRTCRemoteUser) => {
-            console.log('[RTC] user-unpublished', user.uid);
-            // delete this.remoteUsers[user.uid];
+        client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+            console.log('[RTC] user-unpublished', user.uid, mediaType);
+            if (mediaType === 'video') {
+                // 关键点：清空轨道引用，确保下次重新发布时 Vue 的 watch 能识别到变化并触发 play()
+                this.remoteVideoTrack.value = null;
+            }
         });
 
         client.on('user-left', (user: IAgoraRTCRemoteUser) => {
@@ -178,7 +181,7 @@ class RTCService {
                 }
 
                 if (this.isVideoMasked.value) {
-                    await this.localVideoTrack.setEnabled(false);
+                    await this.localVideoTrack.setMuted(true);
                 }
 
                 tracks.push(this.localVideoTrack);
@@ -263,10 +266,12 @@ class RTCService {
      */
     public async toggleVideoMask(enable: boolean) {
         this.isVideoMasked.value = enable;
-        if (!this.client || !this.localVideoTrack) return;
+        if (!this.localVideoTrack) return;
 
         try {
-            await this.localVideoTrack.setEnabled(!enable);
+            // 使用 setMuted 而不是 setEnabled。
+            // setMuted 不会断开流发送，能确保对端画面在再次开启时瞬间恢复。
+            await this.localVideoTrack.setMuted(enable);
         } catch (error) {
             console.error('[RTC] toggleVideoMask error:', error);
         }
@@ -306,27 +311,40 @@ class RTCService {
         }
     }
 
+    public setIncomingCall(callInfo: CallInfoModel) {
+        this._currentCallInfo = callInfo;
+        this._isCaller = false;
+    }
+
     public async answerCall() {
+        HUD.showLoading();
         this._isCaller = false;
         let callInfo = this._currentCallInfo
         if (callInfo && callInfo.LiveToken) {
             let res = await this.firstCharge()
+
             switch (res) {
                 case ChargeResult.Success:
+                    console.log("frst charge success");
+
                     break;
                 case ChargeResult.Faild:
+                    HUD.hideLoading()
                     HUD.showToast("扣费失败");
                     return;
                 case ChargeResult.NeedCoins:
+                    HUD.hideLoading()
                     HUD.showToast("余额不足，请充值");
                     return;
             }
+            console.log("join start");
             await this.join(
                 callInfo.LiveToken.RoomId,
                 callInfo.LiveToken.UserRtcToken,
                 callInfo.LiveToken.SysUserId
             )
-
+            console.log("join end");
+            HUD.hideLoading()
             // 被叫端容错：15秒对方没进房，自动挂断
             setTimeout(() => {
                 if (!this.remoteOnline && this._currentCallInfo) {

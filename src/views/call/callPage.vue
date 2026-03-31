@@ -5,6 +5,7 @@ import { useCallStore } from '@/stores/callStore';
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/stores/userStore';
 import { getFlagEmoji } from '@/utils/tools';
+import RTCService from '@/utils/MOMORTC';
 
 const router = useRouter();
 const route = useRoute();
@@ -63,7 +64,7 @@ onMounted(() => {
 
 const answerCall = () => {
     if (timer) clearInterval(timer);
-    router.push({ name: 'videoPage' });
+    RTCService.answerCall();
 };
 
 onUnmounted(() => {

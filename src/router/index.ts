@@ -43,7 +43,7 @@ const routes = [
         path: "/message/detail",
         component: messageDetail,
         name: "messageDetail",
-        meta: { depth: 30 }
+        meta: { depth: 31 }
     },
     {
         path: "/anchorProfile",
@@ -152,6 +152,9 @@ router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore();
     const publicPages = ['/login', '/register', '/'];
     const authRequired = !publicPages.includes(to.path);
+    
+    // 0. Ensure system info is loaded
+    await userStore.initSystemInfo();
 
     // 1. Check if token exists
     if (authRequired && !userStore.token) {

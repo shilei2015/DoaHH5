@@ -1,5 +1,8 @@
 import { h, render, markRaw, type Component, type VNode } from 'vue';
 import BasePopup from '@/components/common/BasePopup.vue';
+import UserActionModal from '@/components/modal/UserActionModal.vue';
+import ReportModal from '@/components/modal/ReportModal.vue';
+import BlackListConfirmModal from '@/components/modal/BlackListConfirmModal.vue';
 
 /**
  * Global Modal Service
@@ -25,7 +28,7 @@ export function showModal(
     props: any = {},
     options: ModalOptions = {}
 ) {
-    // 1. 如果已有弹窗在显示，先强制清理之前的渲染（支持多重弹窗可进一步扩展，此处为单例模式）
+    // 1. 如果已有弹窗在显示，先强制清理之前的渲染
     if (container) {
         render(null, container);
         container.remove();
@@ -70,7 +73,6 @@ export function showModal(
     });
 
     // 5. First render with show=false, then flip to true on next frame
-    //    so Vant Popup can animate the enter transition.
     render(createVNode(false), container);
     requestAnimationFrame(() => {
         if (container) {
@@ -79,4 +81,41 @@ export function showModal(
     });
 
     return { close };
+}
+
+/**
+ * 【业务封装】弹出通用的“举报/拉黑”操作表
+ * @param targetUserId 目标用户ID
+ * @param callbacks 包含拉黑和举报成功后的事件回调
+ */
+export function showUserActionModal(targetUserId: string, callbacks: {
+    onBlacklistSuccess?: () => void,
+    onReportSuccess?: () => void
+}) {
+    return showModal(UserActionModal, {
+        // 第一级：底部菜单点击 Blacklist
+        onBlacklist: () => {
+            showModal(BlackListConfirmModal, {
+                targetUserId,
+                onSuccess: () => {
+                    if (callbacks.onBlacklistSuccess) callbacks.onBlacklistSuccess();
+                }
+            }, { position: 'center', round: true });
+        },
+        // 第一级：底部菜单点击 Report
+        onReport: () => {
+            showModal(ReportModal, {
+                targetUserId,
+                onSuccess: () => {
+                    if (callbacks.onReportSuccess) callbacks.onReportSuccess();
+                }
+            }, { position: 'center', round: true });
+        }
+    }, {
+        position: 'bottom',
+        round: true,
+        customStyle: {
+            background: 'transparent'
+        }
+    });
 }

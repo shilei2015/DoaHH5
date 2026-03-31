@@ -1,44 +1,92 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { 
-  NavBar as VanNavBar, 
-  Button as VanButton,
-  Empty as VanEmpty,
+import {
+  NavBar as VanNavBar,
   Dialog
 } from 'vant';
-import HUD from '@/components/HUD';
 
-// Assets
+// Utils
 import backIcon from '@/assets/comm/comm-back.png';
+import { type UserInfoModel } from '@/components/appModels/UserInfoModel';
+import ScrollList from '@/components/ScrollList.vue';
+import { post } from '@/utils/net/request';
+import { API } from '@/utils/net/api';
+import HUD from '@/components/HUD';
 
 const router = useRouter();
 
-// Mock Blacklist Data
-const blacklist = ref([
-  { id: 1, nickname: 'Annabelle', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&h=100&fit=crop', time: 'Blocked 2 days ago' },
-  { id: 2, nickname: 'Jasmine', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=100&h=100&fit=crop', time: 'Blocked 1 week ago' },
-  { id: 3, nickname: 'Sophie', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=100&h=100&fit=crop', time: 'Blocked 1 month ago' },
-]);
+// List State
+const blacklist = ref<UserInfoModel[]>([]);
+const refreshing = ref(false);
+const loading = ref(false);
+const finished = ref(false);
+const isEmpty = ref(false);
+const page = ref(1);
 
-const removeFromBlacklist = (item: any) => {
-  Dialog.confirm({
-    title: 'Unblock User',
-    message: `Are you sure you want to unblock ${item.nickname}?`,
-    confirmButtonColor: '#FF5290',
-  })
-  .then(() => {
-    HUD.showLoading();
-    setTimeout(() => {
-      HUD.hideLoading();
-      blacklist.value = blacklist.value.filter(u => u.id !== item.id);
-      HUD.showToast(`${item.nickname} unblocked Successfully`);
-    }, 1000);
-  })
-  .catch(() => {
-    // on cancel
-  });
+const goBack = () => {
+  router.back();
 };
+
+// 获取黑名单数据
+const fetchData = async (isRefresh = false) => {
+  if (isRefresh) {
+    page.value = 1;
+    finished.value = false;
+    isEmpty.value = false;
+  }
+  const res = await post(API.user_block_list, { Page: page.value.toString() });
+  if (res.code === "0") {
+    const list = (res.data.List || []) as UserInfoModel[];
+
+    if (isRefresh) {
+      blacklist.value = list;
+    } else {
+      blacklist.value = [...blacklist.value, ...list];
+    }
+
+    // 判断是否加载完毕
+    if (list.length < 10) {
+      finished.value = true;
+    }
+
+    // 判断是否为空
+    isEmpty.value = blacklist.value.length === 0;
+
+    page.value++;
+
+    loading.value = false;
+    refreshing.value = false;
+  }
+}
+
+
+const onRefresh = () => {
+  fetchData(true);
+};
+
+const onLoadMore = () => {
+  fetchData(false);
+};
+
+// 移出黑名单
+const removeFromBlacklist = async (user: UserInfoModel) => {
+  HUD.showLoading()
+  const res = await post(API.block_user_remove, { UserId: user.UserId });
+  HUD.hideLoading()
+  if (res.code === "0") {
+    HUD.showToast("Unblocked successfully");
+    // 成功后直接在本地列表中移除，避免全量刷新
+    blacklist.value = blacklist.value.filter(u => u.UserId !== user.UserId);
+    if (blacklist.value.length === 0) {
+      isEmpty.value = true;
+    }
+  }
+};
+
+onMounted(() => {
+  onRefresh();
+});
 
 </script>
 
@@ -46,89 +94,86 @@ const removeFromBlacklist = (item: any) => {
   <div class="blacklist-page">
     <!-- Header -->
     <header class="header">
-      <button class="back-btn" @click="router.back()">
-        <img :src="backIcon" alt="Back" />
-      </button>
-      <h1 class="title">Blacklist</h1>
+      <div class="header-left">
+        <img :src="backIcon" alt="Back" class="back-btn" @click="goBack" />
+      </div>
+      <h1 class="header-title">Blacklist</h1>
       <div class="header-right"></div>
     </header>
 
-    <div class="content">
-      <div v-if="blacklist.length > 0" class="list-container">
-        <div v-for="user in blacklist" :key="user.id" class="blacklist-item">
-          <img :src="user.avatar" alt="Avatar" class="user-avatar" />
+    <!-- Use ScrollList component -->
+    <ScrollList class="content" v-model:refreshing="refreshing" v-model:loading="loading" :finished="finished"
+      :isEmpty="isEmpty" @refresh="onRefresh" @load-more="onLoadMore">
+      <div class="list-container">
+        <div v-for="user in blacklist" :key="user.UserId" class="blacklist-item">
+          <img :src="user.HeadImage" class="user-avatar" />
           <div class="user-info">
-            <span class="user-nickname">{{ user.nickname }}</span>
-            <span class="block-time">{{ user.time }}</span>
+            <span class="user-nickname">{{ user.Nickname }}</span>
+            <!-- <span class="block-time">{{ user.BlockTime }}</span> -->
           </div>
           <button class="remove-btn" @click="removeFromBlacklist(user)">Remove</button>
         </div>
       </div>
-      <van-empty v-else description="No blocked users" image="search" />
-    </div>
+    </ScrollList>
   </div>
 </template>
 
 <style scoped>
 .blacklist-page {
-  width: 100%;
+  width: 100vw;
   height: 100vh;
-  background-color: #fff;
   display: flex;
   flex-direction: column;
+  background-color: #FFFFFF;
 }
 
-/* Header */
 .header {
-  height: 44px;
-  background-color: #fff;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
+  border-bottom: 1px solid #f5f5f5;
   flex-shrink: 0;
-  margin-top: env(safe-area-inset-top);
-  border-bottom: 1px solid #F5F6F7;
+}
+
+.header-left,
+.header-right {
+  width: 40px;
 }
 
 .back-btn {
   width: 24px;
-  background: none;
-  border: none;
-  padding: 0;
+  height: 24px;
+  cursor: pointer;
 }
 
-.back-btn img {
-  width: 100%;
-}
-
-.title {
+.header-title {
   font-size: 18px;
-  font-weight: 600;
-  color: #1A1A1A;
+  font-weight: 700;
+  color: #333;
 }
 
-.header-right {
-  width: 24px;
-}
-
-/* Content */
 .content {
   flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
+  overflow: hidden;
+  /* ScrollList will handle the scrolling internally */
+}
+
+.list-container {
+  padding: 0 16px;
 }
 
 .blacklist-item {
   display: flex;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #F5F6F7;
+  padding: 16px 0;
+  border-bottom: 1px solid #f9f9f9;
 }
 
 .user-avatar {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 12px;
@@ -138,13 +183,13 @@ const removeFromBlacklist = (item: any) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .user-nickname {
   font-size: 16px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #333;
+  margin-bottom: 4px;
 }
 
 .block-time {
@@ -153,18 +198,18 @@ const removeFromBlacklist = (item: any) => {
 }
 
 .remove-btn {
-  background-color: #F5F6F7;
-  color: #666;
+  padding: 6px 16px;
+  background: #f5f5f5;
   border: none;
-  border-radius: 16px;
-  padding: 6px 14px;
-  font-size: 13px;
+  border-radius: 17px;
+  font-size: 14px;
   font-weight: 600;
-  transition: all 0.2s;
+  color: #666;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .remove-btn:active {
-  background-color: #EBECED;
-  transform: scale(0.95);
+  background-color: #eeeeee;
 }
 </style>

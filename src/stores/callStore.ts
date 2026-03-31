@@ -5,7 +5,7 @@ import type { CallInfoModel } from '@/components/appModels/CallInfoModel';
 export const useCallStore = defineStore('call', () => {
     const currentCallInfo = ref<CallInfoModel | null>(null);
 
-    const setCurrentCallInfo = (info: CallInfoModel) => {
+    const setCurrentCallInfo = (info: CallInfoModel | null) => {
         currentCallInfo.value = info;
     };
 

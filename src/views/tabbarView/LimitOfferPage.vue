@@ -1,24 +1,51 @@
 <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import type { LimitOffModel } from '@/components/appModels/LimitOffModel';
 import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
 import { LHTimer } from '@/utils/Timer';
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { paymentService } from '@/utils/tools/paymentService';
+import { useLimitOfferStore } from '@/stores/limitOfferStore';
+import LimitOfferModal from '@/components/limitOff/LimitOfferModal.vue';
 
 // Use LHTimer for countdown
 let timer: LHTimer;
 
-const countDonwTime = ref(900); // 15 mins
+const limitOfferStore = useLimitOfferStore()
+
+const countDonwTime = ref(0);
 const countDonwText = ref("");
+const currentTime = ref(Date.now());
+const limitOffInfo = ref<LimitOffModel | null>(null);
+
+const showFullModal = ref(false); // 控制全屏弹窗显示
 
 const timerHandler = () => {
-    if (countDonwTime.value <= 0) {
-        timer?.stop();
-        return;
+    currentTime.value = Date.now();
+    const start = limitOfferStore.showTimeRange.startTime;
+    const end = limitOfferStore.showTimeRange.endTime;
+
+    // --- 全屏弹窗触发逻辑 ---
+    // 只有在 [start, end) 之间，且本轮 startTime 未弹过时才弹
+    if (currentTime.value >= start && currentTime.value < end && start !== 0) {
+        if (limitOfferStore.lastModalShownStartTime !== start) {
+            showFullModal.value = true;
+            limitOfferStore.lastModalShownStartTime = start;
+        }
     }
-    countDonwTime.value -= 1;
-    countDonwText.value = formatTime(countDonwTime.value);
-};
+
+    // 情况 A: 正在优惠期内
+    if (currentTime.value >= start && currentTime.value <= end) {
+        const totalSeconds = Math.max(0, Math.floor((end - currentTime.value) / 1000));
+        countDonwTime.value = totalSeconds;
+        countDonwText.value = formatTime(totalSeconds);
+    }
+    // 情况 B: 优惠已经彻底过时了
+    else if (currentTime.value > end && end !== 0) {
+        timer?.stop();
+        console.log("Limit Off ended, timer stopped.");
+    }
+}
 
 const formatTime = (total: number): string => {
     const h = Math.floor(total / 3600);
@@ -27,31 +54,46 @@ const formatTime = (total: number): string => {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-const limitOffInfo = ref<LimitOffModel | null>(null)
-
 const isShowLimitOfferView = computed(() => {
-    return limitOffInfo.value && limitOffInfo.value.State == '1' && limitOffInfo.value.IsBuy == '0' && todayIsShow
+    const active = limitOfferStore.isTimeInPeriod(
+        currentTime.value,
+        limitOfferStore.showTimeRange.startTime,
+        limitOfferStore.showTimeRange.endTime
+    );
+    return limitOffInfo.value && limitOffInfo.value.State == '1' && limitOffInfo.value.IsBuy == '0' && active
 })
 
-const todayIsShow = computed(() => {
-    return true
-})
 const getLimitOfferInfo = async () => {
     const res = await post(API.specail_lto)
-    if (res.code == "0") {
+    if (res.code == "0" && res.data) {
+
+        // res.data.FirstStart = "3"
+        // res.data.LimitTime = "100000"
+
         limitOffInfo.value = res.data
+        // limitOfferStore.reset()
+        limitOfferStore.updateTimeInfo(res.data)
+
+        // 重启计时器
+        timer?.stop();
+        timer?.start();
     }
 }
 
 const payLimitOff = () => {
-
+    const productId = limitOffInfo.value?.Product?.ProductId
+    if (productId) {
+        paymentService.startPayment(productId, () => {
+            getLimitOfferInfo()
+        })
+    }
 }
 
 onMounted(() => {
     getLimitOfferInfo()
-    countDonwText.value = formatTime(countDonwTime.value);
     timer = new LHTimer(1000, () => timerHandler());
     timer.start();
+    timerHandler(); // 立即执行一次
 });
 
 onUnmounted(() => {
@@ -60,27 +102,38 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div v-if="isShowLimitOfferView" class="limit-page" @click="payLimitOff">
-        <div class="leftWihtView"></div>
-        <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="giftLogo">
-        <div class="limitInfoContent">
-            <div class="topInfo">
-                <div class="coinsCount">200</div>
-                <div class="countDonwView">{{ countDonwText }}</div>
-                <div class="priceView">$1.99</div>
+    <div class="limit-offer-wrapper">
+        <div v-if="isShowLimitOfferView" class="limit-page" @click="payLimitOff">
+            <div class="leftWihtView"></div>
+            <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="giftLogo">
+            <div class="limitInfoContent">
+                <div class="topInfo">
+                    <div class="coinsCount">{{ limitOffInfo?.Product?.Coins }}</div>
+                    <div class="countDonwView">{{ countDonwText }}</div>
+                    <div class="priceView">{{ limitOffInfo?.Product?.ApplePrice ? '$' + limitOffInfo.Product.ApplePrice
+                        :
+                        'Buy' }}</div>
+                </div>
+                <div class="bottomInfo">Will miss the offer the countdown ends.</div>
             </div>
-            <div class="bottomInfo">Will miss the offer the countdown ends.</div>
         </div>
+
+        <Teleport to="body">
+            <LimitOfferModal v-model:visible="showFullModal" @buy="payLimitOff" />
+        </Teleport>
     </div>
 </template>
 
 <style scoped>
 .limit-page {
+    position: relative;
     background: linear-gradient(to right, #AD5CFF, #FF99EB);
     border-radius: 16px;
     overflow: hidden;
     display: flex;
     padding-right: 17px;
+    height: 86px;
+    cursor: pointer;
 }
 
 .leftWihtView {
@@ -101,11 +154,12 @@ onUnmounted(() => {
 }
 
 .limitInfoContent {
+    flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: left;
-    gap: 12px;
+    gap: 8px;
+    margin-left: 4px;
 }
 
 .topInfo {
@@ -119,45 +173,36 @@ onUnmounted(() => {
     height: 27px;
     line-height: 27px;
     background-color: rgba(255, 255, 255, 0.25);
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
     border-radius: 13.5px;
-    border-color: rgba(255, 255, 255, 0.3);
-    border-width: 1px;
-    border-style: solid;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     color: #fff;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
 }
 
 .countDonwView {
     background-color: #A93FED;
-    margin-left: 8px;
-    padding-left: 8px;
-    padding-right: 8px;
+    margin-left: 12px;
+    padding: 0 8px;
     height: 22px;
     line-height: 22px;
     border-radius: 11px;
     color: #fff;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     font-size: 12px;
-    font-weight: 590;
+    font-weight: 600;
 }
 
 .bottomInfo {
-    height: 14px;
-    line-height: 14px;
-    color: #fff;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    font-size: 12px;
-    font-weight: 510;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    font-weight: 500;
 }
 
 .coinsCount {
     color: #fff;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
 }
 </style>

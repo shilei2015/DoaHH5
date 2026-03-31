@@ -25,8 +25,9 @@ import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
 import ChatGiftPicker from './messageOtherViews/ChatGiftPicker.vue';
-import { showModal } from '@/utils/tools/modalService';
+import { showModal, showUserActionModal } from '@/utils/tools/modalService';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
+import { NET_CONFIG } from '@/utils/net/config';
 
 const router = useRouter();
 const route = useRoute();
@@ -44,8 +45,13 @@ const partnerName = ref('Chat');
 const partnerAvatar = ref('');
 
 const targetUserId = ref<string>(route.query.userId as string || '888');
+
 const currentSessionId = computed(() => {
   return generateSessionId(targetUserId.value, userStore.userInfo?.UserId || '1')
+})
+
+const isSystemNoti = computed(() => {
+  return targetUserId.value === NET_CONFIG.ID
 })
 
 const clickedMission = (type: MissionType) => {
@@ -274,6 +280,12 @@ const giftSayHello = async () => {
     missionData.giftMission.show = true
   }
 }
+
+const handlerActionModel = () => {
+  showUserActionModal(targetUserId.value, {
+  })
+}
+
 onMounted(async () => {
   if (userStore.userInfo?.UserId) {
     messageManager.setCurrentUserId(userStore.userInfo.UserId);
@@ -309,7 +321,8 @@ onUnmounted(() => {
       <div class="naviContent">
         <img class="backButton" :src="back" alt="" @click="goBack">
         <div class="naviTitle">{{ partnerName }}</div>
-        <img class="naviReport" :src="msgReport" alt="">
+        <img v-if="!isSystemNoti" class="naviReport" :src="msgReport" @click="handlerActionModel">
+        <div v-else></div>
       </div>
     </header>
     <div class="detailContent">
@@ -328,7 +341,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <footer class="detailFooter">
+    <footer v-if="!isSystemNoti" class="detailFooter">
       <input type="file" ref="fileInput" @change="onFileChange" accept="image/*" hidden />
       <div class="sendImg" @click="onImageClick">
         <img src="@/assets/message/msg-send-img.svg" alt="">

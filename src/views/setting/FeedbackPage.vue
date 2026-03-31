@@ -8,43 +8,77 @@ import {
   Button as VanButton
 } from 'vant';
 import HUD from '@/components/HUD';
+import { ossUploadService } from '@/utils/net/OSSUploadService';
+import { post } from '@/utils/net/request';
+import { API } from '@/utils/net/api';
 
 // Assets
 import backIcon from '@/assets/comm/comm-back.png';
-import addIcon from '@/assets/profile/add_icon.svg';
-import closeIcon from '@/assets/profile/close_icon.svg';
 
 const router = useRouter();
-
-// Feedback types
-const feedbackTypes = ['Suggestion', 'Bug content', 'Other'];
-const selectedType = ref('Suggestion');
 
 // Form data
 const feedbackContent = ref('');
 const contactEmail = ref('');
 const fileList = ref<any[]>([]);
 
-const onTypeSelect = (type: string) => {
-  selectedType.value = type;
+/**
+ * 校验邮箱格式的正则表达式
+ */
+const isEmailValid = (email: string) => {
+  const reg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return reg.test(email);
 };
 
-const onSubmit = () => {
-  if (!feedbackContent.value) {
+const onSubmit = async () => {
+  const content = feedbackContent.value.trim();
+  const email = contactEmail.value.trim();
+
+  if (!content || content.trim().length < 10) {
     HUD.showToast('Please enter feedback content');
     return;
   }
 
-  // Mock submission
-  HUD.showLoading();
+  // 邮箱格式校验拦截
+  if (email && !isEmailValid(email)) {
+    HUD.showToast('Please enter a valid email address');
+    return;
+  }
 
-  setTimeout(() => {
+  HUD.showLoading();
+  try {
+    // 1. 并发上传所有图片
+    const imageUrls: string[] = [];
+    if (fileList.value.length > 0) {
+      const uploadPromises = fileList.value.map(item => {
+        // item.file 是原生的 File/Blob 对象
+        return ossUploadService.uploadImage(item.file);
+      });
+      const results = await Promise.all(uploadPromises);
+      imageUrls.push(...results);
+    }
+
+    // 2. 提交反馈表单
+    const res = await post(API.feedback, {
+      Content: content.trim(),
+      Email: email.trim(),
+      Images: imageUrls.join(',') // 多图以逗号分隔
+    });
+
+    if (res.code === "0") {
+      HUD.showToast('Feedback submitted successfully!');
+      setTimeout(() => {
+        router.back();
+      }, 1500);
+    } else {
+      HUD.showToast(res.msg || 'Submit failed');
+    }
+  } catch (error) {
+    console.error("[Feedback] Submit error:", error);
+    HUD.showToast('Upload failed or network error');
+  } finally {
     HUD.hideLoading();
-    HUD.showToast('Feedback submitted successfully!');
-    setTimeout(() => {
-      router.back();
-    }, 1500);
-  }, 1500);
+  }
 };
 
 </script>
@@ -61,20 +95,6 @@ const onSubmit = () => {
     </header>
 
     <div class="content">
-      <!-- Feedback Type Tags -->
-      <!-- <section class="section">
-        <div class="tags-container">
-          <div 
-            v-for="type in feedbackTypes" 
-            :key="type"
-            :class="['tag-item', { active: selectedType === type }]"
-            @click="onTypeSelect(type)"
-          >
-            {{ type }}
-          </div>
-        </div>
-      </section> -->
-
       <!-- Feedback Content Area -->
       <section class="section">
         <label class="section-label">Feedback</label>
@@ -86,15 +106,11 @@ const onSubmit = () => {
 
       <!-- Media Upload -->
       <section class="section">
-        <van-uploader v-model="fileList" multiple :max-count="9" class="media-uploader">
-          <template #preview-cover="{ file }">
-            <div class="delete-overlay">
-              <!-- Custom delete logic handled by Vant natively via v-model -->
-            </div>
-          </template>
+        <van-uploader v-model="fileList" multiple :max-count="9" :preview-size="['106px', '141px']"
+          class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">
-              <img :src="addIcon" alt="Add" />
+              <img src="@/assets/setting/setting-feedback-add.svg" alt="Add" />
             </div>
           </div>
         </van-uploader>
@@ -110,7 +126,7 @@ const onSubmit = () => {
       </section>
     </div>
 
-    <!-- Submit Button (Fixed at Bottom) -->
+    <!-- Submit Button -->
     <footer class="footer">
       <button class="submit-btn" @click="onSubmit">Submit</button>
     </footer>
@@ -124,17 +140,14 @@ const onSubmit = () => {
   background-color: #fff;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Header */
 .header {
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  flex-shrink: 0;
   margin-top: env(safe-area-inset-top);
   background: #fff;
 }
@@ -160,7 +173,6 @@ const onSubmit = () => {
   width: 24px;
 }
 
-/* Content */
 .content {
   flex: 1;
   overflow-y: auto;
@@ -179,29 +191,6 @@ const onSubmit = () => {
   margin-bottom: 12px;
 }
 
-/* Tags */
-.tags-container {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.tag-item {
-  padding: 8px 20px;
-  border-radius: 20px;
-  background-color: #F5F6F7;
-  color: #666;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.tag-item.active {
-  background: linear-gradient(135deg, #FF5290 0%, #B847FF 100%);
-  color: #fff;
-}
-
-/* Textarea */
 .textarea-wrapper {
   background-color: #F8F9FB;
   border-radius: 12px;
@@ -219,7 +208,6 @@ const onSubmit = () => {
   resize: none;
 }
 
-/* Input */
 .input-wrapper {
   background-color: #F8F9FB;
   border-radius: 12px;
@@ -235,20 +223,50 @@ const onSubmit = () => {
   color: #1A1A1A;
 }
 
-/* Uploader */
+/* ====================================================== */
+/* Vant 原生删除按钮样式美化 */
+/* ====================================================== */
+
+:deep(.van-uploader__preview-delete) {
+  width: 20px !important;
+  height: 20px !important;
+  top: 4px !important;
+  right: 4px !important;
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  transform: none !important;
+}
+
+:deep(.van-uploader__preview-delete-icon) {
+  font-size: 16px !important;
+  color: #fff !important;
+  transform: none !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  left: 2.5px !important;
+  top: 2.2px !important;
+  font-weight: 800 !important;
+}
+
+/* ====================================================== */
+
 .media-uploader {
   margin-top: 4px;
 }
 
 .upload-placeholder {
-  width: 80px;
-  height: 80px;
+  width: 106px;
+  height: 141px;
 }
 
 .add-box {
-  width: 80px;
-  height: 80px;
-  border: 2px dashed #EBECED;
+  width: 106px;
+  height: 141px;
+  border: 1px dashed #EBECED;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -266,7 +284,6 @@ const onSubmit = () => {
   overflow: hidden;
 }
 
-/* Footer */
 .footer {
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
@@ -277,7 +294,6 @@ const onSubmit = () => {
   width: 100%;
   height: 50px;
   background: linear-gradient(90.2deg, #FED627 0.17%, #FF1AD0 99.85%);
-  /* Matching UserCenter gradient */
   color: #fff;
   border: none;
   border-radius: 25px;
