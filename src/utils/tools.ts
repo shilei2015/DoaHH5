@@ -115,6 +115,24 @@ export function getTranslateTargetLanguage(): string {
     return lang
 }
 
+/**
+ * 确保 URL 是 HTTPS 格式，防止 HTTPS 页面加载 HTTP 资源时的混合内容报错。
+ * @param url 原始 URL (如 http://static... )
+ */
+export function secureUrl(url: string | undefined | null): string {
+    if (!url) return "";
+    
+    // 1. 如果是相对路径或者是 base64，直接返回
+    if (url.startsWith("/") || url.startsWith("data:")) return url;
+
+    // 2. 如果包含 http:// 则替换为 https://
+    if (url.startsWith("http://")) {
+        return url.replace("http://", "https://");
+    }
+
+    return url;
+}
+
 export async function translateText(text: string, to?: string): Promise<string | null> {
     const targetLang = to || getTranslateTargetLanguage();
     let res = await post(API.translate_text, { Text: text, To: targetLang })

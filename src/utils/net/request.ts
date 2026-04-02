@@ -66,35 +66,50 @@ service.interceptors.request.use(
     (config as any)._originParams = originParams
 
     // 3. 构建 Headers
-    const userStore = useUserStore()
-    const token = userStore.token
     const udid = getUdid()
-    // Web端模拟获取一些设备信息
-    const fromDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'WebMobile' : 'WebPC'
-    const deviceVersion = navigator.appVersion
-
-    config.headers.set('DeviceLanguage', navigator.language || 'en')
-    config.headers.set('Language', navigator.language || 'en')
-    config.headers.set('Nonce', nonce)
-    config.headers.set('Version', NET_CONFIG.VERSION)
-    config.headers.set('Udid', udid)
-    config.headers.set('AppId', NET_CONFIG.ID)
-
-    // 生成签名，传入原始参数即可（Swift 中是对转译前的参数做签名的，但签名逻辑中排除了 File 和 s 等等）
-    // 注意：Swift中实际传入 createSiginString 的参数是 transParams!
     const signature = createSiginString(transParams, nonce, isEncrypt)
-    config.headers.set('Signature', signature)
+    const systemLanguage = navigator.language || 'en'
+    const fromDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'WebMobile' : 'WebPC'
+    const deviceVersion = navigator.appVersion || "Unknown"
 
-    config.headers.set('VPN', '0') // Web 端无法检测 VPN
-    config.headers.set('FromDevice', fromDevice)
-    config.headers.set('DeviceVersion', deviceVersion)
-    config.headers.set('LocalCCode', 'CN') // 默认或者根据时区推断
-
-    if (isEncrypt) {
-      config.headers.set('IV', 'v2')
+    // 辅助获取国家代码
+    const getCCode = () => {
+      try {
+        const lang = navigator.language;
+        if (lang && lang.includes('-')) {
+          const parts = lang.split('-');
+          if (parts.length > 1) return (parts[1] as string).toUpperCase();
+        }
+        return 'US';
+      } catch { return 'CN'; }
     }
-    if (token.length > 0) {
-      config.headers.set('Token', token)
+
+    try {
+      if (config.headers) {
+        config.headers.set('DeviceLanguage', systemLanguage)
+        config.headers.set('Language', systemLanguage)
+        config.headers.set('Nonce', nonce)
+        config.headers.set('Version', NET_CONFIG.VERSION)
+        config.headers.set('Udid', udid)
+        config.headers.set('AppId', NET_CONFIG.ID)
+        config.headers.set('Signature', signature)
+        config.headers.set('VPN', '0')
+        config.headers.set('FromDevice', fromDevice)
+        config.headers.set('DeviceVersion', deviceVersion)
+        config.headers.set('LocalCCode', getCCode())
+        config.headers.set('OS', '101')
+
+        if (isEncrypt) {
+          config.headers.set('IV', 'v2')
+        }
+
+        const userStore = useUserStore()
+        if (userStore.token && userStore.token.length > 0) {
+          config.headers.set('Token', userStore.token)
+        }
+      }
+    } catch (headerError) {
+      console.error("[RequestInterceptor] Header setup failed:", headerError);
     }
 
     return config
@@ -126,23 +141,23 @@ service.interceptors.response.use(
 
     // 格式化打印日志 (仅相对路径、参数、响应结果)
     const config = response.config
-    
+
     // 优先读取我们在发起请求时存入的未加密原始真实路径
     let path = (config as any).meta?.originalPath
     if (!path) {
-        const fullUrl = config.url || ''
-        const baseURL = config.baseURL || ''
-        path = fullUrl.startsWith(baseURL) ? fullUrl.substring(baseURL.length) : fullUrl
+      const fullUrl = config.url || ''
+      const baseURL = config.baseURL || ''
+      path = fullUrl.startsWith(baseURL) ? fullUrl.substring(baseURL.length) : fullUrl
     }
-    
+
     // 提取参数 (优先真实传递下去的未加密参数 _originParams)
     let reqData = (config as any)._originParams
     if (!reqData) {
-        reqData = config.data
-        if (typeof reqData === 'string') {
-            try { reqData = JSON.parse(reqData) } catch {}
-        }
-        if (!reqData) reqData = config.params
+      reqData = config.data
+      if (typeof reqData === 'string') {
+        try { reqData = JSON.parse(reqData) } catch { }
+      }
+      if (!reqData) reqData = config.params
     }
 
     console.log(`🚀 [API Success] ${path}\n ├── Params:`, reqData, `\n └── Result:`, resData)
@@ -155,11 +170,11 @@ service.interceptors.response.use(
     if (resData && typeof resData === 'object' && resData.code !== undefined) {
       // 这里的结构是 { code: Int/String, data: Any, toast: String }
       const code = Number(resData.code)
-      
+
       // 处理登录失效或未登录
       if (code === 1) {
         console.error('[API] Login invalid (code 1), logging out...')
-        
+
         // 1. 取消所有正在进行的请求
         pendingRequests.forEach(ctrl => ctrl.abort())
         pendingRequests.clear()
@@ -171,9 +186,9 @@ service.interceptors.response.use(
 
         // 3. 跳转登录页
         router.push('/login')
-        
+
         // 返回一个永远 pending 的 promise，防止后续业务处理继续执行
-        return new Promise(() => {})
+        return new Promise(() => { })
       }
 
       // 请求成功
@@ -184,7 +199,7 @@ service.interceptors.response.use(
     // 处理请求取消的情况
     if (error.name === 'CanceledError' || error.name === 'AbortError') {
       console.warn('[API] Request canceled:', error.config?.url)
-      return new Promise(() => {}) // 返回 pending 状态
+      return new Promise(() => { }) // 返回 pending 状态
     }
 
     // 从集合中移除

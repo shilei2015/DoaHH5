@@ -153,19 +153,22 @@ router.beforeEach(async (to, from, next) => {
     const publicPages = ['/login', '/register', '/'];
     const authRequired = !publicPages.includes(to.path);
     
-    // 0. Ensure system info is loaded
-    await userStore.initSystemInfo();
+    // 1. 引导流程 (SystemInfo, User恢复等)
+    await userStore.bootstrapApp();
 
-    // 1. Check if token exists
+    // 2. 特殊拦截：通话页刷新判定
+    // 物理刷新进入 (from.name 为空) 且 目标为通话/呼叫页，强制重定向至首页
+    const isCallRoute = ['callPage', 'videoPage'].includes(to.name as string);
+    const isInitialLoad = !from.name;
+    if (isInitialLoad && isCallRoute) {
+        console.warn("[Router] Refresh detected on call/video page. Redirecting to home.");
+        return next('/');
+    }
+
+    // 3. 登录拦截
     if (authRequired && !userStore.token) {
         console.warn("[Router] No token found, redirecting to login");
         return next('/login');
-    }
-
-    // 2. If token exists, ensure RTM and DB are initialized
-    if (userStore.token) {
-        // Quietly start background missions (idempotent)
-        await LoginedMissions.start();
     }
 
     next();

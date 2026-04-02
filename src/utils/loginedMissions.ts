@@ -19,18 +19,47 @@ class LoginedMissions {
 
     private timer = new LHTimer(1000, () => this.timerTask())
     private isStarted = false
+    private isEnvInitialized = false
     private initPromise: Promise<void> | null = null;
 
     private nextMatchOutTime = 5
 
+    /**
+     * 第一步：同步初始化核心环境（DB, UserInfo）
+     * 路由守卫必须阻塞等待此方法完成，否则页面挂载会报错数据库未初始化
+     */
+    public async initEnvironment() {
+        if (this.isEnvInitialized) return;
+
+        const userStore = useUserStore();
+        // 关键：确保拿到最新的用户信息 (获取 UserId)
+        await userStore.updateLoginUserInfo();
+        
+        if (userStore.userInfo?.UserId) {
+            // 正式初始化数据库：这一步必须在页面挂载前完成
+            initDB(userStore.userInfo.UserId);
+            this.isEnvInitialized = true;
+            console.log("[LoginedMissions] Environment initialized (DB ready)");
+        }
+    }
+
+    /**
+     * 第二步：开启后台任务（RTM 登录、定时器等）
+     * 此过程可以异步在后台进行，不会阻塞页面 UI 渲染
+     */
     public async start() {
+        // 先确保基础环境已就绪
+        await this.initEnvironment();
+
         if (this.initPromise) return this.initPromise;
 
         this.initPromise = (async () => {
             this.minuteTimerTask()
             this.nextMatchOutTime = 5
             this.timer.start()
-            await this.loginRTM()
+            
+            // 后台执行 RTM 登录
+            this.loginRTMBackground();
         })();
 
         return this.initPromise;
@@ -40,6 +69,7 @@ class LoginedMissions {
         this.timer.stop()
         this.initPromise = null
         this.isStarted = false
+        this.isEnvInitialized = false
         const rtm = useMomoRTM()
         rtm.logoutRTM()
     }
@@ -59,13 +89,16 @@ class LoginedMissions {
         await post(API.heart_app)
     }
 
-    private async loginRTM() {
+    /**
+     * 后台异步执行 RTM 相关连接，不影响主引导流程
+     */
+    private async loginRTMBackground() {
         const userStore = useUserStore()
         const rtm = useMomoRTM()
+        
+        // 刷新 RTM Token 并登录 Agora 信令系统 (处理 Call 呼叫)
         await userStore.updateRTMToken()
-        await userStore.updateLoginUserInfo()
         if (userStore.userInfo?.UserId && userStore.rtmToken) {
-            initDB(userStore.userInfo.UserId)
             await rtm.loginRTM(userStore.userInfo.UserId, userStore.rtmToken)
         }
     }

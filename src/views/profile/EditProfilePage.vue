@@ -216,6 +216,7 @@ onMounted(() => {
 <template>
   <div class="edit-profile-page">
     <!-- Header -->
+    <div class="topSpace"></div>
     <header class="header">
       <button class="back-btn" @click="router.back()">
         <img :src="backIcon" alt="Back" />
@@ -248,7 +249,7 @@ onMounted(() => {
       <section class="form-section">
         <van-cell-group inset :border="false">
           <van-cell title="Age" :value="formData.age" is-link @click="showAgePicker = true" />
-          <van-cell title="Gender" :value="formData.gender" is-link @click="showGenderPicker = true" />
+          <van-cell title="Gender" :value="formData.gender" />
           <van-cell title="Country" is-link @click="clickGender">
             <template #value>
               <div class="country-value">
@@ -326,6 +327,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+}
+
+.topSpace {
+  position: fixed;
+  background-color: #fff;
+  width: 100%;
+  top: 0;
+  height: env(safe-area-inset-top);
 }
 
 /* Header */

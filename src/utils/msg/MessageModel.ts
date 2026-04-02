@@ -53,7 +53,8 @@ export interface LHMessage {
     localBlob?: Blob;
     localExtension?: string;
     translateState?: TranslateState;
-    transLateTextMessage?: string
+    transLateTextMessage?: string;
+    chatType?: string;
 }
 
 // Minimal user model for message storage (subset of UserInfoModel)

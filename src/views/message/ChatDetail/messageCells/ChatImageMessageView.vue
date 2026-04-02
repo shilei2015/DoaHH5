@@ -11,7 +11,8 @@ const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
 
 const emit = defineEmits<{
-    (e: 'clickSendFaild', msg: LHMessage): void
+    (e: 'clickSendFaild', msg: LHMessage): void,
+    (e: 'clickImage', msg: LHMessage): void
 }>()
 
 // --- Image URL Handling ---
@@ -50,7 +51,7 @@ onUnmounted(() => {
                 @click="emit('clickSendFaild', props.msg)">
                 <img src="@/assets/message/msg-send-fail.svg" alt="">
             </div>
-            <div class="imageBubble">
+            <div class="imageBubble" @click="emit('clickImage', props.msg)">
                 <!-- Loading Spinner -->
                 <div v-if="isImageLoading && displayUrl" class="loadingOverlay">
                     <van-loading type="spinner" size="24px" color="#FF1AD0" />

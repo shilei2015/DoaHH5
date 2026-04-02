@@ -5,7 +5,7 @@
 
 // 测试环境与正式环境控制开关
 export const NET_CONFIG = {
-  releaseVersion: false,
+  releaseVersion: true,
 
   // HOST 基础配置
   get HOSTROOT() {
@@ -15,12 +15,14 @@ export const NET_CONFIG = {
     }
 
     const head = this.releaseVersion ? 'https' : 'http'
-    // 若不同环境域名不同，可在此修改
     const name = this.releaseVersion ? 'api.momofu' : 'vclub23.cookiegeeks'
     const end = this.releaseVersion ? '.store' : '.com'
     const customPath = 'client'
     return `${head}://${name}${end}/${customPath}/`
   },
+
+  ppUrl: "https://www.momofu.store/a1/pp.html?bg=2",
+  tsUrl: "https://www.momofu.store/a1/tos.html?bg=2",
 
   get KEY() {
     return this.releaseVersion

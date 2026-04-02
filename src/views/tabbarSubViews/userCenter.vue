@@ -145,8 +145,8 @@ const goMyLikes = () => {
 .user-center-page {
     position: relative;
     width: 100%;
-    height: 100vh;
-    /* 设定固定高度，填满屏幕 */
+    height: 100%;
+    /* 改为 100% 以适配父级 Tab 显示区域 */
     overflow-y: auto;
     /* 开启内部垂直滚动 */
     -webkit-overflow-scrolling: touch;
@@ -154,8 +154,8 @@ const goMyLikes = () => {
     background-color: #F2F1F4;
     overflow-x: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    padding-bottom: 90px;
-    /* 预留底部 TabBar 的空间，以免最底部内容被挡住 */
+    padding-bottom: 0;
+    /* 外部容器不设置 padding */
     box-sizing: border-box;
 }
 
@@ -177,6 +177,8 @@ const goMyLikes = () => {
     position: relative;
     padding: 20px;
     padding-top: calc(20px + env(safe-area-inset-top));
+    /* 在内容层底部增加大幅度预留空间，并适配刘海屏 */
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
 }
 
 /* Header */

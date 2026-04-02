@@ -6,7 +6,7 @@ import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
 import HUD from '@/components/HUD';
 import type { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
-import { showImagePreview } from '@/utils/imagePreview';
+import { showImagePreview } from 'vant';
 import MOMORTC from '@/utils/MOMORTC';
 import { generateSessionId } from '@/utils/msg/MessageModel';
 import { showUserActionModal } from '@/utils/tools/modalService';
@@ -44,7 +44,8 @@ const handleScroll = (e: Event) => {
 };
 
 const handleImageClick = (index: number) => {
-    showImagePreview(displayAlbums.value, index);
+    //     showImagePreview(displayAlbums.value, index);
+    showImagePreview({ loop: false, images: displayAlbums.value, startPosition: index })
 };
 
 const fetchAnchorData = async (userId: string) => {

@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCallStore } from '@/stores/callStore';
 import { AnchorInfoModel } from './appModels/AnchorInfoModel';
-import { getFlagEmoji, getAge } from '@/utils/tools';
+import { getFlagEmoji, getAge, secureUrl } from '@/utils/tools';
 import MOMORTC from '@/utils/MOMORTC';
 
 const props = defineProps<{
@@ -40,7 +40,7 @@ const clickCall = () => {
     <div class="anchor-card" @click="$router.push({ path: '/anchorProfile', query: { id: anchor.UserId } })">
         <!-- 上半部分头像 -->
         <div class="avatar-wrapper">
-            <img :src="anchor.HeadImage" alt="avatar" class="anchor-avatar" />
+            <img :src="secureUrl(anchor.HeadImage)" alt="avatar" class="anchor-avatar" />
 
             <!-- 顶部标签与状态 -->
             <div class="card-header">

@@ -18,7 +18,7 @@ import videoGift from '@/assets/call/video-gift.png';
 import { MissionType } from '@/utils/Enums/Enums';
 import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { showToast } from 'vant';
+import { showImagePreview, showToast } from 'vant';
 import MOMORTC from '@/utils/MOMORTC';
 import { getChatTask, upsertChatTask } from '@/utils/msg/DBService';
 import { post } from '@/utils/net/request';
@@ -88,6 +88,9 @@ const scrollToBottom = () => {
 }
 
 const handleReceivedMessage = (message: LHMessage) => {
+  // 忽略通话互动的消息 (ChatType="2")，不显示在聊天详情页
+  if (message.chatType === '2') return;
+
   msgList.value.push(message);
   scrollToBottom();
 }
@@ -190,7 +193,6 @@ const openGiftPicker = () => {
   showModal(ChatGiftPicker, {
     coins: userCoins.value,
     onSend: onSendGift,
-    onRecharge: () => router.push('/recharge')
   });
 }
 
@@ -205,6 +207,18 @@ const onResendMessage = async (message: LHMessage) => {
   } catch (err) {
     console.error("Resend failed:", err);
   }
+}
+
+const onClickImage = (message: LHMessage) => {
+  let imageMessageList = msgList.value.filter(
+    m => m.msgType === MessageType.Image && m.imageObj?.urlString != null
+  )
+
+  let index = imageMessageList.findIndex(m => m.messageId === message.messageId);
+  let imageList = imageMessageList.map(m => m.imageObj?.urlString || '')
+  console.log(imageList);
+
+  showImagePreview({ loop: false, images: imageList, startPosition: index })
 }
 
 const onSendText = async () => {
@@ -334,7 +348,7 @@ onUnmounted(() => {
           <!-- User Messages -->
           <ChatTextMessageView v-if="msg.msgType === MessageType.Text" :msg="msg" @clickSendFaild="onResendMessage" />
           <ChatImageMessageView v-else-if="msg.msgType === MessageType.Image" :msg="msg"
-            @clickSendFaild="onResendMessage" />
+            @clickSendFaild="onResendMessage" @clickImage="onClickImage" />
           <ChatGifMessageView v-else-if="msg.msgType === MessageType.Animation" :msg="msg"
             @clickSendFaild="onResendMessage" />
         </div>

@@ -128,6 +128,7 @@ onMounted(() => {
 }
 
 .header {
+  margin-top: env(safe-area-inset-top);
   height: 56px;
   display: flex;
   align-items: center;

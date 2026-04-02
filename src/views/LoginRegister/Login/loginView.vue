@@ -7,6 +7,8 @@ import { getUdid } from '@/utils/net/encryption';
 import logoLogo from '@/assets/launch/loginLogo.png'
 import HUD from '@/components/HUD'
 import loginedMissions from '@/utils/loginedMissions';
+import { showWebviewModal } from '@/utils/tools/modalService';
+import { NET_CONFIG } from '@/utils/net/config';
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -42,7 +44,12 @@ const loginToSystem = async () => {
         console.log("loginError:", error);
     }
 }
-
+const toTermsOfServicePage = () => {
+    showWebviewModal("Terms of Service", NET_CONFIG.tsUrl)
+}
+const toPrivacyPolicyPage = () => {
+    showWebviewModal("Privacy Policy", NET_CONFIG.ppUrl)
+}
 </script>
 
 <template>
@@ -57,8 +64,9 @@ const loginToSystem = async () => {
         <div class="bottom-section">
             <div class="login-button" @click="loginToSystem">Login</div>
             <p class="terms-text">
-                By logging in, you agree to our <span class="highlight-link">Terms of Service</span> & <span
-                    class="highlight-link">Privacy Policy</span>
+                By logging in, you agree to our <span class="highlight-link" @click="toTermsOfServicePage">Terms of
+                    Service</span> & <span class="highlight-link" @click="toPrivacyPolicyPage">Privacy
+                    Policy</span>
             </p>
         </div>
     </div>

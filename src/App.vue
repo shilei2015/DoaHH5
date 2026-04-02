@@ -6,24 +6,15 @@ const route = useRoute();
 const router = useRouter();
 const transitionName = ref('push');
 
-// --- 权限检查逻辑 ---
-const checkDevicePermissions = async () => {
-    try {
-        // 请求摄像头和麦克风权限
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
-        // 成功获取后立即释放资源，否则指示灯会常亮
-        stream.getTracks().forEach(track => track.stop());
-        console.log("[Permission] Camera & Microphone accessed successfully.");
-    } catch (error) {
-        console.error("[Permission] Denied or device error:", error);
-    }
-}
+import { notificationService } from '@/utils/tools/notificationService';
+import FlashNotification from '@/components/Notification/FlashNotification.vue';
+
+const ns = notificationService.state;
+const onNotificationClose = () => {
+    notificationService.hide();
+};
 
 onMounted(() => {
-    checkDevicePermissions();
 })
 
 // --- 右滑返回逻辑 ---
@@ -79,6 +70,9 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 
 <template>
     <div class="app-container" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+        <!-- Global Message Flash Banner -->
+        <FlashNotification v-if="ns.visible && ns.data" :data="ns.data" @close="onNotificationClose" />
+
         <router-view v-slot="{ Component, route }">
             <!-- 使用 transition 包裹，并配合 keep-alive 固化旧页面状态 -->
             <!-- 限制 keep-alive 仅包含 mainTabbarView，确保三级以上的页面 (如详情页) 每次进入都是新的 -->

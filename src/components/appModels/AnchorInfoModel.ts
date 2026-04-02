@@ -20,4 +20,5 @@ export class AnchorInfoModel {
     VisitorMeNumber: string | null = null
     LikeMeNumber: string | null = null
     UserLikeNumber: string | null = null
+    AlbumVideos: { [key: string]: string } | null = null
 }

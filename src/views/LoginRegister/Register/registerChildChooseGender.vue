@@ -44,18 +44,27 @@ const register = async () => {
         }
         const userStore = useUserStore()
         const response = await post(API.register, params)
-        MMHUD.hideLoading()
+
         const token = response.data.Token
         const rtmToken = response.data?.RtmToken
         if (response.code == "0" && token && token.length > 0 && rtmToken && rtmToken.length > 0) {
             userStore.token = token
             userStore.rtmToken = rtmToken
-            router.push({ name: "anchorList" })
+            
+            // 关键：只 await 核心的用户信息拉取，确保首页有数据
+            await userStore.updateLoginUserInfo()
+            
+            // 后台静默启动 RTM 和其他任务，不阻塞路由跳转
             loginedMissions.start()
+            
+            MMHUD.hideLoading()
+            router.push({ name: "anchorList" })
         } else {
+            MMHUD.hideLoading()
             MMHUD.showToast(response.data.toast)
         }
     } catch {
+        MMHUD.hideLoading()
         MMHUD.showToast("Network request failed")
     }
 }

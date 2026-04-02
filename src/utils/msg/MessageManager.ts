@@ -77,9 +77,12 @@ export function useMessageManager() {
         toUid: string,
         fromUid: string,
         fromUser?: LHMessageUser,
-        toUser?: LHMessageUser
+        toUser?: LHMessageUser,
+        chatType: string = '1'
     ): LHMessage {
-        return createTextMessage(text, toUid, fromUid, fromUser, toUser);
+        const msg = createTextMessage(text, toUid, fromUid, fromUser, toUser);
+        msg.chatType = chatType;
+        return msg;
     }
 
     function newImageMessage(
@@ -89,11 +92,13 @@ export function useMessageManager() {
         fromUser?: LHMessageUser,
         toUser?: LHMessageUser,
         localBlob?: Blob,
-        extension?: string
+        extension?: string,
+        chatType: string = '1'
     ): LHMessage {
         const msg = createImageMessage(imageUrl, toUid, fromUid, fromUser, toUser);
         msg.localBlob = localBlob;
         msg.localExtension = extension;
+        msg.chatType = chatType;
         return msg;
     }
 
@@ -103,9 +108,12 @@ export function useMessageManager() {
         toUid: string,
         fromUid: string,
         fromUser?: LHMessageUser,
-        toUser?: LHMessageUser
+        toUser?: LHMessageUser,
+        chatType: string = '1'
     ): LHMessage {
-        return createGifMessage(gifId, gifUrl, toUid, fromUid, fromUser, toUser);
+        const msg = createGifMessage(gifId, gifUrl, toUid, fromUid, fromUser, toUser);
+        msg.chatType = chatType;
+        return msg;
     }
 
     // --- Message Storage & Dispatch ---
@@ -117,6 +125,11 @@ export function useMessageManager() {
     async function messagePlant(message: LHMessage, saveChatRecord = true): Promise<void> {
         if (!message.messageId) {
             message.messageId = createUUID();
+        }
+
+        // --- 业务分流：通话中互动的消息 (ChatType="2") 不存入数据库，不影响列表 ---
+        if (message.chatType === '2') {
+            message.saveLocal = false;
         }
 
         emit(message.sessionID, 'willSave', message);
@@ -180,6 +193,9 @@ export function useMessageManager() {
      * Internal actual send logic (moved from previous sendMessage).
      */
     async function executeSendMessage(message: LHMessage, chatType: string): Promise<any> {
+        // 同步消息类型，用于后续 UI 逻辑判断是否本地持久化
+        message.chatType = chatType;
+
         // --- 1. Handle Upload if needed ---
         if (message.msgType === MessageType.Image && message.localBlob && !message.imageObj?.urlString) {
             try {
@@ -253,6 +269,9 @@ export function useMessageManager() {
     // --- Chat Record Helpers ---
 
     async function updateChatRecordFromMessage(message: LHMessage): Promise<void> {
+        // 如果是通话视频消息，不进入聊天列表，不更新未读，不持久化会话最后一条记录
+        if (message.chatType === '2') return;
+
         const existingRecord = await DB.getChatRecordById(message.sessionID);
         const isMySend = message.fromUid === getCurrentUserId();
 

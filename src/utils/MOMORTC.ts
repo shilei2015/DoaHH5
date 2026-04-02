@@ -36,6 +36,7 @@ export enum EndLiveEndState {
     agoraExited = "102",
     hangUpByClick = "200",
     notCoins = "203",
+    playEnd = "4",
     unkonw = "204"
 }
 class RTCService {
@@ -47,6 +48,12 @@ class RTCService {
     public remoteVideoTrack = ref<IRemoteVideoTrack | null>(null)
     public remoteOnline = false;
     public remoteUid: string | number = 0;
+    public isCaller = false;
+    public fakeAcceptTimer: any = null;
+
+    public get isVideoMode(): boolean {
+        return this._currentCallInfo?.User?.AnchorType === '30';
+    }
 
     private timer: LHTimer = new LHTimer(1000, () => this.callTimerTask())
 
@@ -91,7 +98,7 @@ class RTCService {
             this.remoteOnline = true;
             this.remoteUid = user.uid;
 
-            if (this._isCaller) {
+            if (this.isCaller) {
                 // 主叫方：对方进房后进行首次扣费
                 this.firstCharge().then(res => {
                     if (res === ChargeResult.NeedCoins) {
@@ -129,7 +136,7 @@ class RTCService {
             // 延迟1秒挂断，防止网络抖动导致的误触
             setTimeout(() => {
                 if (!this.remoteOnline && this._currentCallInfo) {
-                    this.endStreamSession("对方声网离线自动挂断", EndLiveEndState.remoteAgoraExit);
+                    this.handleRemoteHangup();
                 }
             }, 1000);
         });
@@ -190,13 +197,19 @@ class RTCService {
             }
 
             if (tracks.length > 0) {
-                await client.publish(tracks as any);
-                console.log('[RTC] publish success');
+                // 特别注意：马甲模式没有真实的 RTC 频道，不需要（也无法）发布到云端
+                if (this.isVideoMode) {
+                    console.log('[RTC] Fake mode detected, skipping cloud publish, local capture only.');
+                } else {
+                    const client = this._ensureClient();
+                    await client.publish(tracks as any);
+                    console.log('[RTC] publish success');
+                }
             }
 
             return { audio: this.localAudioTrack, video: this.localVideoTrack };
         } catch (e) {
-            console.error('[RTC] publish failed', e);
+            console.error('[RTC] capture/publish failed', e);
             throw e;
         }
     }
@@ -205,6 +218,11 @@ class RTCService {
      * 离开频道
      */
     public async leave(): Promise<void> {
+        if (this.fakeAcceptTimer) {
+            clearTimeout(this.fakeAcceptTimer);
+            this.fakeAcceptTimer = null;
+        }
+
         if (this.localAudioTrack) {
             this.localAudioTrack.stop();
             this.localAudioTrack.close();
@@ -218,8 +236,6 @@ class RTCService {
 
         if (this.client) {
             await this.client.leave();
-            // Optional: reset client to allow full re-init if needed
-            // this.client = null;
         }
 
         useCallStore().clearCallInfo();
@@ -269,8 +285,6 @@ class RTCService {
         if (!this.localVideoTrack) return;
 
         try {
-            // 使用 setMuted 而不是 setEnabled。
-            // setMuted 不会断开流发送，能确保对端画面在再次开启时瞬间恢复。
             await this.localVideoTrack.setMuted(enable);
         } catch (error) {
             console.error('[RTC] toggleVideoMask error:', error);
@@ -279,9 +293,8 @@ class RTCService {
 
 
     private _currentCallInfo?: CallInfoModel
-    private _isCaller = false;
     public async startAnchorCall(anchorId: string) {
-        this._isCaller = true;
+        this.isCaller = true;
         try {
             HUD.showLoading();
             const res = await post(API.video_to_user, { ToUserId: anchorId });
@@ -292,13 +305,16 @@ class RTCService {
                 if (callInfo) {
                     useCallStore().setCurrentCallInfo(callInfo);
                     this._currentCallInfo = callInfo;
-                    // Join and push
-                    if (callInfo.LiveToken) {
-                        await this.join(
+                    if (this.isVideoMode) {
+                        // 仅做标记，由 UI 引导接听，不再自动启动定时器执行接接听任务
+                    } else if (callInfo.LiveToken) {
+                        this.join(
                             callInfo.LiveToken.RoomId,
                             callInfo.LiveToken.UserRtcToken,
                             callInfo.LiveToken.SysUserId
-                        );
+                        ).catch(e => {
+                            console.error("[RTC] background join error:", e);
+                        });
                     }
                     router.push({ name: "callPage", query: { role: "caller" } });
                 }
@@ -313,20 +329,19 @@ class RTCService {
 
     public setIncomingCall(callInfo: CallInfoModel) {
         this._currentCallInfo = callInfo;
-        this._isCaller = false;
+        this.isCaller = false;
     }
 
     public async answerCall() {
         HUD.showLoading();
-        this._isCaller = false;
+        this.isCaller = false;
         let callInfo = this._currentCallInfo
-        if (callInfo && callInfo.LiveToken) {
-            let res = await this.firstCharge()
 
+        if (callInfo) {
+            // 无论是真人还是马甲，接听前都需尝试扣费（针对非免费通话）
+            let res = await this.firstCharge()
             switch (res) {
                 case ChargeResult.Success:
-                    console.log("frst charge success");
-
                     break;
                 case ChargeResult.Faild:
                     HUD.hideLoading()
@@ -337,35 +352,101 @@ class RTCService {
                     HUD.showToast("余额不足，请充值");
                     return;
             }
-            console.log("join start");
-            await this.join(
-                callInfo.LiveToken.RoomId,
-                callInfo.LiveToken.UserRtcToken,
-                callInfo.LiveToken.SysUserId
-            )
-            console.log("join end");
-            HUD.hideLoading()
-            // 被叫端容错：15秒对方没进房，自动挂断
-            setTimeout(() => {
-                if (!this.remoteOnline && this._currentCallInfo) {
-                    console.log("接听方进入频道超过15秒未收到远端加入消息，主动挂断");
-                    this.endStreamSession("接听方等候超时", EndLiveEndState.remoteAgoraExit);
-                }
-            }, 15000);
+
+            if (this.isVideoMode) {
+                // --- 视频马甲支线 ---
+                HUD.hideLoading()
+                this.remoteOnline = true;
+                this.timer.start();
+                router.replace({ name: 'videoPage' });
+                
+                // 统一 20 秒后自动挂断退出
+                if (this.fakeAcceptTimer) clearTimeout(this.fakeAcceptTimer);
+                this.fakeAcceptTimer = setTimeout(() => {
+                    console.log("[RTC] Fake video callee session timeout (20s). Ending...");
+                    this.endStreamSession("Fake video timeout", EndLiveEndState.playEnd);
+                }, 20000);
+                return; // 结束逻辑，不走下方的声网入会
+            }
+
+            // --- 正常声网支线 ---
+            if (callInfo.LiveToken) {
+                await this.join(
+                    callInfo.LiveToken.RoomId,
+                    callInfo.LiveToken.UserRtcToken,
+                    callInfo.LiveToken.SysUserId
+                )
+                HUD.hideLoading()
+                // 被叫端容错：15秒对方没进房，自动挂断
+                setTimeout(() => {
+                    if (!this.remoteOnline && this._currentCallInfo) {
+                        this.handleRemoteHangup();
+                    }
+                }, 15000);
+                router.replace({ name: "videoPage" });
+            }
         }
-        router.push({ name: "videoPage" });
     }
 
     private handleUserJoined() {
-        if (this._isCaller) {
-            router.push({ name: "videoPage" });
+        if (this.isCaller) {
+            router.replace({ name: "videoPage" });
+        }
+    }
+
+    /**
+     * 手动触发马甲视频接听进入
+     */
+    public async handleFakeVideoJoined() {
+        if (!this._currentCallInfo || !this.isCaller) return;
+        const res = await this.firstCharge();
+        if (res === ChargeResult.NeedCoins) {
+            HUD.showToast("余额不足");
+            this.endStreamSession("扣费失败，金币不足", EndLiveEndState.notCoins);
+        } else if (res === ChargeResult.Faild) {
+            HUD.showToast("扣费失败");
+            this.endStreamSession("首次扣费网络异常", EndLiveEndState.unkonw);
+        } else {
+            // 扣费成功，模拟进入画面
+            this.remoteOnline = true;
+            this.timer.start();
+            router.replace({ name: 'videoPage' });
+
+            // 马甲视频统一 20 秒后自动挂断退出
+            if (this.fakeAcceptTimer) clearTimeout(this.fakeAcceptTimer);
+            this.fakeAcceptTimer = setTimeout(() => {
+                console.log("[RTC] Fake video session timeout (20s). Ending...");
+                this.endStreamSession("Fake video timeout", EndLiveEndState.playEnd);
+            }, 20000);
+        }
+    }
+
+    /**
+     * 系统退出通话 UI 逻辑 (支持双层回退)
+     */
+    private exitCallUI() {
+        const currentRouteName = router.currentRoute.value.name as string;
+        if (currentRouteName === 'callPage' || currentRouteName === 'videoPage') {
+            router.back();
+
+            // 针对被叫场景优化：首页 -> callPage -> videoPage
+            // 第一次 back 回到来电页，如果发现还在通话流程内，则继续 back
+            setTimeout(() => {
+                const nextRoute = router.currentRoute.value.name;
+                if (nextRoute === 'callPage' || nextRoute === 'videoPage') {
+                    router.back();
+                }
+            }, 150);
         }
     }
 
     public async endStreamSession(reason: string, endState: EndLiveEndState) {
+        // 1. 立即执行 UI 回退，防止数据清空后页面残留
+        this.exitCallUI();
+
         if (this._currentCallInfo) {
             let liveId = this._currentCallInfo.LiveId;
-            let playEnd = false; // 目前不管假视频的情况
+            let playEnd = false;
             let liveTime = Math.floor(this.timer.totalTime);
 
             try {
@@ -382,16 +463,27 @@ class RTCService {
             }
         }
 
-        // 挂断本地
         this.timer.stop();
         this.timer.totalTime = 0;
         await this.leave();
         this._currentCallInfo = undefined;
         this.remoteOnline = false;
         this.remoteUid = 0;
+    }
 
-        // 挂断后退出页面
-        router.back();
+    /**
+     * 响应远端挂断信号 (仅清理本地资源和回退 UI，不上报结束接口)
+     */
+    public async handleRemoteHangup() {
+        // 1. 响应远端挂断，立即回退 UI
+        this.exitCallUI();
+
+        this.timer.stop();
+        this.timer.totalTime = 0;
+        await this.leave();
+        this._currentCallInfo = undefined;
+        this.remoteOnline = false;
+        this.remoteUid = 0;
     }
 
     private async firstCharge(): Promise<ChargeResult> {
@@ -434,7 +526,6 @@ class RTCService {
         if (!this._currentCallInfo) return;
 
         let totalTime = this.timer.totalTime;
-        // 每分钟末尾扣费 (59s, 119s, 等)
         if (Math.floor(totalTime) % 60 === 59) {
             this.chargeCall(this._currentCallInfo.LiveId).then(res => {
                 if (res === ChargeResult.NeedCoins) {
@@ -447,6 +538,4 @@ class RTCService {
     }
 }
 
-
 export default new RTCService();
-

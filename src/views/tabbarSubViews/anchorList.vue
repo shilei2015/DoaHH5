@@ -8,6 +8,7 @@ import { onMounted } from 'vue';
 import HUD from '@/components/HUD';
 import { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showCheckIn } from '@/utils/tools/missionService';
+import { showEvaluateCallModal } from '@/utils/tools/modalService';
 
 class AnchorCate {
     NavId: string = ""
@@ -185,7 +186,8 @@ onMounted(() => {
 /* 顶部标题栏 */
 .header {
     position: relative;
-    z-index: 2; /* 确保高于下拉刷新的指示器 */
+    z-index: 2;
+    /* 确保高于下拉刷新的指示器 */
     display: flex;
     justify-content: space-between;
     align-items: center;

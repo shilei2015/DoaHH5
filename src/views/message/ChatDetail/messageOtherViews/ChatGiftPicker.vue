@@ -6,6 +6,7 @@ import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
+import { showCoinShop } from '@/utils/tools/shopService';
 
 /**
  * ChatGiftPicker.vue
@@ -20,7 +21,6 @@ const gifts = ref<ChatGiftModel[]>([]);
 
 const emit = defineEmits<{
     (e: 'send', gift: ChatGiftModel): void;
-    (e: 'recharge'): void;
     (e: 'close'): void; // 用于主动关闭弹窗
 }>();
 
@@ -60,7 +60,7 @@ onMounted(() => {
                 <VanIcon name="cross" size="18" />
             </div>
             <div class="title">Gift</div>
-            <div class="balance-container" @click="emit('recharge')">
+            <div class="balance-container" @click="showCoinShop()">
                 <img src="@/assets/profile/diamond_icon.svg" class="diamond-icon" alt="diamond" />
                 <span class="coins-total">{{ props.coins }}</span>
                 <div class="add-btn">+</div>

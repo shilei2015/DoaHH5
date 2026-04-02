@@ -3,6 +3,9 @@ import BasePopup from '@/components/common/BasePopup.vue';
 import UserActionModal from '@/components/modal/UserActionModal.vue';
 import ReportModal from '@/components/modal/ReportModal.vue';
 import BlackListConfirmModal from '@/components/modal/BlackListConfirmModal.vue';
+import ExitCallConfirmModal from '@/components/modal/ExitCallConfirmModal.vue';
+import EvaluateCallModal from '@/components/modal/EvaluateCallModal.vue';
+import WebviewModal from '@/components/modal/WebviewModal.vue';
 
 /**
  * Global Modal Service
@@ -14,6 +17,7 @@ let container: HTMLElement | null = null;
 interface ModalOptions {
     position?: 'bottom' | 'center' | 'top' | 'left' | 'right';
     round?: boolean;
+    closeOnClickOverlay?: boolean;
     customStyle?: Record<string, string>;
 }
 
@@ -116,6 +120,57 @@ export function showUserActionModal(targetUserId: string, callbacks: {
         round: true,
         customStyle: {
             background: 'transparent'
+        }
+    });
+}
+
+/**
+ * 弹出退出通话确认弹窗
+ */
+export function showExitCallConfirmModal(onConfirm: () => void) {
+    return showModal(ExitCallConfirmModal, {
+        onConfirm: onConfirm
+    }, {
+        position: 'center',
+        round: true
+    });
+}
+
+/**
+ * 弹出显示视频评价弹窗
+ */
+export function showEvaluateCallModal(props: {
+    targetAvatar: string,
+    targetName: string,
+    callDuration: string,
+    targetUserId: string,
+    liveId: string
+}) {
+    return showModal(EvaluateCallModal, {
+        targetAvatar: props.targetAvatar,
+        targetName: props.targetName,
+        callDuration: props.callDuration,
+        targetUserId: props.targetUserId,
+        liveId: props.liveId
+    }, {
+        position: 'center',
+        round: true,
+        closeOnClickOverlay: false
+    });
+}
+
+/**
+ * 弹出显示一个网页内容 (支付同款弹窗)
+ */
+export function showWebviewModal(title: string, url: string) {
+    return showModal(WebviewModal, {
+        title: title,
+        url: url
+    }, {
+        position: 'bottom',
+        round: true,
+        customStyle: {
+            height: '90vh'
         }
     });
 }

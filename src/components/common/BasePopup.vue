@@ -11,6 +11,7 @@ const props = defineProps<{
   show: boolean;
   position?: 'bottom' | 'center' | 'top' | 'left' | 'right';
   round?: boolean;
+  closeOnClickOverlay?: boolean;
   customStyle?: Record<string, string>;
 }>();
 
@@ -33,6 +34,7 @@ const isRound = computed(() => props.round !== false);
     @closed="emit('closed')"
     :position="props.position || 'bottom'"
     :round="isRound"
+    :close-on-click-overlay="props.closeOnClickOverlay"
     class="base-popup-container"
     :class="{ 'no-round': !isRound }"
     :style="popupStyle"

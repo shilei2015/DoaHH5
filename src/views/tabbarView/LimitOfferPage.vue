@@ -102,8 +102,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="limit-offer-wrapper">
-        <div v-if="isShowLimitOfferView" class="limit-page" @click="payLimitOff">
+    <div class="limit-offer-wrapper" v-if="isShowLimitOfferView">
+        <div class="limit-page" @click="payLimitOff">
             <div class="leftWihtView"></div>
             <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="giftLogo">
             <div class="limitInfoContent">
@@ -125,7 +125,14 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.limit-offer-wrapper {
+    /* pointer-events: none; */
+    /* width: 100%;
+    height: 100%; */
+}
+
 .limit-page {
+    /* pointer-events: auto; */
     position: relative;
     background: linear-gradient(to right, #AD5CFF, #FF99EB);
     border-radius: 16px;

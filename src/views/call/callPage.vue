@@ -5,7 +5,8 @@ import { useCallStore } from '@/stores/callStore';
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/stores/userStore';
 import { getFlagEmoji } from '@/utils/tools';
-import RTCService from '@/utils/MOMORTC';
+import rtc, { EndLiveEndState } from '@/utils/MOMORTC';
+import { showExitCallConfirmModal } from '@/utils/tools/modalService';
 
 const router = useRouter();
 const route = useRoute();
@@ -35,7 +36,11 @@ const anchor = computed(() => {
 
 const callCoins = computed(() => currentCallInfo.value?.LiveCoins || '0');
 const oldCoins = computed(() => currentCallInfo.value?.LiveOriginalCoins || '');
-const isFreeCall = computed(() => Number(currentCallInfo.value?.LiveFreeTime || 0) > 0);
+const isFreeCall = computed(() => {
+    const freeTime = Number(currentCallInfo.value?.LiveFreeTime || 0);
+    const coins = Number(currentCallInfo.value?.LiveCoins || 0);
+    return freeTime > 0 || coins <= 0;
+});
 
 const currentCoins = ref(useUserStore().userInfo?.Coins)
 
@@ -46,29 +51,60 @@ const circleProgress = computed(() => {
     return `${percent}, 100`;
 });
 let timer: ReturnType<typeof setInterval> | null = null;
+import callingSound from '@/assets/audio/call.mp3';
+import { showCoinShop } from '@/utils/tools/shopService';
+
+const isAnswering = ref(false);
+
+const ringtone = new Audio(callingSound);
+ringtone.loop = true;
 
 const goBack = () => {
-    router.back();
+    if (rtc.isCaller) {
+        showExitCallConfirmModal(() => {
+            rtc.endStreamSession("Caller cancel call", EndLiveEndState.hangUpByClick);
+        });
+    } else {
+        // Callee explicitly rejects the call
+        rtc.endStreamSession("Callee reject call", EndLiveEndState.hangUpByClick);
+    }
 };
 
 onMounted(() => {
+    // 自动播放铃声 (部分浏览器需要用户手势后才允许，但移动端呼叫通常会放宽或由 Webview 接管)
+    ringtone.play().catch(err => console.warn("[Audio] Autoplay ringtone blocked:", err));
+
     // Start countdown for the call request
     timer = setInterval(() => {
         if (countdown.value > 0) {
             countdown.value--;
         } else {
+            // 如果已经在接听过程中（处理 API / RTC），倒计时到 0 也不能触发超时挂断
+            if (isAnswering.value) return;
+
             if (timer) clearInterval(timer);
+            // 倒计时结束
+            if (rtc.isCaller) {
+                // 主叫方：负责上报计费结束
+                rtc.endStreamSession("对方超时未接听，自动挂断", EndLiveEndState.notSelfHangUp);
+            } else {
+                // 接听方：仅本地静默清理并退出（防止重复上报）
+                rtc.handleRemoteHangup();
+            }
         }
     }, 1000);
 });
 
 const answerCall = () => {
-    if (timer) clearInterval(timer);
-    RTCService.answerCall();
+    // 标记为正在接听，不再主动停计时器（保持动画），同时防止倒计时逻辑冲突
+    isAnswering.value = true;
+    ringtone.pause();
+    rtc.answerCall();
 };
 
 onUnmounted(() => {
     if (timer) clearInterval(timer);
+    ringtone.pause();
 });
 </script>
 
@@ -89,12 +125,10 @@ onUnmounted(() => {
             </button>
 
             <!-- Coin Balance (Placeholder for actual balance, currently showing price/info) -->
-            <div class="coin-badge">
+            <div class="coin-badge" @click="showCoinShop">
                 <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="diamond-icon" />
                 <span class="coin-text">{{ currentCoins }}</span>
-                <div class="add-btn">
-                    <img src="@/assets/setting/ic_wallet_bg.svg" alt="Add" class="add-icon" />
-                </div>
+                <div class="add-btn">+</div>
             </div>
         </div>
 
@@ -110,6 +144,12 @@ onUnmounted(() => {
                         <div class="country-row">
                             <span v-if="anchor.CountryCode" class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
                             <span class="country-text">{{ anchor.Country || 'Unknown' }}</span>
+                        </div>
+                        <!-- Callee specific price info -->
+                        <div class="price-info-callee">
+                            <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="small-diamond" />
+                            <span v-if="isFreeCall" class="free-text">FREE</span>
+                            <span v-else class="coin-amount">{{ callCoins }}/min</span>
                         </div>
                     </div>
                     <div class="countdown-circle">
@@ -280,21 +320,17 @@ onUnmounted(() => {
 }
 
 .add-btn {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background-color: #ff5290;
+    width: 20px;
+    height: 20px;
+    background: #FF5290;
     color: white;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 2px;
-}
-
-.add-icon {
-    width: 100%;
-    height: 100%;
-    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
 }
 
 .info-box-wrapper {
@@ -344,6 +380,30 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     width: 100%;
+}
+
+.price-info-callee {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    width: fit-content;
+}
+
+.price-info-callee .free-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4CAF50;
+    /* Green for trust */
+}
+
+.price-info-callee .coin-amount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffd700;
 }
 
 .avatar {

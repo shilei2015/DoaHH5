@@ -11,13 +11,14 @@ import {
 } from 'vant';
 import HUD from '@/components/HUD';
 
-// Assets
 import backIcon from '@/assets/comm/comm-back.png';
+import { NET_CONFIG } from '@/utils/net/config';
+import { showWebviewModal } from '@/utils/tools/modalService';
 
 const router = useRouter();
 
 // Version info
-const currentVersion = 'V 1.1.0';
+const currentVersion = 'V ' + NET_CONFIG.VERSION
 const hasUpdate = ref(true);
 
 // Language state
@@ -62,17 +63,9 @@ const clearCache = () => {
       <section class="menu-group">
         <van-cell-group inset round>
           <!-- Version with Update Badge -->
-          <van-cell title="Version" :value="currentVersion" is-link>
-            <template #right-icon>
-              <div class="version-right">
-                <span class="version-text">{{ currentVersion }}</span>
-                <div v-if="hasUpdate" class="update-dot"></div>
-                <van-icon name="arrow" class="van-cell__right-icon" />
-              </div>
-            </template>
-          </van-cell>
-          <van-cell title="Privacy Policy" is-link />
-          <van-cell title="Terms of Service" is-link />
+          <van-cell title="Version" :value="currentVersion" />
+          <van-cell title="Privacy Policy" is-link @click="showWebviewModal('Privacy Policy', NET_CONFIG.ppUrl)" />
+          <van-cell title="Terms of Service" is-link @click="showWebviewModal('Terms of Service', NET_CONFIG.tsUrl)" />
           <!-- <van-cell title="Language" :value="currentLanguage" is-link @click="showLanguagePicker = true" /> -->
 
           <!-- <van-cell title="Clear Cache" is-link @click="clearCache" /> -->
@@ -111,7 +104,7 @@ const clearCache = () => {
 .setting-page {
   width: 100%;
   height: 100vh;
-  background-color: #F5F6F7;
+  background-color: #fff;
   /* Neutral light grey background */
   display: flex;
   flex-direction: column;
@@ -155,6 +148,7 @@ const clearCache = () => {
   flex: 1;
   overflow-y: auto;
   padding: 12px 0;
+  background-color: #F5F6F7;
 }
 
 .menu-group {

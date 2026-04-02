@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { getChatRecordManager } from '@/utils/msg/ChatRecordManager'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { LHMsgChat } from '@/utils/msg/ChatModel'
 import { formatTimestamp } from '@/utils/tools'
+import { NET_CONFIG } from '@/utils/net/config'
 
 const router = useRouter()
 const chatManager = getChatRecordManager()
@@ -30,7 +31,15 @@ const onClickChat = async (chat: LHMsgChat) => {
     })
 }
 
-const chatList = chatManager.chatList
+const chatList = computed(() => {
+    return [...chatManager.chatList.value].sort((a, b) => {
+        const isASys = a.userId === NET_CONFIG.ID
+        const isBSys = b.userId === NET_CONFIG.ID
+        if (isASys && !isBSys) return -1
+        if (!isASys && isBSys) return 1
+        return 0
+    })
+})
 
 onMounted(async () => {
     await chatManager.initialize();
@@ -56,7 +65,7 @@ onMounted(async () => {
                     <!-- 头像区 -->
                     <div class="avatar-area">
                         <img class="avatar" :src="chat.user?.HeadImage" />
-                        <div v-if="chat.user?.OnlineState" class="status-dot online"></div>
+                        <!-- <div v-if="chat.user?.OnlineState" class="status-dot online"></div> -->
                     </div>
 
                     <!-- 内容区 -->

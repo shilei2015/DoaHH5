@@ -10,6 +10,9 @@ import {
 // Assets
 import backIcon from '@/assets/comm/comm-back.png';
 
+import { useUserStore } from '@/stores/userStore';
+
+const userStore = useUserStore();
 const router = useRouter();
 
 /**
@@ -23,8 +26,8 @@ const handleLogout = () => {
     cancelButtonText: 'Cancel',
     confirmButtonColor: '#000000',
   }).then(() => {
-    // Implement logout logic (clear token, etc.)
-    localStorage.removeItem('token');
+    // 调用统一的登出方法，它会处理 RTM 登出和任务停止
+    userStore.logout();
     showToast('Logged out successfully');
     router.push('/login');
   }).catch(() => {
@@ -68,8 +71,9 @@ const handleDeleteAccount = () => {
       <!-- Account Actions Group -->
       <section class="menu-group">
         <van-cell-group inset round class="custom-cell-group">
-          <van-cell title="Delete Account" is-link @click="handleDeleteAccount" class="account-cell" />
-          <div class="divider"></div>
+          <!-- 暂时隐藏注销账户选项 -->
+          <!-- <van-cell title="Delete Account" is-link @click="handleDeleteAccount" class="account-cell" />
+          <div class="divider"></div> -->
           <van-cell title="Logout" is-link @click="handleLogout" class="account-cell" />
         </van-cell-group>
       </section>
