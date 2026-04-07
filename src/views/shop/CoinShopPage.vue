@@ -33,7 +33,7 @@ const getCoinProducts = async () => {
   const res = await post(API.coin_products, { PType: "1" })
   if (res.code == "0") {
     let list: [ProductModel] = res.data.List
-    products.value = list
+    products.value = list.filter((item) => item.AppleSkuId != "com.momof.product08")
   }
 }
 

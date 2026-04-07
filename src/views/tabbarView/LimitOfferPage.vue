@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { LimitOffModel } from '@/components/appModels/LimitOffModel';
 import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
@@ -9,6 +9,14 @@ import { useLimitOfferStore } from '@/stores/limitOfferStore';
 import LimitOfferModal from '@/components/limitOff/LimitOfferModal.vue';
 
 // Use LHTimer for countdown
+// const emits = defineEmits({
+//     isShowLimitOfferView
+// })
+
+const emits = defineEmits<{
+    isShowLimitOfferView: [value: boolean]
+}>()
+
 let timer: LHTimer;
 
 const limitOfferStore = useLimitOfferStore()
@@ -62,6 +70,15 @@ const isShowLimitOfferView = computed(() => {
     );
     return limitOffInfo.value && limitOffInfo.value.State == '1' && limitOffInfo.value.IsBuy == '0' && active
 })
+
+
+watch(isShowLimitOfferView, (newValue) => {
+    emits("isShowLimitOfferView", newValue as boolean)
+}, { immediate: true })
+
+defineExpose({
+    isShowLimitOfferView
+});
 
 const getLimitOfferInfo = async () => {
     const res = await post(API.specail_lto)

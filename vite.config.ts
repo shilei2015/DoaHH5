@@ -13,7 +13,7 @@ export default defineConfig({
   ],
   plugins: [
     vue(),
-    vueDevTools(),
+    // vueDevTools(),
     basicSsl(),
   ],
   resolve: {
@@ -28,7 +28,15 @@ export default defineConfig({
       '/api': {
         target: 'http://vclub23.cookiegeeks.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        // @ts-ignore 绕过 ts 类型检查，http-proxy 底层天然支持 router 选项
+        router: function (req: any) {
+          const dynamicTarget = req.headers['x-dynamic-target'];
+          if (dynamicTarget && typeof dynamicTarget === 'string' && dynamicTarget.startsWith('http')) {
+            return dynamicTarget;
+          }
+          return 'http://vclub23.cookiegeeks.com'; // fallback
+        }
       }
     }
   },

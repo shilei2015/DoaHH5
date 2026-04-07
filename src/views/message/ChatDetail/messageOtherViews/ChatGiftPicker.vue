@@ -7,6 +7,7 @@ import { API } from '@/utils/net/api';
 import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
 import { showCoinShop } from '@/utils/tools/shopService';
+import { useUserStore } from '@/stores/userStore';
 
 /**
  * ChatGiftPicker.vue
@@ -33,9 +34,14 @@ const selectGift = (gift: ChatGiftModel) => {
 
 const onSendGift = () => {
     const gift = gifts.value.find(g => g.GiftId === selectedGiftId.value);
-    if (gift) {
-        emit('send', gift);
-        emit('close')
+    const userInfo = useUserStore().userInfo
+    if (gift && userInfo) {
+        if (Number(gift.Coins) <= Number(userInfo?.Coins)) {
+            emit('send', gift);
+            emit('close')
+        } else {
+            showCoinShop()
+        }
     }
 };
 

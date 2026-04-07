@@ -320,6 +320,9 @@ class RTCService {
                 }
             } else {
                 HUD.showToast(res.data?.toast || "Call failed");
+                if (res.code == "10103") {
+                    showCoinShop()
+                }
             }
         } catch (error: any) {
             console.error("[RTC] startAnchorCall error:", error);
@@ -359,7 +362,7 @@ class RTCService {
                 this.remoteOnline = true;
                 this.timer.start();
                 router.replace({ name: 'videoPage' });
-                
+
                 // 统一 20 秒后自动挂断退出
                 if (this.fakeAcceptTimer) clearTimeout(this.fakeAcceptTimer);
                 this.fakeAcceptTimer = setTimeout(() => {
@@ -442,8 +445,6 @@ class RTCService {
 
     public async endStreamSession(reason: string, endState: EndLiveEndState) {
         // 1. 立即执行 UI 回退，防止数据清空后页面残留
-        this.exitCallUI();
-
         if (this._currentCallInfo) {
             let liveId = this._currentCallInfo.LiveId;
             let playEnd = false;
@@ -457,15 +458,15 @@ class RTCService {
                     Reason: reason,
                     EndState: endState.toString()
                 };
-                await post(API.video_stop, params);
+                post(API.video_stop, params);
             } catch (e) {
                 console.error("[RTC] endStream failed", e);
             }
         }
-
+        this.exitCallUI();
+        this.leave();
         this.timer.stop();
         this.timer.totalTime = 0;
-        await this.leave();
         this._currentCallInfo = undefined;
         this.remoteOnline = false;
         this.remoteUid = 0;

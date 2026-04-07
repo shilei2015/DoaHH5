@@ -133,10 +133,10 @@ onMounted(() => {
             <!-- 顶部标题栏 -->
             <div class="header">
                 <h1 class="title">Discover</h1>
-                <button class="daily-bonus-btn" @click="handleOpenCheckIn">
+                <!-- <button class="daily-bonus-btn" @click="handleOpenCheckIn">
                     <span class="bonus-icon">🎁</span>
                     <span class="bonus-text">Daily Bonus</span>
-                </button>
+                </button> -->
             </div>
 
             <!-- 水平滑动的标签栏 -->

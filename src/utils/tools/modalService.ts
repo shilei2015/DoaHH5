@@ -32,34 +32,22 @@ export function showModal(
     props: any = {},
     options: ModalOptions = {}
 ) {
-    // 1. 如果已有弹窗在显示，先强制清理之前的渲染
-    if (container) {
-        render(null, container);
-        container.remove();
-        container = null;
-    }
+    // 1. 每调用一次分配一个独立的 container 支持多层弹窗
+    const currentContainer = document.createElement('div');
+    document.body.appendChild(currentContainer);
 
-    // 2. 创建 DOM 容器并挂载
-    container = document.createElement('div');
-    document.body.appendChild(container);
-
-    // 3. 定义辅助函数用于关闭弹窗并播放退出动画
+    // 2. 定义辅助函数用于关闭弹窗并播放退出动画
     const close = () => {
-        if (!container) return;
-
         const vnode = h(BasePopup, {
             show: false, // 设为 false 触发 Vant 动画
             ...options,
             onClosed: () => {
                 // 动画结束后的彻底清理
-                if (container) {
-                    render(null, container);
-                    container.remove();
-                    container = null;
-                }
+                render(null, currentContainer);
+                currentContainer.remove();
             }
         });
-        render(vnode, container);
+        render(vnode, currentContainer);
     };
 
     // 4. Build the vnode factory
@@ -77,10 +65,10 @@ export function showModal(
     });
 
     // 5. First render with show=false, then flip to true on next frame
-    render(createVNode(false), container);
+    render(createVNode(false), currentContainer);
     requestAnimationFrame(() => {
-        if (container) {
-            render(createVNode(true), container);
+        if (currentContainer) {
+            render(createVNode(true), currentContainer);
         }
     });
 

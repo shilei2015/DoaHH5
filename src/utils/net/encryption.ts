@@ -5,9 +5,10 @@
 import CryptoJS from 'crypto-js'
 import { NET_CONFIG, STORAGE_KEYS } from './config'
 
-// 真实使用的 KEY 是32位字符串，所以直接解析可作为 AES-256 的 Key。
-// Swift 中使用了 ECB 模式，不需要 IV。
-const AES_KEY = CryptoJS.enc.Utf8.parse(NET_CONFIG.KEY)
+// 当需要AES加解密时，动态从源配置获取最新的 KEY
+function getAesKey() {
+  return CryptoJS.enc.Utf8.parse(NET_CONFIG.KEY)
+}
 
 /**
  * AES 加密
@@ -20,7 +21,7 @@ export function encryptAES(word: string): string {
   const awaitAesText = word + '_' + NET_CONFIG.ID
   const srcs = CryptoJS.enc.Utf8.parse(awaitAesText)
 
-  const encrypted = CryptoJS.AES.encrypt(srcs, AES_KEY, {
+  const encrypted = CryptoJS.AES.encrypt(srcs, getAesKey(), {
     mode: CryptoJS.mode.ECB,
     padding: CryptoJS.pad.Pkcs7
   })
@@ -43,7 +44,7 @@ export function decryptAES(word: string): string {
   let base64Text = word.replace(/-/g, '+').replace(/_/g, '/').replace(/\$/g, '=').replace(/\\/g, '').replace(/"/g, '')
 
   try {
-    const decrypt = CryptoJS.AES.decrypt(base64Text, AES_KEY, {
+    const decrypt = CryptoJS.AES.decrypt(base64Text, getAesKey(), {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7
     })
@@ -73,17 +74,22 @@ export function getMD5(word: string): string {
 }
 
 /**
- * 获取或生成设备 UDID
- * @param externalUdid 外部传入的 UDID，如果原生通过 JSBridge 传给 Web 可以用这个参数覆盖缓存。
+ * 获取设备 UDID
+ * 优先从 iOS 原生注入的内存中获取，非原生环境则从 localStorage 读取或生成随机值
  */
 export function getUdid(externalUdid?: string): string {
   if (externalUdid) {
     localStorage.setItem(STORAGE_KEYS.UDID, externalUdid)
     return externalUdid
   }
+
+  // 优先从原生内存中获取（iapBridge.ts 收到后会挂在 window 上）
+  const nativeId = (window as any).__nativeUdid
+  if (nativeId) return nativeId
+
+  // 非原生环境：从 localStorage 读取或生成随机值
   let udid = localStorage.getItem(STORAGE_KEYS.UDID)
   if (!udid) {
-    // 生成一个类似 UUID 的随机字符串
     udid = 'web-' + URL.createObjectURL(new Blob()).slice(-36).replace(/-/g, '') + Date.now().toString(36)
     localStorage.setItem(STORAGE_KEYS.UDID, udid)
   }
@@ -130,6 +136,5 @@ export function createSiginString(
   const signString = encodedPairsString + '&' + NET_CONFIG.KEY + '&h520260401'
 
   const md5 = getMD5(signString)
-  console.log("params:", encodedPairs, "md5:", md5);
   return md5
 }

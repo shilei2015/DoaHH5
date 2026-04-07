@@ -38,19 +38,24 @@ const onClose = () => {
 
 const onSubmit = async () => {
     HUD.showLoading()
-    const params = {
-        UserId: props.targetUserId,
-        LiveId: props.liveId,
-        Score: selectedRating.value
+    try {
+        const params = {
+            UserId: props.targetUserId,
+            LiveId: props.liveId,
+            Score: selectedRating.value.toString()
+        }
+        const res = await post(API.how_user, params)
+        if (res.code == "0") {
+            // Success
+        } else {
+            HUD.showToast(res.data?.Toast)
+        }
+    } catch (error) {
+        HUD.showToast("Network Error")
+    } finally {
+        HUD.hideLoading()
+        emit('close');
     }
-    const res = await post(API.how_user, params)
-    HUD.hideLoading()
-    if (res.code == "0") {
-        // Success
-    } else {
-        HUD.showToast(res.data?.Toast)
-    }
-    emit('close');
 };
 
 const selectRating = (value: number) => {

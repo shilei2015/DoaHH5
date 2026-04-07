@@ -37,12 +37,12 @@ watch(() => route.name, (newPath) => {
 onMounted(() => {
     syncTabState(route.name as string)
 })
-
+const isShowLimitOfferView = ref(false)
 </script>
 
 <template>
     <div class="main-tabbar-root">
-        <div class="mainTabView">
+        <div class="mainTabView" :style="{ paddingBottom: isShowLimitOfferView ? '120px' : '0', boxSizing: 'border-box' }">
             <RouterView v-slot="{ Component, route }">
                 <KeepAlive>
                     <component :is="Component" :key="route.fullPath" />
@@ -50,7 +50,7 @@ onMounted(() => {
             </RouterView>
         </div>
         <TabbarItemContainerView :tabbarItemList="tabbarItemList" @emitsSwitchTo="switchTo"></TabbarItemContainerView>
-        <LimitOfferPage class="limitOffer"></LimitOfferPage>
+        <LimitOfferPage @isShowLimitOfferView="isShowLimitOfferView = $event" class="limitOffer"></LimitOfferPage>
     </div>
 </template>
 

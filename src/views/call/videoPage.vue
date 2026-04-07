@@ -5,7 +5,7 @@ import { useCallStore } from '@/stores/callStore';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import rtc, { EndLiveEndState } from '@/utils/MOMORTC';
-import { getFlagEmoji } from '@/utils/tools';
+import { getFlagEmoji, translateText } from '@/utils/tools';
 import { showExitCallConfirmModal, showUserActionModal, showModal, showEvaluateCallModal } from '@/utils/tools/modalService';
 import ChatGiftPicker from '@/views/message/ChatDetail/messageOtherViews/ChatGiftPicker.vue';
 import { getMessageManager } from '@/utils/msg/MessageManager';
@@ -152,12 +152,13 @@ const scrollToBottom = () => {
     });
 };
 
-const handleIncomingMessage = (message: any) => {
+const handleIncomingMessage = async (message: any) => {
     const isMe = message.fromUid === userStore.userInfo?.UserId;
     if (message.msgType === MessageType.Text) {
+        const transText = isMe ? message.textMessage : await translateText(message.textMessage || '')
         messages.value.push({
             id: message.messageId || Date.now(),
-            text: message.textMessage || '',
+            text: transText || message.textMessage || '',
             isMe: isMe
         });
         scrollToBottom();
@@ -222,8 +223,7 @@ const reportAnchor = () => {
 const openGiftPicker = () => {
     showModal(ChatGiftPicker, {
         coins: Number(coins.value),
-        onSend: onSendGift,
-        onRecharge: () => showCoinShop()
+        onSend: onSendGift
     });
 };
 

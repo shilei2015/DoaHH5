@@ -107,6 +107,13 @@ service.interceptors.request.use(
         if (userStore.token && userStore.token.length > 0) {
           config.headers.set('Token', userStore.token)
         }
+
+        // 仅在 Vite 本地开发环境下，给本地反向代理服务器动态投喂目标域名，规避 CORS 问题
+        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+          if (NET_CONFIG.APIHOST) {
+            config.headers.set('x-dynamic-target', NET_CONFIG.APIHOST)
+          }
+        }
       }
     } catch (headerError) {
       console.error("[RequestInterceptor] Header setup failed:", headerError);
@@ -160,7 +167,7 @@ service.interceptors.response.use(
       if (!reqData) reqData = config.params
     }
 
-    console.log(`🚀 [API Success] ${path}\n ├── Params:`, reqData, `\n └── Result:`, resData)
+    console.log(`🚀 [API Success] ${path}\n ├── Headers:`, config.headers, `\n ├── Params:`, reqData, `\n └── Result:`, resData)
 
     // 从待处理集合中移除
     if ((config as any)._abortController) {
