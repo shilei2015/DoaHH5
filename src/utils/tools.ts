@@ -121,14 +121,14 @@ export function getTranslateTargetLanguage(): string {
  */
 export function secureUrl(url: string | undefined | null): string {
     if (!url) return "";
-    
-    // 1. 如果是相对路径或者是 base64，直接返回
-    if (url.startsWith("/") || url.startsWith("data:")) return url;
 
-    // 2. 如果包含 http:// 则替换为 https://
-    if (url.startsWith("http://")) {
-        return url.replace("http://", "https://");
-    }
+    // // 1. 如果是相对路径或者是 base64，直接返回
+    // if (url.startsWith("/") || url.startsWith("data:")) return url;
+
+    // // 2. 如果包含 http:// 则替换为 https://
+    // if (url.startsWith("http://")) {
+    //     return url.replace("http://", "https://");
+    // }
 
     return url;
 }

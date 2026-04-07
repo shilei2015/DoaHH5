@@ -38,24 +38,19 @@ const onClose = () => {
 
 const onSubmit = async () => {
     HUD.showLoading()
-    try {
-        const params = {
-            UserId: props.targetUserId,
-            LiveId: props.liveId,
-            Score: selectedRating.value.toString()
-        }
-        const res = await post(API.how_user, params)
-        if (res.code == "0") {
-            // Success
-        } else {
-            HUD.showToast(res.data?.Toast)
-        }
-    } catch (error) {
-        HUD.showToast("Network Error")
-    } finally {
-        HUD.hideLoading()
-        emit('close');
+    const params = {
+        UserId: props.targetUserId,
+        RelationId: props.liveId,
+        Score: selectedRating.value.toString()
     }
+    const res = await post(API.how_user, params)
+    HUD.hideLoading()
+    if (res.code == "0") {
+        // Success
+    } else {
+        HUD.showToast(res.data?.Toast)
+    }
+    emit('close');
 };
 
 const selectRating = (value: number) => {
@@ -77,7 +72,7 @@ const selectRating = (value: number) => {
             <!-- User Profile -->
             <div class="user-info">
                 <div class="avatar-container">
-                    <img :src="secureUrl(props.targetAvatar)" class="avatar" alt="avatar" />
+                    <img :src="props.targetAvatar" class="avatar" alt="avatar" />
                 </div>
                 <div class="user-details">
                     <p class="name">{{ props.targetName }}</p>

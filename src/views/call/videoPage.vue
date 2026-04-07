@@ -23,6 +23,9 @@ interface ChatMessage {
 // 通话开始时间
 const startTime = Date.now();
 
+// 锁定页面高度，防止键盘弹出修改视口
+const pageHeight = ref(`${window.innerHeight}px`);
+
 // 页面挂载时加入频道并发布
 onMounted(async () => {
     console.log("[VideoPage] Mounted. Mode:", isVideoMode.value ? 'Fake Video' : 'Real RTC');
@@ -97,7 +100,7 @@ onUnmounted(async () => {
             targetName: anchorData.Nickname,
             callDuration: durationStr,
             targetUserId: anchorData.UserId,
-            liveId: currentCallInfo.value?.LiveId || ""
+            liveId: cachedLiveId.value || ""
         });
     }
 
@@ -110,11 +113,14 @@ const userStore = useUserStore();
 const { currentCallInfo } = storeToRefs(callStore);
 const { userInfo } = storeToRefs(userStore);
 
-// 缓存主播信息，防止销毁时 Store 已清空导致无法弹窗
+// 缓存主播信息与 LiveId，防止销毁时 Store 已清空导致无法弹窗和上报
 const cachedAnchor = ref<any>(null);
-watch(() => currentCallInfo.value?.User, (val) => {
-    if (val) cachedAnchor.value = val;
-}, { immediate: true });
+const cachedLiveId = ref<string>("");
+
+watch(() => currentCallInfo.value, (val) => {
+    if (val?.User) cachedAnchor.value = val.User;
+    if (val?.LiveId) cachedLiveId.value = val.LiveId;
+}, { deep: true, immediate: true });
 
 const isAudioMuted = ref(false);
 const coins = computed(() => userInfo.value?.Coins || '0');
@@ -246,6 +252,24 @@ const onSendText = async () => {
     }
 };
 
+const preventScroll = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+};
+
+const onInputFocus = () => {
+    window.addEventListener('scroll', preventScroll, { passive: false });
+    setTimeout(preventScroll, 50);
+    setTimeout(preventScroll, 100);
+    setTimeout(preventScroll, 300);
+};
+
+const onInputBlur = () => {
+    window.removeEventListener('scroll', preventScroll);
+    setTimeout(preventScroll, 50);
+};
+
 const onSendGift = async (gift: ChatGiftModel) => {
     if (!anchor.value?.UserId) return;
     const fromUid = userInfo.value?.UserId || '';
@@ -276,7 +300,7 @@ const onSendGift = async (gift: ChatGiftModel) => {
 </script>
 
 <template>
-    <div class="video-page">
+    <div class="video-page" :style="{ height: pageHeight }">
         <!-- Background Image or Remote Video -->
         <div class="video-layer">
             <!-- 1. 正常声网 RTC 渲染层 -->
@@ -345,7 +369,7 @@ const onSendGift = async (gift: ChatGiftModel) => {
                 </button>
                 <div class="message-input-wrapper">
                     <input type="text" placeholder="Message..." class="message-input" v-model="inputText"
-                        @keyup.enter="onSendText" />
+                        @keyup.enter="onSendText" @focus="onInputFocus" @blur="onInputBlur" />
                 </div>
                 <button class="circle-btn action-btn" @click="openGiftPicker"
                     style="background-color: rgba(255, 255, 255, 0.25)">
@@ -365,9 +389,10 @@ const onSendGift = async (gift: ChatGiftModel) => {
 
 <style scoped>
 .video-page {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    min-height: 100vh;
     background-color: #000;
     overflow: hidden;
     color: white;

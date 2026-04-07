@@ -28,13 +28,13 @@ const emit = defineEmits<{
     <div class="viewContent">
         <div v-if="!props.missionData.helloMission.completed" class="helloView"
             @click="emit('clickMission', MissionType.hello)">👋 say hello</div>
-        <div v-if="!props.missionData.giftMission.completed && props.missionData.giftMission.show" class="sendGiftView"
+        <!-- <div v-if="!props.missionData.giftMission.completed && props.missionData.giftMission.show" class="sendGiftView"
             @click="emit('clickMission', MissionType.gift)">
             <img class="giftIcon" :src="props.missionData.giftMission.giftIcon" alt="">
             <span class="sendTitle">send gift</span>
             <img class="diamondTag" src="@/assets/profile/diamond_icon.svg" alt="">
             <span class="diamondCount">{{ props.missionData.giftMission.giftPrice }}</span>
-        </div>
+        </div> -->
     </div>
 </template>
 

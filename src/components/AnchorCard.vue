@@ -40,7 +40,7 @@ const clickCall = () => {
     <div class="anchor-card" @click="$router.push({ path: '/anchorProfile', query: { id: anchor.UserId } })">
         <!-- 上半部分头像 -->
         <div class="avatar-wrapper">
-            <img :src="secureUrl(anchor.HeadImage)" alt="avatar" class="anchor-avatar" />
+            <img :src="anchor.HeadImage" alt="avatar" class="anchor-avatar" />
 
             <!-- 顶部标签与状态 -->
             <div class="card-header">
