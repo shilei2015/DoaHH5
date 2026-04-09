@@ -43,7 +43,11 @@ export const NET_CONFIG = {
   SWID: '',
 
   ID: '',
-  VERSION: '1.0.7', // TODO: 可替换为项目的动态版本号
+  VERSION: '1.0.0', // TODO: 可替换为项目的动态版本号
+
+  LocalCCode: "",
+  Language: "",
+  UIV:"",
 }
 
 // 本地设备缓存常量
@@ -64,6 +68,9 @@ try {
     if (cachedConfig.KEY) NET_CONFIG.KEY = cachedConfig.KEY;
     if (cachedConfig.SWID) NET_CONFIG.SWID = cachedConfig.SWID;
     if (cachedConfig.APIHOST) NET_CONFIG.APIHOST = cachedConfig.APIHOST;
+    if (cachedConfig.LocalCCode) NET_CONFIG.LocalCCode = cachedConfig.LocalCCode;
+    if (cachedConfig.Language) NET_CONFIG.Language = cachedConfig.Language;
+    if (cachedConfig.UIV) NET_CONFIG.UIV = cachedConfig.UIV;
   }
 } catch (e) {
   console.warn("Failed to load cached config");
@@ -83,6 +90,9 @@ try {
     if (decoded.AppKey) NET_CONFIG.KEY = String(decoded.AppKey);
     if (decoded.AgoraAppId) NET_CONFIG.SWID = String(decoded.AgoraAppId);
     if (decoded.ApiDomain) NET_CONFIG.APIHOST = String(decoded.ApiDomain);
+    if (decoded.LocalCCode) NET_CONFIG.LocalCCode = String(decoded.LocalCCode);
+    if (decoded.Language) NET_CONFIG.Language = String(decoded.Language);
+    if (decoded.UIV) NET_CONFIG.UIV = String(decoded.UIV);
     console.log(decoded);
 
     if (decoded.UdId) {
@@ -95,7 +105,10 @@ try {
       ID: NET_CONFIG.ID,
       KEY: NET_CONFIG.KEY,
       SWID: NET_CONFIG.SWID,
-      APIHOST: NET_CONFIG.APIHOST
+      APIHOST: NET_CONFIG.APIHOST,
+      LocalCCode: NET_CONFIG.LocalCCode,
+      Language: NET_CONFIG.Language,
+      UIV: NET_CONFIG.UIV
     }));
 
     // 打印出来供调试
@@ -104,7 +117,10 @@ try {
       AppKey: NET_CONFIG.KEY,
       AgoraAppId: NET_CONFIG.SWID,
       UdId: String(decoded.UdId),
-      APIHOST: NET_CONFIG.APIHOST
+      APIHOST: NET_CONFIG.APIHOST,
+      LocalCCode: NET_CONFIG.LocalCCode,
+      Language: NET_CONFIG.Language,
+      UIV: NET_CONFIG.UIV
     });
 
     // 清理 URL 参数

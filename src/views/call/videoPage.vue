@@ -26,46 +26,6 @@ const startTime = Date.now();
 // 锁定页面高度，防止键盘弹出修改视口
 const pageHeight = ref(`${window.innerHeight}px`);
 
-// 页面挂载时加入频道并发布
-onMounted(async () => {
-    console.log("[VideoPage] Mounted. Mode:", isVideoMode.value ? 'Fake Video' : 'Real RTC');
-    try {
-        // 1. 尝试获取本地媒体轨道（让用户能看到自己）
-        console.log("[RTC] Starting publish local tracks...");
-        const tracks = await rtc.publish();
-        console.log("[RTC] Local tracks published successfully.");
-
-        await nextTick();
-        // 2. 渲染本地预览
-        if (tracks.video) {
-            console.log("[RTC] Rendering local preview to 'local-video'...");
-            tracks.video.play('local-video', { fit: 'cover', mirror: true });
-        }
-
-        // 3. 针对马甲模式的自动播放补救
-        if (isVideoMode.value) {
-            console.log("[VideoMode] Detected Fake Video Mode. URL:", fakeVideoUrl.value);
-            const videoEl = document.querySelector('.fake-video') as HTMLVideoElement;
-            if (videoEl) {
-                console.log("[VideoMode] Video element found. Attempting play()...");
-                videoEl.play().then(() => {
-                    console.log("[VideoMode] play() Success");
-                }).catch(err => {
-                    console.warn("[VideoMode] play() BLOCKED by browser policy. Retrying UI muted...", err);
-                    videoEl.muted = true;
-                    videoEl.play().then(() => {
-                        console.log("[VideoMode] muted play() Success");
-                    });
-                });
-            } else {
-                console.error("[VideoMode] ERROR: .fake-video element not found in DOM");
-            }
-        }
-    } catch (err) {
-        console.error('[VideoPage] FATAL Initialization Error:', err);
-    }
-});
-
 // 监听远端视频轨道变化 (rtc.remoteVideoTrack 是响应式的)
 watch(() => rtc.remoteVideoTrack.value, async (track) => {
     console.log("[RTC] << Remote Video Track Changed:", track ? 'Track Active' : 'Track NULL');
@@ -75,37 +35,6 @@ watch(() => rtc.remoteVideoTrack.value, async (track) => {
         track.play('remote-video', { fit: 'cover' })
     }
 }, { immediate: true });
-
-
-// 页面销毁时离开
-onUnmounted(async () => {
-    // 使用缓存的主播信息
-    const anchorData = cachedAnchor.value;
-    const durationMs = Date.now() - startTime;
-    const minutes = Math.floor(durationMs / 60000);
-    const seconds = Math.floor((durationMs % 60000) / 1000);
-    const durationStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-    const targetId = anchorData?.UserId;
-    if (targetId && userStore.userInfo?.UserId) {
-        const sid = generateSessionId(targetId, userStore.userInfo.UserId);
-        messageManager.off(sid, 'received', handleIncomingMessage);
-    }
-
-    // 通话结束后的评价弹窗 (命令式调用)
-    // 只有非主播（用户侧）才弹评价
-    if (anchorData?.UserId) {
-        showEvaluateCallModal({
-            targetAvatar: anchorData.HeadImage,
-            targetName: anchorData.Nickname,
-            callDuration: durationStr,
-            targetUserId: anchorData.UserId,
-            liveId: cachedLiveId.value || ""
-        });
-    }
-
-    await rtc.leave();
-});
 
 const router = useRouter();
 const callStore = useCallStore();
@@ -129,11 +58,6 @@ const isVideoMode = computed(() => {
     return currentCallInfo.value?.User?.AnchorType === '30';
 });
 
-const fakeVideoUrl = computed(() => {
-    // 优先尝试从 AlbumVideos 获取，如果为空则尝试可能的封面备选（根据业务逻辑调整）
-    return anchor.value?.AlbumVideos?.Video || '';
-});
-
 const anchor = computed(() => {
     return (currentCallInfo.value?.User as any) || {
         Nickname: 'Unknown',
@@ -144,6 +68,10 @@ const anchor = computed(() => {
         UserId: '',
         AlbumVideos: null,
     };
+});
+
+const fakeVideoUrl = computed(() => {
+    return anchor.value?.AlbumVideos?.Video || '';
 });
 
 // --- Gift & Message Handling --- (Moved up to avoid ReferenceError)
@@ -296,6 +224,71 @@ const onSendGift = async (gift: ChatGiftModel) => {
         console.error("Gift send failed:", err);
     }
 };
+
+// 在声明完 isVideoMode / anchor / fakeVideoUrl 后再挂载，避免闭包顺序问题；本地预览用 DOM 节点调用 play 更稳
+onMounted(async () => {
+    console.log('[VideoPage] Mounted. Mode:', isVideoMode.value ? 'Fake Video' : 'Real RTC');
+    try {
+        const tracks = await rtc.publish();
+        console.log('[RTC] Local tracks published successfully.');
+
+        await nextTick();
+        if (tracks.video) {
+            const el = document.getElementById('local-video');
+            if (el) {
+                tracks.video.play(el, { fit: 'cover', mirror: true });
+            } else {
+                tracks.video.play('local-video', { fit: 'cover', mirror: true });
+            }
+        } else {
+            console.warn('[VideoPage] No local video track (camera may be denied or unavailable).');
+        }
+
+        if (isVideoMode.value) {
+            console.log('[VideoMode] Fake Video URL:', fakeVideoUrl.value);
+            const videoEl = document.querySelector('.fake-video') as HTMLVideoElement;
+            if (videoEl) {
+                videoEl.play().then(() => {
+                    console.log('[VideoMode] play() Success');
+                }).catch((err) => {
+                    console.warn('[VideoMode] play() blocked, retry muted', err);
+                    videoEl.muted = true;
+                    videoEl.play().then(() => console.log('[VideoMode] muted play() OK'));
+                });
+            } else {
+                console.error('[VideoMode] .fake-video element not found');
+            }
+        }
+    } catch (err) {
+        console.error('[VideoPage] FATAL Initialization Error:', err);
+    }
+});
+
+onUnmounted(async () => {
+    const anchorData = cachedAnchor.value;
+    const durationMs = Date.now() - startTime;
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    const durationStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    const targetId = anchorData?.UserId;
+    if (targetId && userStore.userInfo?.UserId) {
+        const sid = generateSessionId(targetId, userStore.userInfo.UserId);
+        messageManager.off(sid, 'received', handleIncomingMessage);
+    }
+
+    if (anchorData?.UserId) {
+        showEvaluateCallModal({
+            targetAvatar: anchorData.HeadImage,
+            targetName: anchorData.Nickname,
+            callDuration: durationStr,
+            targetUserId: anchorData.UserId,
+            liveId: cachedLiveId.value || '',
+        });
+    }
+
+    await rtc.leave();
+});
 
 </script>
 

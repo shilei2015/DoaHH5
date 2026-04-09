@@ -6,6 +6,8 @@ import userCenter from "@/views/tabbarSubViews/userCenter.vue";
 import messageDetail from "@/views/message/ChatDetail/ChatDetailPage.vue"
 import { useUserStore } from "@/stores/userStore";
 import LoginedMissions from "@/utils/loginedMissions";
+import { hideGlobalLoading } from "@/utils/native/A0019Bridge";
+
 const routes = [
     {
         path: "/",
@@ -172,6 +174,11 @@ router.beforeEach(async (to, from, next) => {
     }
 
     next();
+});
+
+router.afterEach(() => {
+    // 通知 App 隐藏全局加载动画
+    hideGlobalLoading();
 });
 
 export default router

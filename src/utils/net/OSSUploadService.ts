@@ -2,6 +2,14 @@ import { post } from './request';
 import { API } from './api';
 import OSS from 'ali-oss';
 
+/** 部分内嵌 WebView 无 crypto.randomUUID，会导致选图后立即在上传阶段抛错 */
+function randomObjectKeySegment(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export interface OSSConfig {
     Bucket: string;
     EndPoint: string; // e.g. "oss-cn-shanghai.aliyuncs.com" or "https://..."
@@ -88,7 +96,7 @@ class OSSUploadService {
             throw new Error("OSS Client initialization failed");
         }
 
-        const fileName = `${this.config.Dir}${crypto.randomUUID()}image.${extension}`;
+        const fileName = `${this.config.Dir}${randomObjectKeySegment()}image.${extension}`;
         
         try {
             const result = await this.client.put(fileName, blob);

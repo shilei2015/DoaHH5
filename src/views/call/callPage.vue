@@ -7,6 +7,8 @@ import { useUserStore } from '@/stores/userStore';
 import { getFlagEmoji } from '@/utils/tools';
 import rtc, { EndLiveEndState } from '@/utils/MOMORTC';
 import { showExitCallConfirmModal } from '@/utils/tools/modalService';
+import callingSound from '@/assets/audio/call.mp3';
+import { showCoinShop } from '@/utils/tools/shopService';
 
 const router = useRouter();
 const route = useRoute();
@@ -45,14 +47,39 @@ const isFreeCall = computed(() => {
 const currentCoins = ref(useUserStore().userInfo?.Coins)
 
 const totalTime = 30;
-const countdown = ref(totalTime);
+/** 响铃结束时刻（墙钟），避免系统权限弹窗等场景下 setInterval 被节流导致倒计时「停住」 */
+const countdownEndsAt = ref(Date.now() + totalTime * 1000);
+/** 每帧刷新，驱动倒计时、圆环与波纹；从系统弹窗返回后会立刻对齐真实剩余时间 */
+const timeNow = ref(Date.now());
+const countdown = computed(() =>
+    Math.max(0, Math.ceil((countdownEndsAt.value - timeNow.value) / 1000))
+);
 const circleProgress = computed(() => {
-    const percent = totalTime > 0 ? (countdown.value / totalTime) * 100 : 100;
+    const remainingSec = Math.max(0, (countdownEndsAt.value - timeNow.value) / 1000);
+    const percent = totalTime > 0 ? (remainingSec / totalTime) * 100 : 100;
     return `${percent}, 100`;
 });
-let timer: ReturnType<typeof setInterval> | null = null;
-import callingSound from '@/assets/audio/call.mp3';
-import { showCoinShop } from '@/utils/tools/shopService';
+
+/** 接听按钮波纹：用时间相位驱动，避免纯 CSS animation 在系统弹窗期间被暂停后不连续 */
+function rippleStyleFromPhase(phase01: number) {
+    const scale = 1 + 1.5 * phase01;
+    const opacity = 0.8 * (1 - phase01);
+    return {
+        transform: `scale(${scale})`,
+        opacity: String(opacity),
+    };
+}
+const ripple1Style = computed(() => {
+    const ms = timeNow.value % 2000;
+    return rippleStyleFromPhase(ms / 2000);
+});
+const ripple2Style = computed(() => {
+    const ms = (timeNow.value + 1000) % 2000;
+    return rippleStyleFromPhase(ms / 2000);
+});
+
+let rafId: number | null = null;
+let countdownEndFired = false;
 
 const isAnswering = ref(false);
 
@@ -70,29 +97,44 @@ const goBack = () => {
     }
 };
 
+function syncClockFromWallTime() {
+    timeNow.value = Date.now();
+}
+
+function onVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+        syncClockFromWallTime();
+    }
+}
+
+function tickCallPage() {
+    timeNow.value = Date.now();
+
+    const remainSec = Math.max(0, (countdownEndsAt.value - timeNow.value) / 1000);
+    if (remainSec <= 0 && !isAnswering.value && !countdownEndFired) {
+        countdownEndFired = true;
+        if (rtc.isCaller) {
+            rtc.endStreamSession("对方超时未接听，自动挂断", EndLiveEndState.notSelfHangUp);
+        } else {
+            rtc.handleRemoteHangup();
+        }
+        return;
+    }
+
+    rafId = requestAnimationFrame(tickCallPage);
+}
+
 onMounted(() => {
+    countdownEndsAt.value = Date.now() + totalTime * 1000;
+    countdownEndFired = false;
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pageshow', syncClockFromWallTime);
+
     // 自动播放铃声 (部分浏览器需要用户手势后才允许，但移动端呼叫通常会放宽或由 Webview 接管)
     ringtone.play().catch(err => console.warn("[Audio] Autoplay ringtone blocked:", err));
 
-    // Start countdown for the call request
-    timer = setInterval(() => {
-        if (countdown.value > 0) {
-            countdown.value--;
-        } else {
-            // 如果已经在接听过程中（处理 API / RTC），倒计时到 0 也不能触发超时挂断
-            if (isAnswering.value) return;
-
-            if (timer) clearInterval(timer);
-            // 倒计时结束
-            if (rtc.isCaller) {
-                // 主叫方：负责上报计费结束
-                rtc.endStreamSession("对方超时未接听，自动挂断", EndLiveEndState.notSelfHangUp);
-            } else {
-                // 接听方：仅本地静默清理并退出（防止重复上报）
-                rtc.handleRemoteHangup();
-            }
-        }
-    }, 1000);
+    rafId = requestAnimationFrame(tickCallPage);
 });
 
 const answerCall = () => {
@@ -103,7 +145,12 @@ const answerCall = () => {
 };
 
 onUnmounted(() => {
-    if (timer) clearInterval(timer);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('pageshow', syncClockFromWallTime);
+    if (rafId != null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
     ringtone.pause();
 });
 </script>
@@ -165,8 +212,8 @@ onUnmounted(() => {
             </div>
 
             <div class="answer-btn-container" @click="answerCall">
-                <div class="ripple"></div>
-                <div class="ripple delay-1"></div>
+                <div class="ripple" :style="ripple1Style"></div>
+                <div class="ripple" :style="ripple2Style"></div>
                 <img src="@/assets/call/callButton.png" alt="Answer" class="answer-img-btn" />
             </div>
         </div>
@@ -565,25 +612,8 @@ onUnmounted(() => {
     width: 62px;
     height: 62px;
     background: rgba(255, 82, 144, 0.5);
-    /* Pinkish matching the theme */
     border-radius: 50%;
     z-index: 1;
-    animation: ripple-effect 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-}
-
-.ripple.delay-1 {
-    animation-delay: 1s;
-}
-
-@keyframes ripple-effect {
-    0% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-
-    100% {
-        transform: scale(2.5);
-        opacity: 0;
-    }
+    will-change: transform, opacity;
 }
 </style>

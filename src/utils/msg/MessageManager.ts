@@ -17,6 +17,7 @@ import { getChatRecordManager } from './ChatRecordManager';
 import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import { ossUploadService } from '@/utils/net/OSSUploadService';
+import { useUserStore } from '@/stores/userStore';
 
 type MessageEventType =
     | 'willSave'
@@ -197,7 +198,9 @@ export function useMessageManager() {
         message.chatType = chatType;
 
         // --- 1. Handle Upload if needed ---
-        if (message.msgType === MessageType.Image && message.localBlob && !message.imageObj?.urlString) {
+        // 仅当尚无远端 URL 时才走 OSS（用 trim 避免空字符串被当成「已有 URL」的边界问题）
+        const hasRemoteImageUrl = Boolean(message.imageObj?.urlString?.trim());
+        if (message.msgType === MessageType.Image && message.localBlob && !hasRemoteImageUrl) {
             try {
                 const url = await ossUploadService.uploadImage(message.localBlob, message.localExtension || 'jpg');
                 if (message.imageObj) {
@@ -241,6 +244,13 @@ export function useMessageManager() {
             const res = await post(API.send_message, params);
             if (res && res.code == "0") {
                 await markSendSuccess(message);
+                const coins = res.data?.Coins;
+                if (coins !== undefined && coins !== null) {
+                    const userStore = useUserStore();
+                    if (userStore.userInfo) {
+                        userStore.userInfo.Coins = String(coins);
+                    }
+                }
             } else {
                 await markSendFailed(message, res?.code ? Number(res.code) : -1, res.data?.toast);
             }

@@ -1,6 +1,8 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+/** 尽早挂载 window.A0019，避免仅依赖路由分包时原生 evaluateJavaScript 早于桥接注册 */
+import '@/utils/native/A0019Bridge'
 import './assets/global.css'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'

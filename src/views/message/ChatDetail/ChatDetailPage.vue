@@ -97,7 +97,9 @@ const handleReceivedMessage = (message: LHMessage) => {
 
 const handleSendFaildMessage = (message: LHMessage, extra?: any) => {
   console.log(`[ChatDetailPage] sendFail event received for ${message.messageId}`, extra);
-  if (extra && extra.toast) {
+  // 图片上传失败 (-110) 气泡上已有失败态，不再弹 Toast，避免选图后立即被打断；其它错误仍提示
+  const code = extra?.code;
+  if (extra?.toast && code !== -110) {
     showToast(extra.toast);
   }
   const index = msgList.value.findIndex(m => m.messageId === message.messageId);

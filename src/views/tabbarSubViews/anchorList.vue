@@ -64,9 +64,9 @@ const getCateList = async () => {
         } else {
             HUD.showToast(response.data?.toast)
         }
-    } catch (error: any) {
-        HUD.showToast(error?.message || String(error) || "Network Error")
+    } catch (error: unknown) {
         console.error("getCateList error:", error)
+        HUD.showToast("Unable to load content. Please try again.")
     }
 }
 
@@ -83,9 +83,9 @@ const getAnchorListByNaviId = async (naviId: string) => {
         } else {
             HUD.showToast(response.data?.toast)
         }
-    } catch (error: any) {
-        HUD.showToast(error?.message || String(error) || "Network Error")
+    } catch (error: unknown) {
         console.error("getAnchorListByNaviId error:", error)
+        HUD.showToast("Unable to load content. Please try again.")
     }
 }
 

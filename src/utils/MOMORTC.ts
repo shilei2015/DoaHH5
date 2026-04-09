@@ -19,6 +19,7 @@ import { } from 'agora-rtc-sdk-ng';
 import { LHTimer } from './Timer';
 import { useUserStore } from '@/stores/userStore';
 import { showCoinShop } from './tools/shopService';
+import { ensureVideoCallMediaPermissions } from '@/utils/native/videoCallPermissions';
 
 const AGORA_APP_ID = NET_CONFIG.SWID;
 AgoraRTC.setLogLevel(2);
@@ -102,10 +103,10 @@ class RTCService {
                 // 主叫方：对方进房后进行首次扣费
                 this.firstCharge().then(res => {
                     if (res === ChargeResult.NeedCoins) {
-                        HUD.showToast("余额不足");
+                        HUD.showToast("Insufficient balance");
                         this.endStreamSession("扣费失败，金币不足", EndLiveEndState.notCoins);
                     } else if (res === ChargeResult.Faild) {
-                        HUD.showToast("扣费失败");
+                        HUD.showToast("Charge failed");
                         this.endStreamSession("首次扣费网络异常", EndLiveEndState.unkonw);
                     } else {
                         // 扣费成功，可进入音视频
@@ -162,7 +163,7 @@ class RTCService {
      */
     public async publish(): Promise<{ audio: IMicrophoneAudioTrack | null; video: ICameraVideoTrack | null }> {
         try {
-            const client = this._ensureClient();
+            // 先采集音视频再按需 ensureClient；避免在部分 WebView 上先建 Agora Client 导致 getUserMedia/本地预览异常
             console.log('[RTC] Starting to publish tracks...');
 
             // 检查是否在安全上下文中
@@ -303,6 +304,9 @@ class RTCService {
             if (res.code == "0") {
                 const callInfo = res.data;
                 if (callInfo) {
+                    if (!(await ensureVideoCallMediaPermissions())) {
+                        return;
+                    }
                     useCallStore().setCurrentCallInfo(callInfo);
                     this._currentCallInfo = callInfo;
                     if (this.isVideoMode) {
@@ -319,14 +323,15 @@ class RTCService {
                     router.push({ name: "callPage", query: { role: "caller" } });
                 }
             } else {
-                HUD.showToast(res.data?.toast || "Call failed");
+                console.warn("[RTC] startAnchorCall rejected", res.code, res.data);
+                HUD.showToast("Unable to start the call. Please try again.");
                 if (res.code == "10103") {
                     showCoinShop()
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("[RTC] startAnchorCall error:", error);
-            HUD.showToast("Networking error");
+            HUD.showToast("Unable to connect. Please try again.");
         }
     }
 
@@ -348,17 +353,22 @@ class RTCService {
                     break;
                 case ChargeResult.Faild:
                     HUD.hideLoading()
-                    HUD.showToast("扣费失败");
+                    HUD.showToast("Charge failed");
                     return;
                 case ChargeResult.NeedCoins:
                     HUD.hideLoading()
-                    HUD.showToast("余额不足，请充值");
+                    HUD.showToast("Insufficient balance. Please top up.");
                     return;
+            }
+
+            // 先收起全屏 Loading，避免与系统权限弹窗叠在一起、拦截触摸（ensureVideoCallMediaPermissions 内会 nextTick）
+            HUD.hideLoading();
+            if (!(await ensureVideoCallMediaPermissions())) {
+                return;
             }
 
             if (this.isVideoMode) {
                 // --- 视频马甲支线 ---
-                HUD.hideLoading()
                 this.remoteOnline = true;
                 this.timer.start();
                 router.replace({ name: 'videoPage' });
@@ -404,12 +414,15 @@ class RTCService {
         if (!this._currentCallInfo || !this.isCaller) return;
         const res = await this.firstCharge();
         if (res === ChargeResult.NeedCoins) {
-            HUD.showToast("余额不足");
+            HUD.showToast("Insufficient balance");
             this.endStreamSession("扣费失败，金币不足", EndLiveEndState.notCoins);
         } else if (res === ChargeResult.Faild) {
-            HUD.showToast("扣费失败");
+            HUD.showToast("Charge failed");
             this.endStreamSession("首次扣费网络异常", EndLiveEndState.unkonw);
         } else {
+            if (!(await ensureVideoCallMediaPermissions())) {
+                return;
+            }
             // 扣费成功，模拟进入画面
             this.remoteOnline = true;
             this.timer.start();
