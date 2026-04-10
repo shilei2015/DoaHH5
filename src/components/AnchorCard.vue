@@ -77,25 +77,32 @@ const clickCall = () => {
 .anchor-card {
     position: relative;
     width: 100%;
-    /* aspect-ratio: 184 / 310; */
+    min-width: 0;
     border-radius: 16px;
     overflow: hidden;
     background-color: white;
     display: flex;
     flex-direction: column;
+    align-self: start;
     /* 为非纯黑色背景加一点精细阴影提升立体感 */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+/* 用 padding 比例盒代替纯 aspect-ratio，避免部分 WebView 在 grid/flex 下高度塌成 0 */
 .avatar-wrapper {
     position: relative;
     width: 100%;
-    aspect-ratio: 184 / 248;
-    /* 同步设计图缩放比例限制 */
+    height: 0;
+    padding-bottom: calc(100% * 248 / 184);
     flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 16px 16px 0 0;
 }
 
 .anchor-avatar {
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;

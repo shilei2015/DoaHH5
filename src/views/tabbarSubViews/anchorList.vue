@@ -264,12 +264,19 @@ onMounted(() => {
     color: white;
 }
 
-/* 主播列表网格 */
+/* 主播列表网格：align-items 避免子项被拉伸成异常行高（部分 WebView 下与 aspect-ratio 组合会塌缩） */
 .anchor-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
     gap: 2px;
     padding: 0 2px;
+}
+
+/* 单列 flex 布局下让滚动区占满剩余高度，保证内部百分比高度可计算 */
+.anchor-list-page :deep(.scroll-list-container) {
+    flex: 1;
+    min-height: 0;
 }
 
 /* 底部防遮挡占位 */
