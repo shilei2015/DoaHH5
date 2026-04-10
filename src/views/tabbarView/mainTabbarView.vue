@@ -12,7 +12,7 @@ import type { mainTabbarConfig } from '@/components/tabbarModels/mainTabbarConfi
 import { mainTabbarConfigList } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import TabbarItemContainerView from '@/views/tabbarView/tabbarItemContainerView.vue';
 import LimitOfferPage from './LimitOfferPage.vue';
-
+import { triggerHaptic } from '@/utils/native/A0019Bridge';
 const router = useRouter()
 const route = useRoute()
 

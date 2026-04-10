@@ -71,6 +71,11 @@ try {
     if (cachedConfig.LocalCCode) NET_CONFIG.LocalCCode = cachedConfig.LocalCCode;
     if (cachedConfig.Language) NET_CONFIG.Language = cachedConfig.Language;
     if (cachedConfig.UIV) NET_CONFIG.UIV = cachedConfig.UIV;
+    if (cachedConfig.Bundle) {
+      (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ = String(
+        cachedConfig.Bundle
+      ).trim();
+    }
   }
 } catch (e) {
   console.warn("Failed to load cached config");
@@ -81,6 +86,12 @@ try {
 // ---------------------------
 try {
   const urlParams = new URLSearchParams(window.location.search);
+  const bundleFromQuery = urlParams.get('Bundle');
+  if (bundleFromQuery?.trim()) {
+    (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ =
+      bundleFromQuery.trim();
+  }
+
   let tokenStr = urlParams.get('t');
 
   if (tokenStr) {
@@ -93,6 +104,11 @@ try {
     if (decoded.LocalCCode) NET_CONFIG.LocalCCode = String(decoded.LocalCCode);
     if (decoded.Language) NET_CONFIG.Language = String(decoded.Language);
     if (decoded.UIV) NET_CONFIG.UIV = String(decoded.UIV);
+    if (decoded.Bundle) {
+      (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ = String(
+        decoded.Bundle
+      ).trim();
+    }
     console.log(decoded);
 
     if (decoded.UdId) {
@@ -108,7 +124,8 @@ try {
       APIHOST: NET_CONFIG.APIHOST,
       LocalCCode: NET_CONFIG.LocalCCode,
       Language: NET_CONFIG.Language,
-      UIV: NET_CONFIG.UIV
+      UIV: NET_CONFIG.UIV,
+      Bundle: (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ ?? '',
     }));
 
     // 打印出来供调试
@@ -120,14 +137,62 @@ try {
       APIHOST: NET_CONFIG.APIHOST,
       LocalCCode: NET_CONFIG.LocalCCode,
       Language: NET_CONFIG.Language,
-      UIV: NET_CONFIG.UIV
+      UIV: NET_CONFIG.UIV,
+      Bundle: (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__,
     });
 
     // 清理 URL 参数
     urlParams.delete('t');
+    urlParams.delete('Bundle');
+    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+  } else if (bundleFromQuery?.trim()) {
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.APP_CONFIG) || '{}');
+      localStorage.setItem(
+        STORAGE_KEYS.APP_CONFIG,
+        JSON.stringify({
+          ...existing,
+          Bundle: (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__,
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+    urlParams.delete('Bundle');
     const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '') + window.location.hash;
     window.history.replaceState({}, '', newUrl);
   }
 } catch (error) {
   console.error("Failed to parse config from URL:", error);
+}
+
+/**
+ * VConsole 异步挂载后补打一遍当前生效的启动配置（与 URL 解析结果一致，URL 已清理后仍可读内存态）
+ */
+export function logAppInitConfigForVConsole(): void {
+  try {
+    const bridge = (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__
+    let udid = ''
+    try {
+      udid = localStorage.getItem(STORAGE_KEYS.UDID) || ''
+    } catch {
+      /* ignore */
+    }
+
+    console.log('[App Init Replay] 当前生效配置（VConsole 挂载后补打）', {
+      AppId: NET_CONFIG.ID,
+      AppKey: NET_CONFIG.KEY,
+      AgoraAppId: NET_CONFIG.SWID,
+      UdId: udid,
+      APIHOST: NET_CONFIG.APIHOST,
+      LocalCCode: NET_CONFIG.LocalCCode,
+      Language: NET_CONFIG.Language,
+      UIV: NET_CONFIG.UIV,
+      Bundle: bridge ?? '',
+      HOSTROOT: NET_CONFIG.HOSTROOT,
+    })
+  } catch (e) {
+    console.warn('[App Init Replay] 打印失败', e)
+  }
 }

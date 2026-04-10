@@ -98,9 +98,9 @@ const getLimitOfferInfo = async () => {
 }
 
 const payLimitOff = () => {
-    const productId = limitOffInfo.value?.Product?.ProductId
-    if (productId) {
-        paymentService.startPayment(productId, () => {
+    const product = limitOffInfo.value?.Product
+    if (product) {
+        paymentService.startPayment(product, () => {
             getLimitOfferInfo()
         })
     }

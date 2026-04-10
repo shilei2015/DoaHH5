@@ -25,8 +25,10 @@ const currentFeaturedProduct = ref<ProductModel | null>(null)
 /**
  * Handle direct purchase using the global payment service
  */
-const onPurchase = async (productId: string) => {
-  await paymentService.startPayment(productId);
+const onPurchase = async (product: ProductModel) => {
+  if (product) {
+    await paymentService.startPayment(product);  
+  }
 };
 
 const getCoinProducts = async () => {
@@ -68,14 +70,14 @@ onMounted(async () => {
     <!-- Scrollable Content -->
     <div class="shop-content">
       <!-- Featured Banner -->
-      <div v-if="currentFeaturedProduct" class="featured-banner" @click="onPurchase(currentFeaturedProduct.ProductId)">
+      <div v-if="currentFeaturedProduct" class="featured-banner" @click="onPurchase(currentFeaturedProduct)">
         <img :src="currentFeaturedProduct.ProductCover" alt="">
       </div>
 
       <!-- Products Grid -->
       <div class="products-grid">
         <div v-for="product in products" :key="product.ProductId" class="product-card"
-          @click="onPurchase(product.ProductId)">
+          @click="onPurchase(product)">
           <div class="card-image-wrap">
             <img :src="product.ProductCover" alt="" class="card-image" />
           </div>

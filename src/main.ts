@@ -1,7 +1,14 @@
+/** 先于桥接解析 URL（含 Bundle 桥标识），再挂载 A0019Bridge */
+import '@/utils/net/config'
+
+import { initOptionalVConsole } from '@/utils/debugConsole'
+
+initOptionalVConsole()
+
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-/** 尽早挂载 window.A0019，避免仅依赖路由分包时原生 evaluateJavaScript 早于桥接注册 */
+/** 尽早挂载 window[桥名]，见 nativeBridgeConfig / URL Bundle / VITE_* */
 import '@/utils/native/A0019Bridge'
 import './assets/global.css'
 import { createPinia } from 'pinia'

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { post } from '@/utils/net/request'
 import { API } from '@/utils/net/api'
 import type { UserInfoModel } from '@/components/appModels/UserInfoModel'
+import { syncMessageUnreadToNative } from '@/utils/native/A0019Bridge'
 
 export const useUserStore = defineStore('useUserStore', () => {
     const token = ref("")
@@ -93,6 +94,7 @@ export const useUserStore = defineStore('useUserStore', () => {
         userInfo.value = null
         rtmToken.value = ""
         isBootstrapDone.value = false;
+        syncMessageUnreadToNative(0)
     }
     return { token, rtmToken, userInfo, isBootstrapDone, updateLoginUserInfo, getUserInfoById, updateRTMToken, initSystemInfo, bootstrapApp, logout }
 },

@@ -4,6 +4,11 @@
  * 允许与原先的 iapBridge 并存
  */
 
+import { paymentService } from "../tools/paymentService"
+import { getNativeBridgeName } from "./nativeBridgeConfig"
+
+export { getNativeBridgeName }
+
 // ===================== 类型定义 =====================
 
 /** App->Web 调试：弹窗展示字符串（与业务 type 0–11 区分） */
@@ -20,7 +25,9 @@ export interface BridgeMessage<T = any> {
 export interface A0019PaymentResult {
   code: number // 0=成功；非0=失败错误码
   transactionId: string // Apple 交易 ID（成功时有值）
-  uuid: string // 业务识别码
+  uuid: string // 业务识别码（与 Web 发起时的 uuid 对应）
+  /** 若 App 回传业务订单号，优先使用；否则用 Web 侧按 uuid 缓存的 orderNum */
+  orderNum?: string
 }
 
 /** 定位结果回调数据结构 */
@@ -66,18 +73,33 @@ type Resolver<T> = {
   reject: (reason?: any) => void
 }
 
-// 缓存等待回调的 Promise
-const paymentResolvers = new Map<string, Resolver<A0019PaymentResult>>()
+/** Web 发起 type2 时缓存 uuid -> 业务订单号，供回调与验单接口对齐 */
+const pendingA0019OrderByUuid = new Map<string, string>()
 let locationResolver: Resolver<A0019LocationResult> | null = null
 const permissionResolvers = new Map<number, Resolver<A0019PermissionResult>>()
 
 // ===================== 核心通信机制 =====================
 
+function getNativeMessageHandler(): { postMessage(message: unknown): void } | undefined {
+  try {
+    const name = getNativeBridgeName()
+    const handlers = (window as unknown as { webkit?: { messageHandlers?: Record<string, { postMessage?: unknown }> } })
+      .webkit?.messageHandlers
+    const handler = handlers?.[name]
+    if (handler && typeof handler.postMessage === 'function') {
+      return handler as { postMessage(message: unknown): void }
+    }
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
 /**
- * 判断是否在原生 A0019 环境中
+ * 判断当前 WebView 是否已注入桥（messageHandlers 名由 {@link getNativeBridgeName} 决定）
  */
 export function isA0019Native(): boolean {
-  return !!(window as any).webkit?.messageHandlers?.A0019
+  return getNativeMessageHandler() !== undefined
 }
 
 /**
@@ -87,11 +109,14 @@ export function isA0019Native(): boolean {
  */
 function sendToApp<T = any>(type: number, data?: T): void {
   const message: BridgeMessage<T> = { type, data }
-  if (isA0019Native()) {
-    ;(window as any).webkit.messageHandlers.A0019.postMessage(message)
-    console.log(`[A0019 Bridge] -> 发送 type: ${type}`, data)
+  const name = getNativeBridgeName()
+  // 必须在 handler 上调用 postMessage，不能拆成裸函数（否则 Safari 报 UserMessageHandler 绑定错误）
+  const handler = getNativeMessageHandler()
+  if (handler) {
+    handler.postMessage(message)
+    console.log(`[NativeBridge ${name}] -> 发送 type: ${type}`, data)
   } else {
-    console.warn(`[A0019 Bridge] 未处于原生环境，被忽略的调用 type: ${type}`, data)
+    console.warn(`[NativeBridge ${name}] 未注入 messageHandlers.${name}，已忽略 type: ${type}`, data)
   }
 }
 
@@ -103,31 +128,50 @@ function generateUUID(): string {
 }
 
 /**
- * 全局挂载：接收 App 回传消息
+ * 全局挂载：接收 App 回传消息（属性名与 {@link getNativeBridgeName} 一致）
  */
-;(window as any).A0019 = function (jsonString: string) {
+;(function mountNativeBridgeCallback() {
+  const name = getNativeBridgeName()
+  ;(window as unknown as Record<string, unknown>)[name] = function (jsonString: string) {
   try {
     const msg: BridgeMessage = JSON.parse(jsonString)
-    console.log(`[A0019 Bridge] <- 收到 App 回调 type: ${msg.type}`, msg.data)
+    console.log(`[NativeBridge ${name}] <- 收到 App 回调 type: ${msg.type}`, msg.data)
 
     switch (msg.type) {
       case 2: // 支付回调
         {
           const data = msg.data as A0019PaymentResult
-          if (data && data.uuid && paymentResolvers.has(data.uuid)) {
-            const resolver = paymentResolvers.get(data.uuid)!
-            if (data.code === 0) {
-              resolver.resolve(data)
-            } else {
-              // code 非 0 认为是失败（取消或出现未知错误）
-              console.warn('[A0019 Bridge] payment failed', { code: data.code, uuid: data.uuid })
-              resolver.reject(new Error('Payment could not be completed. Please try again.'))
-            }
-            paymentResolvers.delete(data.uuid)
+          if (!data?.uuid) {
+            console.warn(`[NativeBridge ${name}] payment callback missing uuid`, data)
+            paymentService.handleA0019NativePurchaseFailed()
+            break
           }
-        }
-        break
+          const orderFromNative =
+            data.orderNum?.trim() ||
+            (data as { OrderId?: string }).OrderId?.trim() ||
+            (data as { orderId?: string }).orderId?.trim()
+          const cachedOrder = pendingA0019OrderByUuid.get(data.uuid)
+          pendingA0019OrderByUuid.delete(data.uuid)
+          const orderId = orderFromNative || cachedOrder || ''
 
+          if (data.code !== 0) {
+            console.warn(`[NativeBridge ${name}] payment failed`, { code: data.code, uuid: data.uuid })
+            paymentService.handleA0019NativePurchaseFailed()
+            break
+          }
+          const transactionId = String(data.transactionId ?? '').trim()
+          if (!orderId || !transactionId) {
+            console.warn(`[NativeBridge ${name}] payment success but missing orderId or transactionId`, {
+              orderId,
+              transactionId,
+              uuid: data.uuid,
+            })
+            paymentService.handleA0019NativePurchaseFailed()
+            break
+          }
+          paymentService.runNativeA0019Purchase(orderId, transactionId)
+          break
+        }
       case 6: // 定位回调
         {
           const data = msg.data as A0019LocationResult
@@ -164,15 +208,16 @@ function generateUUID(): string {
         }
         const line = text || '(empty)'
         if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-          window.alert(`A0019 Debug\n\n${line}`)
+          window.alert(`Native Bridge ${name}\n\n${line}`)
         }
         break
       }
     }
   } catch (e) {
-    console.error('[A0019 Bridge] 解析 App 回调消息出错:', e, '原字符串:', jsonString)
+    console.error(`[NativeBridge ${name}] 解析 App 回调消息出错:`, e, '原字符串:', jsonString)
   }
-}
+  }
+})()
 
 // ===================== 业务能力导出 =====================
 
@@ -196,19 +241,14 @@ export function openNewWebView(url?: string, showNav: 1 | 0 = 1): void {
  * type 2 - 发起内购支付 (A0019版)
  * @param code 苹果内购商品 ID Identifier
  * @param orderNum 业务自有订单号
- * @returns Promise 返回包含 transactionId 等成功参数
  */
-export function requestA0019Purchase(code: string, orderNum?: string): Promise<A0019PaymentResult> {
-  return new Promise((resolve, reject) => {
-    if (!isA0019Native()) {
-      return reject(new Error('Payment is unavailable.'))
-    }
-    const uuid = generateUUID()
-    paymentResolvers.set(uuid, { resolve, reject })
-    sendToApp(2, { code, orderNum, uuid })
-  })
+export function requestA0019Purchase(code: string, orderNum?: string) {
+  const uuid = generateUUID()
+  if (orderNum?.trim()) {
+    pendingA0019OrderByUuid.set(uuid, orderNum.trim())
+  }
+  sendToApp(2, { code:code, orderNum:orderNum, uuid:uuid })
 }
-
 /**
  * type 3 - 登出
  */
@@ -222,6 +262,16 @@ export function logoutApp(): void {
  */
 export function setBadge(num: number): void {
   sendToApp(4, num) // 注意规范中 type4 数据直接传数字
+}
+
+/**
+ * 将 H5 侧消息未读总数同步到原生（桌面/图标角标，与 {@link setBadge} 相同为 type 4）
+ * 仅在已注入 WebView 桥时发送，浏览器调试环境静默跳过。
+ */
+export function syncMessageUnreadToNative(totalUnread: number): void {
+  if (!isA0019Native()) return
+  const n = Math.max(0, Math.floor(Number(totalUnread)) || 0)
+  setBadge(n)
 }
 
 /**
@@ -242,7 +292,7 @@ export function getLocation(): Promise<A0019LocationResult> {
       return reject(new Error('This feature is unavailable.'))
     }
     if (locationResolver) {
-      console.warn('[A0019 Bridge] getLocation called while a request is already in progress')
+      console.warn(`[NativeBridge ${getNativeBridgeName()}] getLocation called while a request is already in progress`)
       return reject(new Error('Please wait and try again.'))
     }
     locationResolver = { resolve, reject }

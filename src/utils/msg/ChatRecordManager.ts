@@ -2,6 +2,7 @@ import { ref, type Ref } from 'vue';
 import type { LHMsgChat } from './ChatModel';
 import type { ChatTaskRecord } from './ChatModel';
 import * as DB from './DBService';
+import { syncMessageUnreadToNative } from '@/utils/native/A0019Bridge';
 
 type ChatRecordChangeCallback = (list: LHMsgChat[]) => void;
 type ChatRecordDeleteCallback = (record: LHMsgChat) => void;
@@ -50,6 +51,7 @@ export function useChatRecordManager() {
 
         const unread = await DB.getUnreadCount();
         totalUnread.value = unread;
+        syncMessageUnreadToNative(unread);
 
         onChangeCallbacks.forEach((cb) => cb(records));
         onUnreadCallbacks.forEach((cb) => cb(unread));

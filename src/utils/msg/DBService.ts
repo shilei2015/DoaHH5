@@ -198,16 +198,16 @@ export async function deleteChatRecord(chatId: string, deleteMessages = true): P
 
 export async function getUnreadCount(sessionId?: string): Promise<number> {
     const database = getDB();
+    /** 与 RTM 入站 message.isRead = false 及历史数据兼容（boolean / 0） */
+    const isUnread = (msg: LHMessage) => !msg.isRead;
+
     if (sessionId) {
         return await database.msgTable
             .where('sessionID').equals(sessionId)
-            .and((msg) => msg.isRead === false)
-            .count();
-    } else {
-        return await database.msgTable
-            .where('isRead').equals(0) // IndexedDB stores boolean as 0/1
+            .filter(isUnread)
             .count();
     }
+    return await database.msgTable.filter(isUnread).count();
 }
 
 export async function clearUnread(sessionId: string): Promise<boolean> {
@@ -235,7 +235,7 @@ export async function clearAllUnread(): Promise<boolean> {
         const database = getDB();
         await database.transaction('rw', [database.msgTable, database.recordTable], async () => {
             await database.msgTable
-                .where('isRead').equals(0)
+                .filter((msg) => !msg.isRead)
                 .modify({ isRead: true });
 
             await database.recordTable.toCollection().modify({ unreadCount: 0 });

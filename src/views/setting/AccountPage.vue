@@ -11,6 +11,7 @@ import {
 import backIcon from '@/assets/comm/comm-back.png';
 
 import { useUserStore } from '@/stores/userStore';
+import { logoutApp } from '@/utils/native/A0019Bridge';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -30,6 +31,7 @@ const handleLogout = () => {
     userStore.logout();
     showToast('Logged out successfully');
     router.push('/login');
+    logoutApp()
   }).catch(() => {
     // Cancelled
   });

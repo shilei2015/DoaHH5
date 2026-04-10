@@ -7,13 +7,14 @@ import PaymentOverlay, { type PMItem } from '@/components/common/PaymentOverlay.
 import { isA0019Native, requestA0019Purchase } from '@/utils/native/A0019Bridge';
 import type { ProductModel } from '@/components/appModels/ProductModel';
 
-/** v2 验单接口就绪后改为 true，并核对 api.ts 中 pay_apple_verify 路由与请求体字段 */
-const ENABLE_APPLE_IAP_VERIFY_V2 = false;
+/** 服务端苹果验单（需 OrderId + TranscationId，与 api.ts 中 pay_apple_verify 一致） */
+const ENABLE_APPLE_IAP_VERIFY_V2 = true;
 
 /**
  * Global Payment Service (paymentService.ts)
  * 命令式支付服务。封装了从请求 API 到弹出支付列表、再到 Webview 支付的全过程。
- * 三方渠道 ≥1 时走 H5；无任何三方渠道时在 A0019 容器内走原生内购并验单。
+ * 无三方渠道时在 A0019 内走原生内购；另：列表仅一项且 PM 为 origin 时也走原生。
+ * 其余「有渠道且非上述 origin 单条」时走 H5 选渠道支付。
  */
 
 let container: HTMLElement | null = null;
@@ -64,14 +65,16 @@ export const paymentService = {
    * @param productId
    * @param onFinished 支付流程结束（关闭弹窗或原生流程结束）后的回调
    */
-  async startPayment(productId: string, onFinished?: () => void) {
+  async startPayment(product: ProductModel, onFinished?: () => void) {
     onFinishedCallback = onFinished || null;
+    const productId = product.ProductId;
     HUD.showLoading();
     try {
-      const res = await post(API.pay, { ProductId: productId });
-      HUD.hideLoading();
+      const res = await post(API.pay, { ProductId: product.ProductId });
+      
 
       if (res.code !== '0' || !res.data) {
+        HUD.hideLoading();
         console.warn('[Payment] unifiedOrder rejected', res.code, res.data);
         HUD.showToast('Unable to start payment. Please try again.');
         this.clearCallback();
@@ -80,37 +83,46 @@ export const paymentService = {
 
       const data = res.data as Record<string, any>;
       const mList: PMItem[] = Array.isArray(data.PM?.MList) ? data.PM.MList : [];
-      const thirdPartyCount = mList.length;
+      const shouldUseNativeIap = mList.length === 1 && String(mList[0]?.PM ?? '').trim() === 'origin';
+      if (shouldUseNativeIap) {
+        if (!isA0019Native()) {
+          HUD.hideLoading();
+          console.warn('[Payment] origin IAP requires A0019 WebView');
+          HUD.showToast('No payment methods available.');
+          this.clearCallback();
+          return;
+        }
 
-      if (thirdPartyCount >= 1) {
+        const orderId = extractOrderIdFromUnified(data);
+        if (!orderId) {
+          HUD.hideLoading();
+          console.warn('[Payment] unifiedOrder missing order id', data);
+          HUD.showToast('Something went wrong. Please try again.');
+          this.clearCallback();
+          return;
+        }
+
+        const appleSkuId = product.AppleSkuId
+        if (!appleSkuId) {
+          HUD.hideLoading();
+          console.warn('[Payment] could not resolve Apple SKU', { productId });
+          HUD.showToast('Something went wrong. Please try again.');
+          this.clearCallback();
+          return;
+        }
+
+        requestA0019Purchase(appleSkuId, orderId);
+        return;
+      }
+
+      if (mList.length >= 1) {
         this.openOverlay(mList, productId);
         return;
       }
 
-      if (!isA0019Native()) {
-        console.warn('[Payment] no third-party methods and not in app WebView');
-        HUD.showToast('No payment methods available.');
-        this.clearCallback();
-        return;
-      }
-
-      const orderId = extractOrderIdFromUnified(data);
-      if (!orderId) {
-        console.warn('[Payment] unifiedOrder missing order id', data);
-        HUD.showToast('Something went wrong. Please try again.');
-        this.clearCallback();
-        return;
-      }
-
-      const appleSkuId = await resolveAppleSkuId(productId, data);
-      if (!appleSkuId) {
-        console.warn('[Payment] could not resolve Apple SKU', { productId });
-        HUD.showToast('Something went wrong. Please try again.');
-        this.clearCallback();
-        return;
-      }
-
-      await this.runNativeA0019Purchase(orderId, appleSkuId);
+      console.warn('[Payment] empty payment method list');
+      HUD.showToast('No payment methods available.');
+      this.clearCallback();
     } catch (error) {
       HUD.hideLoading();
       console.error('[Payment] startPayment', error);
@@ -120,17 +132,23 @@ export const paymentService = {
   },
 
   /**
-   * A0019 原生内购；v2 验单就绪后通过 ENABLE_APPLE_IAP_VERIFY_V2 打开服务端验单
+   * A0019 原生支付失败或参数不全时由 Bridge 调用，清理 onFinished 等状态
    */
-  async runNativeA0019Purchase(orderId: string, appleSkuId: string) {
+  handleA0019NativePurchaseFailed(message = 'Payment could not be completed. Please try again.') {
+    HUD.showToast(message);
+    this.clearCallback();
+  },
+
+  /**
+   * A0019 原生内购成功回调：服务端验单需 orderId + transactionId（Apple）
+   */
+  async runNativeA0019Purchase(orderId: string, transactionId: string) {
     HUD.showLoading();
     try {
-      const payResult = await requestA0019Purchase(appleSkuId, orderId);
-
       if (ENABLE_APPLE_IAP_VERIFY_V2) {
         const verifyRes = await post(API.pay_apple_verify, {
           OrderId: orderId,
-          TranscationId: payResult.transactionId
+          TranscationId: transactionId
         });
         HUD.hideLoading();
 
