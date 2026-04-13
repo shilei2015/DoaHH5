@@ -8,7 +8,6 @@ import { NET_CONFIG, STORAGE_KEYS } from './config'
 import { getApiUrl } from './api'
 import { encryptAES, decryptAES, getUdid, createSiginString } from './encryption'
 import { useUserStore } from '@/stores/userStore'
-import router from '@/router'
 import loginedMissions from '../loginedMissions'
 
 // 用于取消所有请求的控制器集合
@@ -87,7 +86,7 @@ service.interceptors.request.use(
     try {
       if (config.headers) {
         config.headers.set('DeviceLanguage', systemLanguage)
-        config.headers.set('Language', systemLanguage)
+        config.headers.set('Language', NET_CONFIG.Language)
         config.headers.set('Nonce', nonce)
         config.headers.set('Version', NET_CONFIG.VERSION)
         config.headers.set('Udid', udid)
@@ -192,8 +191,8 @@ service.interceptors.response.use(
         userStore.logout()
         loginedMissions.stop()
 
-        // 3. 跳转登录页
-        router.push('/login')
+        // 3. 关闭 Web 容器，不跳转 H5 路由（避免循环依赖，动态导入桥接）
+        void import('@/utils/native/A0019Bridge').then(({ closeWebView }) => closeWebView())
 
         // 返回一个永远 pending 的 promise，防止后续业务处理继续执行
         return new Promise(() => { })

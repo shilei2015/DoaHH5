@@ -13,6 +13,7 @@ import { generateSessionId, MessageType } from '@/utils/msg/MessageModel';
 import { showCoinShop } from '@/utils/tools/shopService';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
 import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
+import { useKeyboardInset } from '@/composables/useKeyboardInset';
 
 interface ChatMessage {
     id: string;
@@ -23,8 +24,16 @@ interface ChatMessage {
 // 通话开始时间
 const startTime = Date.now();
 
-// 锁定页面高度，防止键盘弹出修改视口
+// 锁定页面高度，避免视频层随布局抖动；输入区上移通过 keyboard inset 单独处理
 const pageHeight = ref(`${window.innerHeight}px`);
+
+const { insetPx } = useKeyboardInset();
+const chatAreaStyle = computed(() => ({
+    bottom: `${98 + insetPx.value}px`,
+}));
+const bottomBarStyle = computed(() => ({
+    bottom: `calc(${34 + insetPx.value}px + env(safe-area-inset-bottom, 0px))`,
+}));
 
 // 监听远端视频轨道变化 (rtc.remoteVideoTrack 是响应式的)
 watch(() => rtc.remoteVideoTrack.value, async (track) => {
@@ -180,24 +189,6 @@ const onSendText = async () => {
     }
 };
 
-const preventScroll = () => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-};
-
-const onInputFocus = () => {
-    window.addEventListener('scroll', preventScroll, { passive: false });
-    setTimeout(preventScroll, 50);
-    setTimeout(preventScroll, 100);
-    setTimeout(preventScroll, 300);
-};
-
-const onInputBlur = () => {
-    window.removeEventListener('scroll', preventScroll);
-    setTimeout(preventScroll, 50);
-};
-
 const onSendGift = async (gift: ChatGiftModel) => {
     if (!anchor.value?.UserId) return;
     const fromUid = userInfo.value?.UserId || '';
@@ -346,7 +337,7 @@ onUnmounted(async () => {
             </div>
 
             <!-- Chat Area -->
-            <div class="chat-area">
+            <div class="chat-area" :style="chatAreaStyle">
                 <div class="messages-list">
                     <div v-for="msg in messages" :key="msg.id"
                         :class="['message-bubble', msg.isMe ? 'message-me' : 'message-remote']">
@@ -356,17 +347,17 @@ onUnmounted(async () => {
             </div>
 
             <!-- Connected Bottom Bar -->
-            <div class="connected-bottom-bar">
+            <div class="connected-bottom-bar" :style="bottomBarStyle">
                 <button class="toggleCamare-button" @click="toggleCamera">
                     <img class="switch-camare" src="@/assets/call/videoSwitchCamare.png" alt="">
                 </button>
                 <div class="message-input-wrapper">
                     <input type="text" placeholder="Message..." class="message-input" v-model="inputText"
-                        @keyup.enter="onSendText" @focus="onInputFocus" @blur="onInputBlur" />
+                        @keyup.enter="onSendText" />
                 </div>
                 <button class="circle-btn action-btn" @click="openGiftPicker"
                     style="background-color: rgba(255, 255, 255, 0.25)">
-                    <img src=" @/assets/call/video-gift.png" style="width: 24px; height: 24px;" alt="">
+                    <img src="@/assets/call/video-gift.png" style="width: 24px; height: 24px;" alt="">
                 </button>
                 <div class="coin-badge connected-coin" @click="showCoinShop">
                     <img src="@/assets/profile/diamond_icon.svg" alt="Diamond" class="diamond-icon" />
@@ -567,7 +558,6 @@ onUnmounted(async () => {
 /* Chat Area */
 .chat-area {
     position: absolute;
-    bottom: 98px;
     left: 20px;
     width: 280px;
     max-height: 250px;
@@ -609,7 +599,6 @@ onUnmounted(async () => {
 /* Connected Bottom Bar */
 .connected-bottom-bar {
     position: absolute;
-    bottom: 34px;
     left: 20px;
     right: 20px;
     display: flex;

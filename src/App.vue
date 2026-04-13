@@ -17,17 +17,17 @@ const onNotificationClose = () => {
 onMounted(() => {
 })
 
-// --- 右滑返回逻辑 ---
+// --- 侧滑返回（从左缘向右滑）：用捕获阶段优先于内部 scroll，避免聊天页等全宽列表吞掉手势 ---
+const EDGE_PX = 40;
 const startX = ref(0);
 const startY = ref(0);
 
 const handleTouchStart = (e: TouchEvent) => {
-    // 只有在非主页（depth > 20）且从屏幕左侧边缘（30px内）触发时才生效
     const depth = Number(route.meta.depth || 0);
     const touch = e.touches[0];
-    if (touch && depth > 20 && touch.pageX < 30) {
-        startX.value = touch.pageX;
-        startY.value = touch.pageY;
+    if (touch && depth > 20 && touch.clientX < EDGE_PX) {
+        startX.value = touch.clientX;
+        startY.value = touch.clientY;
     } else {
         startX.value = 0;
     }
@@ -39,10 +39,9 @@ const handleTouchEnd = (e: TouchEvent) => {
     const touch = e.changedTouches[0];
     if (!touch) return;
 
-    const deltaX = touch.pageX - startX.value;
-    const deltaY = Math.abs(touch.pageY - startY.value);
+    const deltaX = touch.clientX - startX.value;
+    const deltaY = Math.abs(touch.clientY - startY.value);
 
-    // 判定条件：横向滑动距离 > 80 且 比较水平（纵向偏移小）
     if (deltaX > 80 && deltaY < 60) {
         router.back();
     }
@@ -69,7 +68,7 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 </script>
 
 <template>
-    <div class="app-container" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+    <div class="app-container" @touchstart.capture="handleTouchStart" @touchend.capture="handleTouchEnd">
         <!-- Global Message Flash Banner -->
         <FlashNotification v-if="ns.visible && ns.data" :data="ns.data" @close="onNotificationClose" />
 
@@ -96,18 +95,25 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
     position: relative;
 }
 
-/* 全局基础页面容器样式，确保动画不位移 */
+/* 全局基础页面容器：白底 + 顶/底与安全区渐变，与原生壳 #141414 衔接 */
 .page-view {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    /* 使用 cubic-bezier 模拟 iOS 弹跳感 */
     transition: transform 0.4s cubic-bezier(0.3, 0.8, 0.3, 1), opacity 0.4s ease;
-    background-color: #fff;
     overflow: hidden;
     z-index: 1;
+    background-color: #fff;
+    background-image:
+        linear-gradient(180deg, #141414 0%, rgba(255, 255, 255, 0) 100%),
+        linear-gradient(0deg, #141414 0%, rgba(255, 255, 255, 0) 100%);
+    background-size:
+        100% calc(env(safe-area-inset-top, 0px) + 44px),
+        100% calc(env(safe-area-inset-bottom, 0px) + 28px);
+    background-position: top, bottom;
+    background-repeat: no-repeat;
 }
 
 /* --- Push (前进) 动画 --- */
@@ -152,14 +158,17 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
     transform: translateX(100%);
 }
 
-/* 确保动画过程中不出现滚动条干扰 */
+html {
+    background-color: #141414;
+}
+
+/* 与套壳同色，橡皮筋露底时不出现白边 */
 body {
     overflow: hidden;
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
-    background-color: white;
-    /* 终极兜底背景 */
+    background-color: #141414;
 }
 </style>

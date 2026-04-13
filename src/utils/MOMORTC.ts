@@ -324,7 +324,7 @@ class RTCService {
                 }
             } else {
                 console.warn("[RTC] startAnchorCall rejected", res.code, res.data);
-                HUD.showToast("Unable to start the call. Please try again.");
+                HUD.showToast(res.data.Toast);
                 if (res.code == "10103") {
                     showCoinShop()
                 }

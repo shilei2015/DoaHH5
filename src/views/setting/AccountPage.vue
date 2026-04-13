@@ -11,7 +11,7 @@ import {
 import backIcon from '@/assets/comm/comm-back.png';
 
 import { useUserStore } from '@/stores/userStore';
-import { logoutApp } from '@/utils/native/A0019Bridge';
+import { closeWebView, logoutApp } from '@/utils/native/A0019Bridge';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -27,11 +27,10 @@ const handleLogout = () => {
     cancelButtonText: 'Cancel',
     confirmButtonColor: '#000000',
   }).then(() => {
-    // 调用统一的登出方法，它会处理 RTM 登出和任务停止
     userStore.logout();
     showToast('Logged out successfully');
-    router.push('/login');
-    logoutApp()
+    logoutApp();
+    closeWebView();
   }).catch(() => {
     // Cancelled
   });

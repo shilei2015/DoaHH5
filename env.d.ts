@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** 设为 `false` 时关闭 VConsole；不设或其它值则默认开启 */
+  /** 生产：仅 `true` 时注入 VConsole；开发：未设 `false` 时默认开启 */
   readonly VITE_DEBUG_CONSOLE?: string
   /** 原生 WebView 桥标识（iOS messageHandlers 名、window 回调名），默认 A0019 */
   readonly VITE_NATIVE_BRIDGE_NAME?: string

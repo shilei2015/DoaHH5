@@ -16,7 +16,8 @@ import ChatGifMessageView from './messageCells/ChatGifMessageView.vue';
 import ChatBottomMissionView, { type MissionData } from './messageOtherViews/ChatBottomMissionView.vue';
 import videoGift from '@/assets/call/video-gift.png';
 import { MissionType } from '@/utils/Enums/Enums';
-import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
+import { useKeyboardInset } from '@/composables/useKeyboardInset';
 import { useRoute, useRouter } from 'vue-router';
 import { showImagePreview, showToast } from 'vant';
 import MOMORTC from '@/utils/MOMORTC';
@@ -35,6 +36,11 @@ const userStore = useUserStore();
 const rtmService = useMomoRTM();
 const messageManager = getMessageManager();
 const chatManager = getChatRecordManager();
+
+const { insetPx } = useKeyboardInset();
+const detailPageStyle = computed(() => ({
+  paddingBottom: `${insetPx.value}px`,
+}));
 
 const giftList = ref<ChatGiftModel[]>([]);
 const userCoins = computed(() => userStore.userInfo?.Coins ?? 0);
@@ -86,6 +92,10 @@ const scrollToBottom = () => {
     }
   });
 }
+
+watch(insetPx, () => {
+  scrollToBottom();
+});
 
 const handleReceivedMessage = (message: LHMessage) => {
   // 忽略通话互动的消息 (ChatType="2")，不显示在聊天详情页
@@ -332,13 +342,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="detailPage">
+  <div class="detailPage" :style="detailPageStyle">
     <header class="detailHeader">
       <div class="naviContent">
-        <img class="backButton" :src="back" alt="" @click="goBack">
+        <div class="naviLeft">
+          <img class="backButton" :src="back" alt="" @click="goBack">
+        </div>
         <div class="naviTitle">{{ partnerName }}</div>
-        <img v-if="!isSystemNoti" class="naviReport" :src="msgReport" @click="handlerActionModel">
-        <div v-else></div>
+        <div class="naviRight">
+          <img v-if="!isSystemNoti" class="naviReport" :src="msgReport" @click="handlerActionModel">
+        </div>
       </div>
     </header>
     <div class="detailContent">
@@ -437,28 +450,51 @@ onUnmounted(() => {
 .naviContent {
   position: relative;
   top: env(safe-area-inset-top);
-  left: 0px;
-  right: 0px;
-  bottom: 0px;
+  left: 0;
+  right: 0;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.naviLeft,
+.naviRight {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   align-items: center;
 }
 
+.naviLeft {
+  justify-content: flex-start;
+  padding-left: 16px;
+}
+
+.naviRight {
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+
 .backButton {
-  position: relative;
   width: 28px;
   height: 28px;
-  margin-left: 16px;
+  display: block;
 }
 
 .naviReport {
   width: 28px;
   height: 28px;
-  margin-right: 16px;
+  display: block;
 }
 
 .naviTitle {
+  flex: 0 1 auto;
+  max-width: min(56%, 240px);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-size: 16px;
   font-weight: 700;
@@ -470,6 +506,10 @@ onUnmounted(() => {
   background-color: #F2F1F4;
   border-radius: 24px 24px 0px 0px;
   overflow-y: auto;
+  overflow-x: hidden;
+  /* 仅纵向交给列表滚动，减轻与 App 侧缘返回手势的冲突（iOS / WebView） */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   /* Enable inner scrolling for messages */
   padding-bottom: 12px;
   padding-top: 20px;

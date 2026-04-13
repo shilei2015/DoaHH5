@@ -4,6 +4,7 @@ import { post } from '@/utils/net/request'
 import { API } from '@/utils/net/api'
 import type { UserInfoModel } from '@/components/appModels/UserInfoModel'
 import { syncMessageUnreadToNative } from '@/utils/native/A0019Bridge'
+import { getUdid } from '@/utils/net/encryption'
 
 export const useUserStore = defineStore('useUserStore', () => {
     const token = ref("")
@@ -28,6 +29,31 @@ export const useUserStore = defineStore('useUserStore', () => {
         const res = await post(API.refresh_rtm_token, {})
         if (res.code == "0") {
             rtmToken.value = res.data.RtmToken
+        }
+    }
+
+    /** 无登录页时：匿名注册（性别固定男 Gender=1），成功后写入 token / rtmToken 并拉取用户信息 */
+    const registerGuest = async (): Promise<boolean> => {
+        try {
+            const res = await post(API.register, {
+                UdId: getUdid(),
+                Gender: '1',
+            })
+            const ok =
+                String(res.code) === '0' &&
+                Boolean(res.data?.Token?.length) &&
+                Boolean(res.data?.RtmToken?.length)
+            if (ok) {
+                token.value = res.data.Token
+                rtmToken.value = res.data.RtmToken
+                await updateLoginUserInfo()
+                return true
+            }
+            console.warn('[UserStore] registerGuest failed:', res.code, res.data)
+            return false
+        } catch (e) {
+            console.error('[UserStore] registerGuest error:', e)
+            return false
         }
     }
     const isBootstrapDone = ref(false)
@@ -96,7 +122,7 @@ export const useUserStore = defineStore('useUserStore', () => {
         isBootstrapDone.value = false;
         syncMessageUnreadToNative(0)
     }
-    return { token, rtmToken, userInfo, isBootstrapDone, updateLoginUserInfo, getUserInfoById, updateRTMToken, initSystemInfo, bootstrapApp, logout }
+    return { token, rtmToken, userInfo, isBootstrapDone, updateLoginUserInfo, getUserInfoById, updateRTMToken, initSystemInfo, bootstrapApp, logout, registerGuest }
 },
     {
         persist: {

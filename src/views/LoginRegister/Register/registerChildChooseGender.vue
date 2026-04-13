@@ -29,18 +29,18 @@ function toInputCodePage() {
 const register = async () => {
     try {
         MMHUD.showLoading()
-        var genderInt = 0
+        var genderInt = 1
         switch (selectedGender.value) {
             case 'male':
                 genderInt = 1
             case 'female':
                 genderInt = 2
             default:
-                genderInt = 0
+                break;
         }
         const params = {
             UdId: getUdid(),
-            Gender: genderInt
+            Gender: genderInt.toString()
         }
         const userStore = useUserStore()
         const response = await post(API.register, params)

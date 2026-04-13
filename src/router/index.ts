@@ -5,7 +5,6 @@ import messageList from "@/views/tabbarSubViews/messageList.vue";
 import userCenter from "@/views/tabbarSubViews/userCenter.vue";
 import messageDetail from "@/views/message/ChatDetail/ChatDetailPage.vue"
 import { useUserStore } from "@/stores/userStore";
-import LoginedMissions from "@/utils/loginedMissions";
 import { hideGlobalLoading } from "@/utils/native/A0019Bridge";
 
 const routes = [
@@ -65,32 +64,9 @@ const routes = [
         component: () => import("@/views/call/videoPage.vue"),
         meta: { depth: 40 }
     },
-    {
-        path: "/login",
-        name: "login",
-        component: () => import("@/views/LoginRegister/Login/loginView.vue"),
-        meta: { depth: 10 }
-    },
-    {
-        path: "/register",
-        name: "register",
-        component: () => import("@/views/LoginRegister/Register/register.vue"),
-        meta: { depth: 10 },
-        children: [
-            {
-                path: "",
-                name: "selecteGender",
-                component: () => import("@/views/LoginRegister/Register/registerChildChooseGender.vue"),
-                meta: { depth: 10 }
-            },
-            {
-                path: "inputCode",
-                name: "inputCode",
-                component: () => import("@/views/LoginRegister/Register/registerChildInputCode.vue"),
-                meta: { depth: 11 }
-            }
-        ]
-    },
+    { path: "/login", redirect: "/" },
+    { path: "/register", redirect: "/" },
+    { path: "/register/:pathMatch(.*)*", redirect: "/" },
     {
         path: "/profile/edit",
         name: "EditProfile",
@@ -152,7 +128,7 @@ const router = createRouter({
 // Navigation Guard
 router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore();
-    const publicPages = ['/login', '/register', '/'];
+    const publicPages = ['/'];
     const authRequired = !publicPages.includes(to.path);
     
     // 1. 引导流程 (SystemInfo, User恢复等)
@@ -167,10 +143,10 @@ router.beforeEach(async (to, from, next) => {
         return next('/');
     }
 
-    // 3. 登录拦截
+    // 3. 需登录页：无 token 回启动页完成匿名注册
     if (authRequired && !userStore.token) {
-        console.warn("[Router] No token found, redirecting to login");
-        return next('/login');
+        console.warn("[Router] No token, redirecting to launch");
+        return next({ path: '/', replace: true });
     }
 
     next();

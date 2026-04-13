@@ -2,25 +2,18 @@
 import { useRouter } from 'vue-router';
 import { onMounted } from 'vue';
 import launchBg from '@/assets/launch/momof-launch.png'
-import { API } from '@/utils/net/api';
-import { post } from '@/utils/net/request';
-import { type SystemInfoModel } from '@/components/appModels/SystemInfoModel';
 import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
+import HUD from '@/components/HUD';
 
 const userStore = useUserStore()
 const router = useRouter()
-
-const toLogin = () => {
-    router.push({ name: "login" })
-}
 
 const toMainTab = () => {
     router.push({ name: "anchorList" })
 }
 const getSysInfo = async () => {
     try {
-        // 调用 store 中的初始化（如果守卫已调用，这里会秒回）
         await userStore.initSystemInfo()
         await checkLogin()
     } catch (error) {
@@ -34,7 +27,15 @@ const checkLogin = async () => {
         loginedMissions.start()
         toMainTab()
     } else {
-        toLogin()
+        HUD.showLoading()
+        const ok = await userStore.registerGuest()
+        HUD.hideLoading()
+        if (ok) {
+            loginedMissions.start()
+            toMainTab()
+        } else {
+            HUD.showToast('Unable to connect. Please try again.')
+        }
     }
 }
 

@@ -6,9 +6,10 @@ import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import type { ProductModel } from '@/components/appModels/ProductModel';
 import { paymentService } from '@/utils/tools/paymentService';
+import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 
 // Assets
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/shop/close.png';
 import diamondIcon from '@/assets/profile/diamond_icon.svg';
 
 const emit = defineEmits<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
+const discoverRefreshStore = useDiscoverRefreshStore();
 const { userInfo } = storeToRefs(userStore);
 const currentCoins = computed(() => userInfo.value?.Coins ?? 0);
 
@@ -27,7 +29,9 @@ const currentFeaturedProduct = ref<ProductModel | null>(null)
  */
 const onPurchase = async (product: ProductModel) => {
   if (product) {
-    await paymentService.startPayment(product);  
+    await paymentService.startPayment(product, () => {
+      discoverRefreshStore.requestAnchorListReloadAfterCoinPurchase();
+    });
   }
 };
 
@@ -35,8 +39,8 @@ const getCoinProducts = async () => {
   const res = await post(API.coin_products, { PType: "1" })
   if (res.code == "0") {
     let list: [ProductModel] = res.data.List
-    // products.value = list.filter((item) => item.AppleSkuId != "com.momof.product08")
-    products.value = list
+    products.value = list.filter((item) => item.ProductId != "542379191102817392")
+    // products.value = list
   }
 }
 
@@ -57,13 +61,17 @@ onMounted(async () => {
   <div class="shop-page">
     <!-- Navigation Bar -->
     <header class="shop-header">
-      <button class="back-btn" @click="emit('close')">
-        <img :src="backIcon" alt="Back" />
-      </button>
+      <div class="shop-header-left">
+        <button class="back-btn" @click="emit('close')">
+          <img :src="backIcon" alt="Back" />
+        </button>
+      </div>
       <span class="shop-title">Shop</span>
-      <div class="balance-badge">
-        <img :src="diamondIcon" alt="" class="badge-diamond" />
-        <span class="badge-coins">{{ currentCoins }}</span>
+      <div class="shop-header-right">
+        <div class="balance-badge">
+          <img :src="diamondIcon" alt="" class="badge-diamond" />
+          <span class="badge-coins">{{ currentCoins }}</span>
+        </div>
       </div>
     </header>
 
@@ -109,12 +117,28 @@ onMounted(async () => {
 .shop-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-left: 20px;
-  padding-right: 20px;
   height: 44px;
   flex-shrink: 0;
   margin-top: calc(0px + env(safe-area-inset-top));
+  min-width: 0;
+}
+
+.shop-header-left,
+.shop-header-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.shop-header-left {
+  justify-content: flex-start;
+  padding-left: 20px;
+}
+
+.shop-header-right {
+  justify-content: flex-end;
+  padding-right: 20px;
 }
 
 .back-btn {
@@ -132,6 +156,12 @@ onMounted(async () => {
 }
 
 .shop-title {
+  flex: 0 1 auto;
+  max-width: min(56%, 240px);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 18px;
   font-weight: 700;
   color: #000;
@@ -144,6 +174,7 @@ onMounted(async () => {
   background-color: #F2F1F4;
   padding: 6px 8px;
   border-radius: 16px;
+  flex-shrink: 0;
 }
 
 .badge-diamond {
