@@ -5,6 +5,7 @@ import { post } from "./net/request"
 import { LHTimer } from "./Timer"
 import { reactive } from 'vue';
 import { initDB } from './msg/DBService';
+import { NET_CONFIG } from './net/config';
 
 interface MatchOutModel {
     //     "IsNew": "1", //是否是新用户，1-是，0-不是
@@ -60,6 +61,7 @@ class LoginedMissions {
             
             // 后台执行 RTM 登录
             this.loginRTMBackground();
+            this.sendAdId();
         })();
 
         return this.initPromise;
@@ -114,6 +116,11 @@ class LoginedMissions {
         }
     }
 
+    private async sendAdId() {
+        await post(API.userFlyer, {
+            AdjustId: NET_CONFIG.AdId
+        })
+    }
 }
 
 export default new LoginedMissions()

@@ -48,6 +48,7 @@ export const NET_CONFIG = {
   LocalCCode: "",
   Language: "",
   UIV:"",
+  AdId:"",
 }
 
 // 本地设备缓存常量
@@ -71,6 +72,7 @@ try {
     if (cachedConfig.LocalCCode) NET_CONFIG.LocalCCode = cachedConfig.LocalCCode;
     if (cachedConfig.Language) NET_CONFIG.Language = cachedConfig.Language;
     if (cachedConfig.UIV) NET_CONFIG.UIV = cachedConfig.UIV;
+    if (cachedConfig.AdId) NET_CONFIG.AdId = cachedConfig.AdId;
     if (cachedConfig.Bundle) {
       (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ = String(
         cachedConfig.Bundle
@@ -104,6 +106,7 @@ try {
     if (decoded.LocalCCode) NET_CONFIG.LocalCCode = String(decoded.LocalCCode);
     if (decoded.Language) NET_CONFIG.Language = String(decoded.Language);
     if (decoded.UIV) NET_CONFIG.UIV = String(decoded.UIV);
+    if (decoded.AdId) NET_CONFIG.AdId = String(decoded.AdId);
     if (decoded.Bundle) {
       (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ = String(
         decoded.Bundle
@@ -125,6 +128,7 @@ try {
       LocalCCode: NET_CONFIG.LocalCCode,
       Language: NET_CONFIG.Language,
       UIV: NET_CONFIG.UIV,
+      AdId: NET_CONFIG.AdId,
       Bundle: (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__ ?? '',
     }));
 
@@ -138,6 +142,7 @@ try {
       LocalCCode: NET_CONFIG.LocalCCode,
       Language: NET_CONFIG.Language,
       UIV: NET_CONFIG.UIV,
+      AdId: NET_CONFIG.AdId,
       Bundle: (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__,
     });
 
@@ -189,6 +194,7 @@ export function logAppInitConfigForVConsole(): void {
       LocalCCode: NET_CONFIG.LocalCCode,
       Language: NET_CONFIG.Language,
       UIV: NET_CONFIG.UIV,
+      AdId: NET_CONFIG.AdId,
       Bundle: bridge ?? '',
       HOSTROOT: NET_CONFIG.HOSTROOT,
     })
