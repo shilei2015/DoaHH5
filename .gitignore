@@ -17,8 +17,8 @@ Thumbs.db
 *.local
 
 # Build artifacts
-dist
-dist-ssr
+# dist
+# dist-ssr
 coverage
 *.tsbuildinfo
 
