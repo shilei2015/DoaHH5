@@ -11,7 +11,7 @@ export { getNativeBridgeName }
 
 // ===================== 类型定义 =====================
 
-/** App->Web 调试：弹窗展示字符串（与业务 type 0–11 区分） */
+/** App->Web 调试：弹窗展示字符串（与业务 type 0–12 区分） */
 export const A0019_APP_DEBUG_ALERT_TYPE = 99
 
 /** 发送消息到 App */
@@ -55,6 +55,15 @@ export interface A0019PermissionResult {
   getType: number // 0=通知, 1=相机, 2=相册, 3=麦克风
 }
 
+/** 设备标识信息 */
+export interface A0019DeviceIdentifiers {
+  idfa: string
+  adId: string
+  idfv: string
+  deviceId: string
+  appId: string
+}
+
 /**
  * Web->App type 8 请求体中的 `getType`（与 App->Web type 8 回调中的 `getType` 对应）
  * @see `.agents/doc/北京-App-H5 Bridge交互规范.md` §「Web->App type: 8 — 权限检查」
@@ -77,6 +86,36 @@ type Resolver<T> = {
 const pendingA0019OrderByUuid = new Map<string, string>()
 let locationResolver: Resolver<A0019LocationResult> | null = null
 const permissionResolvers = new Map<number, Resolver<A0019PermissionResult>>()
+let deviceIdentifiersResolver: Resolver<A0019DeviceIdentifiers> | null = null
+let latestDeviceIdentifiers: A0019DeviceIdentifiers | null = null
+
+function normalizeDeviceIdentifiers(raw: unknown): A0019DeviceIdentifiers {
+  let payload = raw
+  if (typeof payload === 'string') {
+    try {
+      payload = JSON.parse(payload)
+    } catch {
+      payload = {}
+    }
+  }
+
+  const obj = payload && typeof payload === 'object'
+    ? (payload as Record<string, unknown>)
+    : {}
+
+  const read = (key: keyof A0019DeviceIdentifiers) => {
+    const value = obj[key]
+    return typeof value === 'string' ? value.trim() : ''
+  }
+
+  return {
+    idfa: read('idfa'),
+    adId: read('adId'),
+    idfv: read('idfv'),
+    deviceId: read('deviceId'),
+    appId: read('appId'),
+  }
+}
 
 // ===================== 核心通信机制 =====================
 
@@ -190,6 +229,18 @@ function generateUUID(): string {
               permissionResolvers.get(data.getType)!.resolve(data)
               permissionResolvers.delete(data.getType)
             }
+          }
+        }
+        break
+
+      case 12: // 设备标识信息回调
+        {
+          const data = normalizeDeviceIdentifiers(msg.data)
+          latestDeviceIdentifiers = data
+          console.log(`[NativeBridge ${name}] <- device identifiers`, data)
+          if (deviceIdentifiersResolver) {
+            deviceIdentifiersResolver.resolve({ ...data })
+            deviceIdentifiersResolver = null
           }
         }
         break
@@ -346,3 +397,37 @@ export function requestAppStoreReview(): void {
 export function hideGlobalLoading(): void {
   sendToApp(11, {})
 }
+
+/**
+ * 获取最近一次由 App 回传的设备标识信息缓存
+ */
+export function getCachedA0019DeviceIdentifiers(): A0019DeviceIdentifiers | null {
+  return latestDeviceIdentifiers ? { ...latestDeviceIdentifiers } : null
+}
+
+/**
+ * type 12 - 获取设备标识信息
+ */
+export function getDeviceIdentifiers(): Promise<A0019DeviceIdentifiers> {
+  return new Promise((resolve, reject) => {
+    if (latestDeviceIdentifiers) {
+      console.log(`[NativeBridge ${getNativeBridgeName()}] reuse cached device identifiers`, latestDeviceIdentifiers)
+      resolve({ ...latestDeviceIdentifiers })
+      return
+    }
+    if (!isA0019Native()) {
+      reject(new Error('This feature is unavailable.'))
+      return
+    }
+    if (deviceIdentifiersResolver) {
+      console.warn(`[NativeBridge ${getNativeBridgeName()}] getDeviceIdentifiers called while a request is already in progress`)
+      reject(new Error('Please wait and try again.'))
+      return
+    }
+    deviceIdentifiersResolver = { resolve, reject }
+    console.log(`[NativeBridge ${getNativeBridgeName()}] -> requesting device identifiers`)
+    sendToApp(12, {})
+  })
+}
+
+//////

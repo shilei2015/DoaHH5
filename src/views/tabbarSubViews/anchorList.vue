@@ -11,7 +11,7 @@ import { showCoinShop } from '@/utils/tools/shopService';
 import { useUserStore } from '@/stores/userStore';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 
-class AnchorCate {
+class AnchorCate { 
     NavId: string = ""
     NavName: string = ""
     Image: string = ""

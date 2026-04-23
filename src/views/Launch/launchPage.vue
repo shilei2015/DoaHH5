@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { onMounted } from 'vue';
-import launchBg from '@/assets/launch/momof-launch.png'
+// import launchBg from '@/assets/launch/momof-launch.png'
 import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
 import HUD from '@/components/HUD';
@@ -46,7 +46,7 @@ onMounted(() => {
 
 <template>
     <div class="launchContianer">
-        <img :src="launchBg" alt="">
+        <!-- <img :src="launchBg" alt=""> -->
     </div>
 </template>
 
@@ -60,6 +60,7 @@ onMounted(() => {
     /* 可选，用于辅助定位 */
     overflow: hidden;
     /* 隐藏图片超出容器的部分（裁切） */
+    background-color: #1a1a1a;
 }
 
 .launchContianer img {
@@ -67,5 +68,6 @@ onMounted(() => {
     height: 100%;
     object-fit: cover;
     /* display: block; */
+    visibility: hidden;
 }
 </style>

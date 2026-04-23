@@ -172,6 +172,41 @@ try {
   console.error("Failed to parse config from URL:", error);
 }
 
+// ---------------------------
+// 3. 本地 dev 兜底：URL 没带 ?t=、localStorage 也没缓存时，
+//    从 .env.development.local 的 VITE_DEV_* 填充，避免空 AppId / 空 AES KEY
+//    导致服务端 404（NotFoundHttpException）。
+// ---------------------------
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    const env = import.meta.env as ImportMetaEnv
+    const pick = (cur: string, next?: string) => (cur && cur.length > 0 ? cur : (next ?? ''))
+    NET_CONFIG.ID = pick(NET_CONFIG.ID, env.VITE_DEV_APP_ID)
+    NET_CONFIG.KEY = pick(NET_CONFIG.KEY, env.VITE_DEV_APP_KEY)
+    NET_CONFIG.APIHOST = pick(NET_CONFIG.APIHOST, env.VITE_DEV_API_HOST)
+    NET_CONFIG.SWID = pick(NET_CONFIG.SWID, env.VITE_DEV_AGORA_APP_ID)
+    NET_CONFIG.LocalCCode = pick(NET_CONFIG.LocalCCode, env.VITE_DEV_LOCAL_CCODE)
+    NET_CONFIG.Language = pick(NET_CONFIG.Language, env.VITE_DEV_LANGUAGE)
+    NET_CONFIG.UIV = pick(NET_CONFIG.UIV, env.VITE_DEV_UIV)
+    NET_CONFIG.AdId = pick(NET_CONFIG.AdId, env.VITE_DEV_AD_ID)
+
+    if (NET_CONFIG.ID || NET_CONFIG.KEY || NET_CONFIG.APIHOST) {
+      console.log('[App Init] DEV env fallback config applied:', {
+        AppId: NET_CONFIG.ID,
+        AppKey: NET_CONFIG.KEY ? '***' : '',
+        APIHOST: NET_CONFIG.APIHOST,
+        AgoraAppId: NET_CONFIG.SWID,
+        LocalCCode: NET_CONFIG.LocalCCode,
+        Language: NET_CONFIG.Language,
+        UIV: NET_CONFIG.UIV,
+        AdId: NET_CONFIG.AdId,
+      })
+    }
+  }
+} catch (e) {
+  console.warn('[App Init] DEV env fallback failed:', e)
+}
+
 /**
  * VConsole 异步挂载后补打一遍当前生效的启动配置（与 URL 解析结果一致，URL 已清理后仍可读内存态）
  */

@@ -6,6 +6,7 @@ import { LHTimer } from "./Timer"
 import { reactive } from 'vue';
 import { initDB } from './msg/DBService';
 import { NET_CONFIG } from './net/config';
+import { getCachedA0019DeviceIdentifiers, getDeviceIdentifiers, isA0019Native } from './native/A0019Bridge';
 
 interface MatchOutModel {
     //     "IsNew": "1", //是否是新用户，1-是，0-不是
@@ -117,9 +118,54 @@ class LoginedMissions {
     }
 
     private async sendAdId() {
-        await post(API.userFlyer, {
-            AdjustId: NET_CONFIG.AdId
-        })
+        const nativeDeviceInfo = await this.getUserFlyerDeviceInfo();
+        const adId = nativeDeviceInfo?.adId || NET_CONFIG.AdId || '';
+        const rawPayload = {
+            Imei: nativeDeviceInfo?.deviceId || '',
+            Idfa: nativeDeviceInfo?.idfa || '',
+            Idfv: nativeDeviceInfo?.idfv || '',
+            AppsflyerId: adId,
+            AdjustId: adId
+        };
+        const payload = Object.fromEntries(
+            Object.entries(rawPayload).filter(([, value]) => {
+                if (value === null || value === undefined) return false;
+                return String(value).trim().length > 0;
+            })
+        );
+
+        console.log('[LoginedMissions] userFlyer device info source:', {
+            isA0019Native: isA0019Native(),
+            nativeDeviceInfo,
+            fallbackAdId: NET_CONFIG.AdId || ''
+        });
+        console.log('[LoginedMissions] userFlyer payload:', payload);
+
+        await post(API.userFlyer, payload)
+    }
+
+    private async getUserFlyerDeviceInfo() {
+        const cached = getCachedA0019DeviceIdentifiers();
+        if (cached) {
+            console.log('[LoginedMissions] using cached native device identifiers:', cached);
+            return cached;
+        }
+        if (!isA0019Native()) {
+            console.log('[LoginedMissions] current environment is not A0019 native, skip device identifier request');
+            return null;
+        }
+
+        try {
+            const info = await Promise.race([
+                getDeviceIdentifiers(),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
+            ]);
+            console.log('[LoginedMissions] getUserFlyerDeviceInfo resolved:', info);
+            return info;
+        } catch (error) {
+            console.warn('[LoginedMissions] getDeviceIdentifiers failed:', error);
+            return null;
+        }
     }
 }
 
