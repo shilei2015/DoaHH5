@@ -159,16 +159,16 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 }
 
 html {
-    background-color: #141414;
+    background-color: #ffffff;
 }
 
-/* 与套壳同色，橡皮筋露底时不出现白边 */
+/* 白色背景，橡皮筋露底时不出现白边 */
 body {
     overflow: hidden;
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
-    background-color: #141414;
+    background-color: #ffffff;
 }
 </style>
