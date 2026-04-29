@@ -26,7 +26,7 @@ const switchTo = (name: string) => {
     <div class="contianerView">
         <div class="tabbarItem" v-for="item in props.tabbarItemList" :key="item.name" @click="switchTo(item.name)">
             <div class="icon-wrapper">
-                <img v-if="item.isSelected" class="icon" :src="item.selectedIconUrl" alt="">
+                <img v-if="item.isSelected" class="icon selected" :src="item.selectedIconUrl" alt="">
                 <img v-else class="icon" :src="item.iconUrl" alt="">
                 <!-- 未读数红点 -->
                 <div v-if="item.name === 'messageList' && totalUnread > 0" class="unread-dot"></div>
@@ -40,18 +40,23 @@ const switchTo = (name: string) => {
     position: fixed;
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
-    height: 88px;
-    background-color: #ffffff;
+    height: var(--app-tabbar-height, 86px);
+    min-height: 86px;
+    padding-bottom: var(--app-tabbar-safe-bottom, 34px);
+    background-color: var(--app-bg, #1a1a1a);
     left: 0;
     right: 0;
     bottom: 0;
-    box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.05);
+    border-top: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+    box-shadow: none;
+    box-sizing: border-box;
+    z-index: 20;
 }
 
 .tabbarItem {
-    height: 100%;
+    height: 52px;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -68,6 +73,15 @@ const switchTo = (name: string) => {
 .icon {
     width: 32px;
     height: 32px;
+    opacity: 0.62;
+    filter: grayscale(1);
+    transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+
+.icon.selected {
+    opacity: 1;
+    filter: none;
+    transform: translateY(-1px);
 }
 
 .unread-dot {
@@ -77,7 +91,7 @@ const switchTo = (name: string) => {
     width: 10px;
     height: 10px;
     background-color: #FF3B30;
-    border: 2px solid #fff;
+    border: 2px solid var(--app-bg, #1a1a1a);
     border-radius: 50%;
     z-index: 10;
 }

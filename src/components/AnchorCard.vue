@@ -24,10 +24,10 @@ const statusText = computed(() => {
 
 const statusColors = computed(() => {
     switch (props.anchor.OnlineState) {
-        case '1': return { text: '#5ee413', dot: '#5ee413' };
-        case '2': return { text: '#ff8000', dot: '#ff8000' };
-        case 'offline': return { text: '#ccc', dot: '#ccc' };
-        default: return { text: '#fff', dot: '#fff' };
+        case '1': return { text: '#76f337', dot: '#76f337' };
+        case '2': return { text: '#ffa339', dot: '#ffa339' };
+        case '0': return { text: '#d8d8d8', dot: '#d8d8d8' };
+        default: return { text: '#ffffff', dot: '#ffffff' };
     }
 });
 
@@ -78,14 +78,14 @@ const clickCall = () => {
     position: relative;
     width: 100%;
     min-width: 0;
-    border-radius: 16px;
+    border-radius: 8px;
     overflow: hidden;
-    background-color: white;
+    background:
+        linear-gradient(145deg, #1a1a1a 0%, #404040 50%, #1a1a1a 100%);
     display: flex;
     flex-direction: column;
     align-self: start;
-    /* 为非纯黑色背景加一点精细阴影提升立体感 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
 }
 
 /* 用 padding 比例盒代替纯 aspect-ratio，避免部分 WebView 在 grid/flex 下高度塌成 0 */
@@ -96,7 +96,9 @@ const clickCall = () => {
     padding-bottom: calc(100% * 248 / 184);
     flex-shrink: 0;
     overflow: hidden;
-    border-radius: 16px 16px 0 0;
+    border-radius: 8px 8px 0 0;
+    background:
+        linear-gradient(145deg, #1a1a1a 0%, #404040 50%, #1a1a1a 100%);
 }
 
 .anchor-avatar {
@@ -107,6 +109,17 @@ const clickCall = () => {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+.avatar-wrapper::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+    pointer-events: none;
 }
 
 .card-header {
@@ -151,7 +164,7 @@ const clickCall = () => {
     display: flex;
     align-items: center;
     height: 22px;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.42);
     padding: 3px 6px;
     border-radius: 11px;
     gap: 4px;
@@ -171,18 +184,20 @@ const clickCall = () => {
 }
 
 .info-area {
-    height: 62px;
+    min-height: 62px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 0 12px;
     gap: 2px;
+    background: rgba(26, 26, 26, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .name-age {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    color: black;
+    color: var(--app-text-primary, #ffffff);
     font-size: 14px;
     font-weight: 600;
     line-height: 20px;
@@ -208,7 +223,7 @@ const clickCall = () => {
 
 .country-name {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    color: #808080;
+    color: var(--app-text-muted, #808080);
     font-size: 14px;
     font-weight: 500;
     line-height: 16px;

@@ -1,6 +1,46 @@
 /* 隐藏全局滚动条 */
 :root {
+  color-scheme: dark;
   scrollbar-width: none;
+
+  --app-bg: #1a1a1a;
+  --app-bg-elevated: #202020;
+  --app-surface: #252525;
+  --app-surface-soft: #2b2b2b;
+  --app-line: rgba(255, 255, 255, 0.08);
+  --app-text-primary: #ffffff;
+  --app-text-secondary: rgba(255, 255, 255, 0.72);
+  --app-text-muted: #808080;
+  --app-text-inverse: #1a1a1a;
+  --app-accent: #65d941;
+  --app-accent-strong: #8ffb36;
+  --app-accent-gradient: linear-gradient(135deg, #c7ff30 0%, #65d941 100%);
+  --app-danger: #ff4d4f;
+  --app-tabbar-safe-bottom: max(env(safe-area-inset-bottom, 0px), 34px);
+  --app-tabbar-height: calc(52px + var(--app-tabbar-safe-bottom));
+
+  --van-primary-color: var(--app-accent);
+  --van-success-color: var(--app-accent);
+  --van-danger-color: var(--app-danger);
+  --van-background: var(--app-bg);
+  --van-background-2: var(--app-surface);
+  --van-background-3: var(--app-surface-soft);
+  --van-text-color: var(--app-text-primary);
+  --van-text-color-2: var(--app-text-secondary);
+  --van-text-color-3: var(--app-text-muted);
+  --van-active-color: rgba(255, 255, 255, 0.08);
+  --van-border-color: var(--app-line);
+  --van-cell-background: var(--app-surface);
+  --van-cell-text-color: var(--app-text-primary);
+  --van-cell-value-color: var(--app-text-muted);
+  --van-cell-border-color: var(--app-line);
+  --van-cell-active-color: rgba(255, 255, 255, 0.08);
+  --van-popup-background: var(--app-surface);
+  --van-picker-background: var(--app-surface);
+  --van-picker-option-text-color: var(--app-text-primary);
+  --van-field-input-text-color: var(--app-text-primary);
+  --van-field-placeholder-text-color: var(--app-text-muted);
+  --van-loading-spinner-color: var(--app-accent);
 }
 
 ::-webkit-scrollbar {
@@ -11,9 +51,103 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body,
 #app {
   width: 100%;
   height: 100%;
+  min-height: 100%;
+  background: var(--app-bg);
+  color: var(--app-text-primary);
+}
+
+body {
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  border: 0;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+.app-page {
+  min-height: 100%;
+  background: var(--app-bg);
+  color: var(--app-text-primary);
+}
+
+.app-page-header {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px;
+}
+
+.app-page-title {
+  margin: 0;
+  color: var(--app-text-primary);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.app-safe-bottom {
+  padding-bottom: var(--app-tabbar-safe-bottom);
+}
+
+body .van-overlay {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+body .van-popup {
+  background: var(--app-surface);
+  color: var(--app-text-primary);
+}
+
+body .van-cell,
+body .van-cell-group,
+body .van-cell-group--inset {
+  background: var(--app-surface);
+  color: var(--app-text-primary);
+}
+
+body .van-cell::after {
+  border-color: var(--app-line);
+}
+
+body .van-picker__mask {
+  background-image:
+    linear-gradient(180deg, rgba(37, 37, 37, 0.95), rgba(37, 37, 37, 0.55)),
+    linear-gradient(0deg, rgba(37, 37, 37, 0.95), rgba(37, 37, 37, 0.55));
+}
+
+body .van-hairline--top-bottom::after,
+body .van-hairline-unset--top-bottom::after {
+  border-color: var(--app-line);
+}
+
+body .van-toast {
+  background: rgba(37, 37, 37, 0.96);
+  border: 1px solid var(--app-line);
+  color: var(--app-text-primary);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
