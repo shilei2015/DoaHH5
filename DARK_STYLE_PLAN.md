@@ -44,17 +44,17 @@
 | P0 | `codex/dark-style-foundation` | 待验收 | `global-loading` | 共享状态 | `401:1650` | 加载页 | 全局加载/HUD | `src/components/HUD/HUD.vue`、启动/全局加载相关展示 | 深色加载态、遮罩、loading 文案与安全区 | 已完成全局深色遮罩、绿色 loading、Loading 文案、Toast 深色样式；`npm run build` 通过 |
 | P0 | `codex/dark-style-foundation` | 待验收 | `global-empty` | 待确认入口 | `483:3005` | 无网络 | 待确认 | 待确认：当前未见独立路由 | 无网络空态、重试按钮；不新增网络检测逻辑 | 已新增共享 `EmptyState` 的 network 形态，含无网络插画、文案和 Try again 按钮；未新增网络检测或业务入口 |
 | P0 | `codex/dark-style-foundation` | 待验收 | `global-empty` | 共享状态 | `483:3101` | 通用缺省页 | 多个列表页共用 | `src/components/ScrollList.vue`、各列表空态 | 通用空态视觉、图标、文案容器 | 已完成通用空态组件并接入 `ScrollList`，同步深色背景与绿色刷新/加载指示；`npm run build` 通过 |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `launch` | 现有页面 | `333:1291` | 启动页 | `/` | `src/views/Launch/launchPage.vue` | 启动页背景、Logo、加载衔接 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `home` | 现有页面 | `350:2256` | 首页 | `/tab` | `src/views/tabbarSubViews/anchorList.vue` | 首页标题、分类、主播列表布局、余额/VIP 入口 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `anchor-profile` | 现有页面 | `429:2222` | 客态资料页 | `/anchorProfile` | `src/views/AnchorProfile/AnchorProfile.vue` | 资料头图、信息区、按钮、相册、更多操作入口 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `message-list` | 现有页面 | `457:7016` | 消息 | `/tab/message` | `src/views/tabbarSubViews/messageList.vue` | 消息列表、未读角标、滑动删除、空态 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `user-center` | 现有页面 | `469:3668` | 我的 | `/tab/user` | `src/views/tabbarSubViews/userCenter.vue` | 个人中心头部、资产、统计、菜单入口 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `edit-profile` | 现有页面 | `469:4262` | 编辑资料 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 编辑资料整体布局、表单、相册、底部按钮 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `edit-profile` | 同页弹窗 | `469:4785` | 选择头像弹窗 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 头像选择弹窗视觉；不改上传逻辑 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `edit-profile` | 同页弹窗 | `469:5567` | 修改年龄 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 年龄选择器弹层视觉；不改选择逻辑 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `edit-profile` | 同页弹窗 | `469:5850` | 选择国家 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 国家选择器弹层视觉；不改数据来源 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `user-list` | 同组件页面 | `469:6130` | See who liked me | `/profile/like-me` | `src/views/profile/UserListPage.vue` | 喜欢我的列表页深色视觉 |  |
-| P1 | `codex/dark-style-core-pages` | 未开始 | `user-list` | 同组件页面 | `469:6675` | See who visited me | `/profile/visitor` | `src/views/profile/UserListPage.vue` | 访客列表页深色视觉 |  |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `launch` | 现有页面 | `333:1291` | 启动页 | `/` | `src/views/Launch/launchPage.vue` | 启动页背景、Logo、加载衔接 | 已按“备用1v1”节点完成深色背景、绿色 Logo 与加载态调整。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `home` | 现有页面 | `350:2256` | 首页 | `/tab` | `src/views/tabbarSubViews/anchorList.vue` | 首页标题、分类、主播列表布局、余额/VIP 入口 | 已按“备用1v1”节点完成深色首页、VIP 入口、分类与双列主播卡调整。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `anchor-profile` | 现有页面 | `429:2222` | 客态资料页 | `/anchorProfile` | `src/views/AnchorProfile/AnchorProfile.vue` | 资料头图、信息区、按钮、相册、更多操作入口 | 已按“备用1v1”节点完成沉浸式头图、资料信息区与底部操作按钮调整。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `message-list` | 现有页面 | `457:7016` | 消息 | `/tab/message` | `src/views/tabbarSubViews/messageList.vue` | 消息列表、未读角标、滑动删除、空态 | 已按“备用1v1”节点完成深色消息列表、未读角标与删除按钮调整。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `user-center` | 现有页面 | `469:3668` | 我的 | `/tab/user` | `src/views/tabbarSubViews/userCenter.vue` | 个人中心头部、资产、统计、菜单入口 | 已按“备用1v1”节点完成 Personal 页头、统计卡、钱包卡与菜单深色视觉。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `edit-profile` | 现有页面 | `469:4262` | 编辑资料 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 编辑资料整体布局、表单、相册、底部按钮 | 已按“备用1v1”节点完成编辑资料表单、相册区与底部 Save 按钮深色视觉。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `edit-profile` | 同页弹窗 | `469:4785` | 选择头像弹窗 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 头像选择弹窗视觉；不改上传逻辑 | 已按“备用1v1”节点完成头像操作弹窗视觉，上传逻辑保持不变。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `edit-profile` | 同页弹窗 | `469:5567` | 修改年龄 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 年龄选择器弹层视觉；不改选择逻辑 | 已按“备用1v1”节点完成年龄选择器深色弹层视觉，选择逻辑保持不变。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `edit-profile` | 同页弹窗 | `469:5850` | 选择国家 | `/profile/edit` | `src/views/profile/EditProfilePage.vue` | 国家选择器弹层视觉；不改数据来源 | 已按“备用1v1”节点完成国家选择器深色弹层视觉，数据来源保持不变。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `user-list` | 同组件页面 | `469:6130` | See who liked me | `/profile/like-me` | `src/views/profile/UserListPage.vue` | 喜欢我的列表页深色视觉 | 已按“备用1v1”节点完成用户列表页深色头部与双列卡片布局。 |
+| P1 | `codex/dark-style-core-pages` | 待验收 | `user-list` | 同组件页面 | `469:6675` | See who visited me | `/profile/visitor` | `src/views/profile/UserListPage.vue` | 访客列表页深色视觉 | 已按“备用1v1”节点完成用户列表页深色头部与双列卡片布局。 |
 | P2 | `codex/dark-style-flows-modals` | 未开始 | `notification` | 共享弹层 | `426:1883` | 站内push | 全局通知 | `src/components/Notification/FlashNotification.vue` | 站内通知卡片、头像、按钮、阴影 |  |
 | P2 | `codex/dark-style-flows-modals` | 未开始 | `permission` | 待确认入口 | `457:7704` | 开启通知权限 | 待确认 | 待确认：当前未见独立 UI 入口 | 权限提示弹窗视觉；不改权限申请逻辑 |  |
 | P2 | `codex/dark-style-flows-modals` | 未开始 | `chat-detail` | 现有页面 | `457:8026` | 聊天页 | `/message/detail` | `src/views/message/ChatDetail/ChatDetailPage.vue`、`messageCells/*` | 聊天顶部、消息气泡、输入栏、任务/礼物入口 |  |

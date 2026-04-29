@@ -8,7 +8,6 @@ import { onMounted, onActivated } from 'vue';
 import HUD from '@/components/HUD';
 import { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showCoinShop } from '@/utils/tools/shopService';
-import { useUserStore } from '@/stores/userStore';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 
 class AnchorCate {
@@ -30,9 +29,6 @@ const anchors = ref<AnchorInfoModel[]>([]);
 const isSwitchingCate = ref(false);
 /** 列表接口进行中：避免在结果返回前把「未加载」当成「真的空」 */
 const isAnchorListPending = ref(true);
-
-const userStore = useUserStore();
-const currentCoins = computed(() => userStore.userInfo?.Coins ?? 0);
 
 const selectCategory = (NavId: string) => {
     categories.value.forEach(c => c.active = false);
@@ -236,8 +232,7 @@ onActivated(() => {
                 <h1 class="title">Discover</h1>
                 <div class="balance-container" @click="showCoinShop()">
                     <img src="@/assets/profile/diamond_icon.svg" class="diamond-icon" alt="diamond" />
-                    <span class="coins-total">{{ currentCoins }}</span>
-                    <div class="add-btn">+</div>
+                    <span class="coins-total">Become VIP</span>
                 </div>
             </div>
 
@@ -270,11 +265,7 @@ onActivated(() => {
 .anchor-list-page {
     width: 100%;
     height: 100vh;
-    background-image: url('@/assets/discover/discoverBackground.png');
-    background-size: cover;
-    background-position: top center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background: #1a1a1a;
     display: flex;
     flex-direction: column;
     scrollbar-width: none;
@@ -293,72 +284,54 @@ onActivated(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-top: calc(56px + env(safe-area-inset-top));
     padding-left: 20px;
     padding-right: 20px;
-    /* modified to include status bar top empty space */
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .title {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: Georgia, "Times New Roman", serif;
     font-size: 28px;
-    font-weight: 800;
-    font-style: italic;
-    color: #1a1a1a;
+    font-weight: 900;
+    color: #fff;
     margin: 0;
+    line-height: 32px;
 }
 
-/* Discover 顶栏金币：白底半透明（适配渐变背景） */
 .balance-container {
     display: flex;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 4px 8px;
-    padding-right: 4px;
-    border-radius: 100px;
-    gap: 4px;
+    background: linear-gradient(90deg, #fef819 0%, #4ef2d5 100%);
+    padding: 4px 10px 4px 5px;
+    border-radius: 16px;
+    gap: 6px;
     flex-shrink: 0;
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    min-height: 34px;
 }
 
 .balance-container .diamond-icon {
-    width: 16px;
-    height: 16px;
+    width: 26px;
+    height: 26px;
 }
 
 .coins-total {
     font-size: 14px;
-    font-weight: 600;
-    color: #FF5290;
-    margin-right: 4px;
-}
-
-.balance-container .add-btn {
-    width: 20px;
-    height: 20px;
-    background: #FF5290;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1;
+    font-weight: 800;
+    color: #1a1a1a;
+    white-space: nowrap;
 }
 
 /* 分类标签栏 */
 .category-tabs {
     display: flex;
-    gap: 12px;
-    padding: 0 20px;
+    gap: 28px;
+    padding: 0 20px 13px;
     overflow-x: auto;
     scrollbar-width: none;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
+    border-bottom: 3px solid #252525;
 }
 
 .category-tabs::-webkit-scrollbar {
@@ -367,20 +340,31 @@ onActivated(() => {
 
 .tab-btn {
     white-space: nowrap;
-    padding: 8px 20px;
-    border-radius: 20px;
+    position: relative;
+    padding: 0;
+    border-radius: 0;
     border: none;
-    background-color: rgba(255, 255, 255, 0.7);
+    background: transparent;
     font-size: 16px;
     font-weight: 700;
-    color: #333;
+    color: #fff;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .tab-btn.active {
-    background: linear-gradient(90deg, #fed627 0%, #ff1ad0 100%);
-    color: white;
+    color: #65d941;
+}
+
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -16px;
+    height: 3px;
+    border-radius: 2px;
+    background: #65d941;
 }
 
 /* 主播列表网格：align-items 避免子项被拉伸成异常行高（部分 WebView 下与 aspect-ratio 组合会塌缩） */
@@ -388,8 +372,8 @@ onActivated(() => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
-    gap: 2px;
-    padding: 0 2px;
+    gap: 1px;
+    padding: 0;
 }
 
 /* 单列 flex 布局下让滚动区占满剩余高度，保证内部百分比高度可计算 */
@@ -417,8 +401,8 @@ onActivated(() => {
 .cate-spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid rgba(0, 0, 0, 0.1);
-    border-top-color: #ff1ad0;
+    border: 3px solid rgba(255, 255, 255, 0.12);
+    border-top-color: #65d941;
     border-radius: 50%;
     animation: cate-spin 0.8s linear infinite;
 }

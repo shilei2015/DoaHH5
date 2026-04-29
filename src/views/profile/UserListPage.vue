@@ -118,22 +118,24 @@ onMounted(() => {
 .user-list-page {
   width: 100%;
   height: 100vh;
-  background-color: #FFFFFF;
+  background-color: #1a1a1a;
   display: flex;
   flex-direction: column;
+  color: #fff;
+  font-family: "Avenir Next", "Trebuchet MS", sans-serif;
 }
 
 /* Header */
 .header {
-  height: 44px;
-  background-color: #fff;
+  height: 96px;
+  background-color: #1a1a1a;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: calc(52px + env(safe-area-inset-top)) 20px 12px;
   flex-shrink: 0;
-  margin-top: env(safe-area-inset-top);
-  border-bottom: 1px solid #f2f2f2;
+  margin-top: 0;
+  border-bottom: none;
 }
 
 .back-btn {
@@ -150,12 +152,13 @@ onMounted(() => {
 .back-btn img {
   width: 100%;
   height: 100%;
+  filter: brightness(0) invert(1);
 }
 
 .title {
   font-size: 18px;
-  font-weight: 700;
-  color: #000000;
+  font-weight: 800;
+  color: #fff;
   margin: 0;
 }
 
@@ -167,14 +170,14 @@ onMounted(() => {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 4px;
+  padding: 0;
 }
 
 /* Grid Layout */
 .anchor-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
   padding-bottom: env(safe-area-inset-bottom);
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
-// import launchBg from '@/assets/launch/momof-launch.png'
+import launchLogo from '@/assets/launch/dark-launch-logo.png'
 import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
 import HUD from '@/components/HUD';
@@ -62,10 +62,9 @@ onMounted(() => {
 
 <template>
     <div class="launchContianer">
-        <!-- <img :src="launchBg" alt=""> -->
+        <img :src="launchLogo" class="launch-logo" alt="Logo">
         <div class="loading-container" v-if="isLoading">
             <div class="loading-spinner"></div>
-            <div class="loading-text">Loading...</div>
         </div>
     </div>
 </template>
@@ -73,51 +72,41 @@ onMounted(() => {
 <style scoped>
 .launchContianer {
     width: 100%;
-    /* 宽度=屏幕宽度 */
     height: 100%;
-    /* 高度=屏幕高度 */
     position: fixed;
-    /* 可选，用于辅助定位 */
     overflow: hidden;
-    /* 隐藏图片超出容器的部分（裁切） */
-    background-color: #ffffff;
+    background-color: #1a1a1a;
 }
 
-.launchContianer img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* display: block; */
+.launch-logo {
+    position: absolute;
+    left: 50%;
+    top: 42.4%;
+    width: 140px;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    z-index: 2;
 }
 
 .loading-container {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    left: 50%;
+    top: calc(42.4% + 104px);
+    transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 255, 255, 0.9);
     z-index: 100;
 }
 
 .loading-spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(0, 0, 0, 0.3);
-    border-top-color: #000;
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    border-top-color: #65d941;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-}
-
-.loading-text {
-    color: #000;
-    font-size: 18px;
-    font-weight: 600;
-    margin-top: 20px;
 }
 
 @keyframes spin {

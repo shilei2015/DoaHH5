@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useCallStore } from '@/stores/callStore';
 import { AnchorInfoModel } from './appModels/AnchorInfoModel';
-import { getFlagEmoji, getAge, secureUrl } from '@/utils/tools';
+import { getFlagEmoji, getAge } from '@/utils/tools';
 import MOMORTC from '@/utils/MOMORTC';
 
 const props = defineProps<{
     anchor: AnchorInfoModel;
 }>();
-
-const router = useRouter();
-const callStore = useCallStore();
 
 const statusText = computed(() => {
     switch (props.anchor.OnlineState) {
@@ -24,10 +19,10 @@ const statusText = computed(() => {
 
 const statusColors = computed(() => {
     switch (props.anchor.OnlineState) {
-        case '1': return { text: '#76f337', dot: '#76f337' };
-        case '2': return { text: '#ffa339', dot: '#ffa339' };
+        case '1': return { text: '#5ee413', dot: '#5ee413' };
+        case '2': return { text: '#ff8000', dot: '#ff8000' };
         case '0': return { text: '#d8d8d8', dot: '#d8d8d8' };
-        default: return { text: '#ffffff', dot: '#ffffff' };
+        default: return { text: '#fff', dot: '#fff' };
     }
 });
 
@@ -38,38 +33,33 @@ const clickCall = () => {
 
 <template>
     <div class="anchor-card" @click="$router.push({ path: '/anchorProfile', query: { id: anchor.UserId } })">
-        <!-- 上半部分头像 -->
         <div class="avatar-wrapper">
             <img :src="anchor.HeadImage" alt="avatar" class="anchor-avatar" />
+            <div class="image-gradient"></div>
 
-            <!-- 顶部标签与状态 -->
             <div class="card-header">
-                <img v-if="anchor.IsHotGirls === '1'" src="@/assets/discover/hot_badge.png" class="hot-badge-img"
-                    alt="HOT" />
-                <img v-else-if="anchor.IsNewGirls === '1'" src="@/assets/discover/new_badge.png" class="hot-badge-img"
-                    alt="NEW" />
-                <div v-else class="empty-tag"></div>
-
                 <div class="status-badge">
                     <div class="status-dot" :style="{ backgroundColor: statusColors.dot }"></div>
                     <span class="status-text" :style="{ color: statusColors.text }">{{ statusText }}</span>
                 </div>
             </div>
-        </div>
 
-        <!-- 下半部分白色信息区 -->
-        <div class="info-area">
-            <div class="name-age">{{ anchor.Nickname }}, {{ getAge(anchor.Birthday) }}</div>
-            <div class="country-info">
-                <span class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
-                <span class="country-name">{{ anchor.Country }}</span>
+            <div class="info-area">
+                <img v-if="anchor.IsHotGirls === '1'" src="@/assets/discover/hot_badge.png" class="hot-badge-img"
+                    alt="HOT" />
+                <img v-else-if="anchor.IsNewGirls === '1'" src="@/assets/discover/new_badge.png" class="hot-badge-img"
+                    alt="NEW" />
+                <div class="name-age">{{ anchor.Nickname }}, {{ getAge(anchor.Birthday) }}</div>
+                <div class="country-info">
+                    <span class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
+                    <span class="country-name">{{ anchor.Country }}</span>
+                </div>
             </div>
-        </div>
 
-        <!-- 跨界悬浮的呼叫按钮 -->
-        <button class="call-btn" @click.stop="clickCall">
-            <img src="@/assets/discover/call_btn.svg" alt="Call" />
-        </button>
+            <button class="call-btn" @click.stop="clickCall">
+                <img src="@/assets/discover/call_btn.svg" alt="Call" />
+            </button>
+        </div>
     </div>
 </template>
 
@@ -78,10 +68,9 @@ const clickCall = () => {
     position: relative;
     width: 100%;
     min-width: 0;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
-    background:
-        linear-gradient(145deg, #1a1a1a 0%, #404040 50%, #1a1a1a 100%);
+    background-color: var(--app-surface, #242424);
     display: flex;
     flex-direction: column;
     align-self: start;
@@ -93,12 +82,11 @@ const clickCall = () => {
     position: relative;
     width: 100%;
     height: 0;
-    padding-bottom: calc(100% * 248 / 184);
+    padding-bottom: calc(100% * 260 / 187);
     flex-shrink: 0;
     overflow: hidden;
-    border-radius: 8px 8px 0 0;
-    background:
-        linear-gradient(145deg, #1a1a1a 0%, #404040 50%, #1a1a1a 100%);
+    border-radius: 0;
+    background: linear-gradient(145deg, #1a1a1a 0%, #404040 50%, #1a1a1a 100%);
 }
 
 .anchor-avatar {
@@ -111,24 +99,24 @@ const clickCall = () => {
     display: block;
 }
 
-.avatar-wrapper::after {
-    content: "";
+.image-gradient {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     height: 50%;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.58) 100%);
+    z-index: 1;
     pointer-events: none;
 }
 
 .card-header {
     position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
+    top: 8px;
+    left: 8px;
+    right: auto;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: flex-start;
     z-index: 2;
 }
@@ -171,41 +159,41 @@ const clickCall = () => {
 }
 
 .status-dot {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
 }
 
 .status-text {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
     font-size: 12px;
     font-weight: 590;
     line-height: 16px;
 }
 
 .info-area {
-    min-height: 62px;
-    flex-shrink: 0;
+    position: absolute;
+    left: 10px;
+    right: 64px;
+    bottom: 12px;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 0 12px;
-    gap: 2px;
-    background: rgba(26, 26, 26, 0.96);
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    align-items: flex-start;
+    gap: 4px;
 }
 
 .name-age {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    color: var(--app-text-primary, #ffffff);
-    font-size: 14px;
-    font-weight: 600;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    color: var(--app-text-primary, #fff);
+    font-size: 15px;
+    font-weight: 700;
     line-height: 20px;
     /* 截断过长文字，避免压住右侧按钮 */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 75%;
+    max-width: 100%;
 }
 
 .country-info {
@@ -222,24 +210,23 @@ const clickCall = () => {
 }
 
 .country-name {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    color: var(--app-text-muted, #808080);
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    color: rgba(255, 255, 255, 0.5);
     font-size: 14px;
     font-weight: 500;
     line-height: 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 80%;
+    max-width: 100%;
 }
 
 /* 根据 Figma 跨界居中悬停的按钮设计 */
 .call-btn {
     position: absolute;
     right: 8px;
-    bottom: 32px;
-    /* 完美垂直居中于交界线 */
-    width: 60px;
+    bottom: 10px;
+    width: 48px;
     aspect-ratio: 1 / 1;
     border: none;
     background: transparent;

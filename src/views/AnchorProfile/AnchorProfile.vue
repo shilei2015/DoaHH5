@@ -152,11 +152,13 @@ const clickActionMore = () => {
                         <div class="msg-circle">
                             <img src="@/assets/profile/msg_icon.svg" alt="Message" />
                         </div>
+                        <span>Chat</span>
                     </button>
 
                     <!-- 视频通话按钮 (居中大尺寸) -->
                     <button class="action-btn call-btn" @click="MOMORTC.startAnchorCall(anchorInfo.UserId)">
                         <img src="@/assets/profile/video_call_btn.svg" alt="Video Call" />
+                        <span>Video Chat</span>
                     </button>
 
                     <!-- 心形关注按钮 -->
@@ -171,6 +173,23 @@ const clickActionMore = () => {
 
             <!-- 底部资料区 -->
             <div class="about-section">
+                <div class="profile-summary">
+                    <div class="summary-main">
+                        <h1 class="profile-name">{{ anchorInfo.Nickname }}</h1>
+                        <div class="summary-chips">
+                            <span class="summary-chip age-chip">{{ getAge(anchorInfo.Birthday) }}</span>
+                            <span class="summary-chip">
+                                <span class="flag">{{ getFlagEmoji(anchorInfo.CountryCode) }}</span>
+                                {{ anchorInfo.Country }}
+                            </span>
+                            <span class="summary-chip" :class="statusInfo.colorClass">{{ statusInfo.text }}</span>
+                        </div>
+                    </div>
+                    <button class="summary-like" @click="likeAnchor">
+                        <img v-if="anchorInfo.IsLike" src="@/assets/profile/heart_liked.svg" alt="Liked" />
+                        <img v-else src="@/assets/profile/heart_icon.png" alt="Favorite" />
+                    </button>
+                </div>
                 <h2 class="about-title">About me</h2>
                 <p class="about-desc">
                     {{ anchorInfo.Introduce || "" }}
@@ -191,24 +210,28 @@ const clickActionMore = () => {
 .profile-page {
     width: 100%;
     height: 100vh;
-    background-color: white;
+    background-color: #1a1a1a;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    /* 适配 iOS 安全区域 */
-    padding-top: 54px;
+    padding-top: 0;
 }
 
 /* 导航栏 */
 .nav-bar {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    z-index: 20;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    height: 44px;
-    margin-bottom: 6px;
+    height: 28px;
+    margin-bottom: 0;
 }
 
 .icon-btn {
@@ -216,8 +239,8 @@ const clickActionMore = () => {
     border: none;
     padding: 0;
     cursor: pointer;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -230,7 +253,7 @@ const clickActionMore = () => {
 }
 
 .title-area {
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -287,14 +310,12 @@ const clickActionMore = () => {
 /* 封面区与相册轮播 */
 .cover-section {
     position: relative;
-    width: calc(100% - 24px);
-    /* 两侧留白 */
-    margin: 0 auto;
-    aspect-ratio: 363 / 546;
-    border-radius: 28px;
-    background-color: #f0f0f0;
-    /* 加载时有底色 */
-    /* 为了让底部的跨界按钮能够溢出并显示，不使用 overflow: hidden */
+    width: 100%;
+    margin: 0;
+    height: min(66.5vh, 540px);
+    min-height: 500px;
+    border-radius: 0;
+    background-color: #242424;
 }
 
 /* 轮播滑动容器 */
@@ -308,8 +329,7 @@ const clickActionMore = () => {
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     /* Firefox */
-    border-radius: 28px;
-    /* 切边圆角 */
+    border-radius: 0;
 }
 
 .carousel-container::-webkit-scrollbar {
@@ -331,17 +351,16 @@ const clickActionMore = () => {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 160px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
-    border-bottom-left-radius: 28px;
-    border-bottom-right-radius: 28px;
+    height: 180px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(26, 26, 26, 0.86) 100%);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
     pointer-events: none;
 }
 
 .pagination-dots {
     position: absolute;
-    bottom: 54px;
-    /* 避开悬浮按钮的位置 */
+    bottom: 38px;
     left: 0;
     right: 0;
     display: flex;
@@ -366,16 +385,16 @@ const clickActionMore = () => {
 
 /* 悬浮操作按钮区 */
 .action-buttons {
-    position: absolute;
-    bottom: -32px;
-    /* 水平骑缝在底部 */
-    left: 0;
-    right: 0;
+    position: fixed;
+    bottom: calc(34px + env(safe-area-inset-bottom));
+    left: 20px;
+    right: 20px;
     display: flex;
     align-items: center;
-    justify-content: space-evenly;
-    padding: 0 20px;
-    z-index: 10;
+    justify-content: space-between;
+    padding: 0;
+    z-index: 30;
+    gap: 12px;
 }
 
 .action-btn {
@@ -384,74 +403,156 @@ const clickActionMore = () => {
     padding: 0;
     cursor: pointer;
     transition: transform 0.2s;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
 }
 
 .action-btn:active {
     transform: scale(0.92);
 }
 
-.msg-circle {
-    width: 50px;
-    height: 50px;
-    background-color: #FFCD00;
-    border-radius: 50%;
+.msg-btn,
+.call-btn {
+    height: 52px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 10px rgba(255, 205, 0, 0.3);
+    gap: 6px;
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a1a1a;
 }
 
-.msg-circle img {
-    width: 24px;
-    height: 24px;
+.msg-btn {
+    width: 120px;
+    background: #ffe539;
 }
 
 .call-btn {
-    width: 78px;
-    height: 78px;
+    flex: 1;
+    background: linear-gradient(90deg, #c8f24e 0%, #78eb3f 100%);
 }
 
+.msg-circle img,
 .call-btn img {
-    width: 100%;
-    height: 100%;
+    width: 26px;
+    height: 26px;
     display: block;
 }
 
-.heart-circle {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
+.msg-circle {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 10px rgba(255, 240, 245, 0.5);
 }
 
-.heart-circle img {
-    width: 100%;
-    height: 100%;
+.heart-btn {
+    display: none;
 }
 
 /* 关于我资料区 */
 .about-section {
-    padding: 50px 20px 20px 20px;
-    /* 给上面的悬浮按钮留出充足的点击空间 */
+    position: relative;
+    z-index: 5;
+    margin-top: -24px;
+    padding: 20px 20px 124px 20px;
     flex: 1;
+    background: #1a1a1a;
+    border-radius: 24px 24px 0 0;
+}
+
+.profile-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+}
+
+.profile-name {
+    margin: 0 0 16px;
+    color: #fff;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-size: 20px;
+    line-height: 20px;
+    font-weight: 800;
+}
+
+.summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.summary-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 8px;
+    border-radius: 16px;
+    background: #292929;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.age-chip {
+    color: #ff7aff;
+}
+
+.summary-chip.is-online {
+    color: #76f337;
+}
+
+.summary-chip.is-busy {
+    color: #ffa339;
+}
+
+.summary-chip.is-offline {
+    color: #d8d8d8;
+}
+
+.summary-like {
+    width: 52px;
+    height: 52px;
+    border: none;
+    border-radius: 50%;
+    background: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.summary-like img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .about-title {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
     font-size: 16px;
     font-weight: 700;
-    color: black;
+    color: #fff;
     margin-bottom: 12px;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.about-title::after {
+    content: "";
+    width: 77px;
+    height: 3px;
+    border-radius: 2px;
+    background: #65d941;
 }
 
 .about-desc {
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 14px;
-    color: #4d4d4d;
-    line-height: 22px;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 24px;
     font-weight: 510;
 }
 
@@ -460,6 +561,6 @@ const clickActionMore = () => {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: white;
+    background-color: #1a1a1a;
 }
 </style>

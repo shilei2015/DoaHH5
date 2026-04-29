@@ -71,10 +71,9 @@ const goMyLikes = () => {
         <div class="content">
             <!-- Header Section -->
             <header class="page-header">
-                <span class="title">Me</span>
+                <span class="title">Personal</span>
                 <button class="edit-btn" @click="handleEdit">
                     <img :src="icEdit" alt="" class="edit-icon" />
-                    <span>Edit</span>
                 </button>
             </header>
 
@@ -101,7 +100,7 @@ const goMyLikes = () => {
                     <span class="stats-num">{{ userInfo?.VisitorMeNumber }}</span>
                 </div>
                 <div class="stat-box" @click="goMyLikes">
-                    <span class="stats-label">Girls I like</span>
+                    <span class="stats-label">Like</span>
                     <span class="stats-num">{{ userInfo?.UserLikeNumber }}</span>
                 </div>
             </div>
@@ -151,15 +150,16 @@ const goMyLikes = () => {
     /* 开启内部垂直滚动 */
     -webkit-overflow-scrolling: touch;
     /* 增强 iOS 上的滚动顺滑感 */
-    background-color: #F2F1F4;
+    background-color: #1a1a1a;
     overflow-x: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
     padding-bottom: 0;
     /* 外部容器不设置 padding */
     box-sizing: border-box;
 }
 
 .bg-wrapper {
+    display: none;
     position: absolute;
     top: 0;
     left: 0;
@@ -176,8 +176,7 @@ const goMyLikes = () => {
 .content {
     position: relative;
     padding: 20px;
-    padding-top: calc(20px + env(safe-area-inset-top));
-    /* 在内容层底部增加大幅度预留空间，并适配刘海屏 */
+    padding-top: calc(56px + env(safe-area-inset-top));
     padding-bottom: calc(110px + env(safe-area-inset-bottom));
 }
 
@@ -186,31 +185,31 @@ const goMyLikes = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .title {
-    font-size: 24px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 28px;
     font-weight: 900;
-    font-style: italic;
-    color: #1A1A1A;
+    color: #fff;
+    line-height: 32px;
 }
 
 .edit-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-    border-radius: 100px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
     border: none;
     cursor: pointer;
 }
 
 .edit-icon {
-    width: 16px;
-    height: 16px;
+    width: 28px;
+    height: 28px;
+    filter: brightness(0) invert(1);
 }
 
 .edit-btn span {
@@ -221,18 +220,20 @@ const goMyLikes = () => {
 
 /* User Info */
 .user-info {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 90px 1fr;
     align-items: center;
-    margin-bottom: 32px;
+    column-gap: 16px;
+    margin-bottom: 20px;
 }
 
 .avatar-container {
-    width: 110px;
-    height: 110px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     overflow: hidden;
-    margin-bottom: 12px;
+    margin-bottom: 0;
+    grid-row: span 2;
 }
 
 .avatar-img {
@@ -242,16 +243,18 @@ const goMyLikes = () => {
 }
 
 .nickname {
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 800;
-    color: #2C2C38;
-    margin-bottom: 4px;
+    color: #fff;
+    margin: 0 0 6px;
+    align-self: end;
 }
 
 .location-badge {
     display: flex;
     align-items: center;
     gap: 4px;
+    align-self: start;
 }
 
 .flag-icon {
@@ -261,7 +264,7 @@ const goMyLikes = () => {
 
 .country {
     font-size: 14px;
-    color: rgba(44, 44, 56, 0.5);
+    color: rgba(255, 255, 255, 0.5);
     font-weight: 500;
 }
 
@@ -269,10 +272,10 @@ const goMyLikes = () => {
 .stats-card {
     display: flex;
     justify-content: space-around;
-    background: #FFFFFF;
-    border-radius: 16px;
-    padding: 18px 0;
-    margin-bottom: 12px;
+    background: #212121;
+    border-radius: 20px;
+    padding: 20px 0;
+    margin-bottom: 20px;
 }
 
 .stat-box {
@@ -284,27 +287,27 @@ const goMyLikes = () => {
 
 .stats-label {
     font-size: 13px;
-    color: rgba(44, 44, 56, 0.4);
+    color: rgba(255, 255, 255, 0.3);
     font-weight: 500;
 }
 
 .stats-num {
     font-size: 20px;
     font-weight: 800;
-    color: #2C2C38;
+    color: #fff;
 }
 
 /* Wallet Banner */
 .wallet-banner {
-    background: linear-gradient(90.2deg, #FED627 0.17%, #FF1AD0 99.85%);
-    border-radius: 16px;
-    height: 80px;
+    background: linear-gradient(90deg, #c8f24e 0%, #78eb3f 100%);
+    border-radius: 20px;
+    height: 76px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 16px;
-    margin-bottom: 12px;
-    color: white;
+    margin-bottom: 28px;
+    color: #061900;
 }
 
 .wallet-left {
@@ -337,7 +340,7 @@ const goMyLikes = () => {
 }
 
 .balance {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 800;
 }
 
@@ -345,15 +348,14 @@ const goMyLikes = () => {
 .get-more-wrap {
     position: relative;
     height: 36px;
+    background: #1a1a1a;
+    border-radius: 18px;
     display: flex;
     align-items: center;
 }
 
 .get-more-bg {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
+    display: none;
 }
 
 .get-more-btn {
@@ -365,8 +367,8 @@ const goMyLikes = () => {
     background: none;
     border: none;
     padding: 0 14px;
-    color: white;
-    font-size: 12px;
+    color: #fff;
+    font-size: 14px;
     font-weight: 800;
     cursor: pointer;
 }
@@ -378,9 +380,9 @@ const goMyLikes = () => {
 
 /* Menu Container */
 .menu-container {
-    background: #FFFFFF;
-    border-radius: 16px;
-    padding: 0 16px;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
     margin-bottom: 24px;
 }
 
@@ -391,35 +393,32 @@ const goMyLikes = () => {
 .menu-item-content {
     display: flex;
     align-items: center;
-    height: 60px;
+    height: 58px;
     cursor: pointer;
 }
 
 .menu-icon {
-    width: 24px;
-    height: 24px;
-    margin-right: 12px;
+    width: 30px;
+    height: 30px;
+    margin-right: 16px;
+    filter: brightness(0) invert(1);
 }
 
 .menu-title {
     flex: 1;
     font-size: 16px;
     font-weight: 600;
-    color: #2C2C38;
+    color: #fff;
 }
 
 .chevron {
     width: 16px;
     height: 16px;
     opacity: 0.3;
+    filter: brightness(0) invert(1);
 }
 
 .divider {
-    position: absolute;
-    bottom: 0;
-    left: 36px;
-    right: 0;
-    height: 1px;
-    background: #F1F1F5;
+    display: none;
 }
 </style>

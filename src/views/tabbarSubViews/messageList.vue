@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getChatRecordManager } from '@/utils/msg/ChatRecordManager'
-import { onMounted, reactive, ref, computed } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { LHMsgChat } from '@/utils/msg/ChatModel'
 import { formatTimestamp } from '@/utils/tools'
@@ -101,15 +101,14 @@ onMounted(async () => {
 
 <style scoped>
 .message-page {
-    background-color: #f2f1f4;
+    background-color: #1a1a1a;
     height: 100vh;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    font-family: 'SF Pro', 'Helvetica Neue', Arial, sans-serif;
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
     position: relative;
-    /* Top gradient from the Figma design background */
-    background: linear-gradient(180deg, #ffe0ec 0%, #f2f1f4 20%, #f2f1f4 100%);
+    background: #1a1a1a;
     overflow: hidden;
 }
 
@@ -117,23 +116,22 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: calc(20px + env(safe-area-inset-top)) 20px 20px;
-    /* Offset for mobile status bar */
+    padding: calc(56px + env(safe-area-inset-top)) 20px 18px;
 }
 
 .title {
-    font-size: 26px;
-    font-weight: 800;
-    font-style: italic;
-    font-family: 'Alibaba Sans', 'SF Pro', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    font-family: Georgia, "Times New Roman", serif;
     margin: 0;
-    color: #000;
+    color: #fff;
+    line-height: 32px;
 }
 
 .clear-btn {
-    background: rgba(255, 255, 255, 0.6);
+    background: #292929;
     border: none;
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 7px 12px;
     display: flex;
     align-items: center;
@@ -144,7 +142,12 @@ onMounted(async () => {
 .clear-text {
     font-size: 14px;
     font-weight: 510;
-    color: #000;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.clear-btn img {
+    opacity: 0.6;
+    filter: brightness(0) invert(1);
 }
 
 .icon-clear {
@@ -154,10 +157,10 @@ onMounted(async () => {
 /* White rounded container for the list */
 .list-wrapper {
     flex: 1;
-    background-color: #ffffff;
-    border-radius: 24px 24px 0 0;
+    background-color: #1a1a1a;
+    border-radius: 0;
     overflow-y: auto;
-    padding-top: 15px;
+    padding-top: 0;
 }
 
 .message-item-wrapper {
@@ -168,13 +171,13 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     padding: 12px 20px;
-    background-color: #ffffff;
+    background-color: #1a1a1a;
 }
 
 .avatar-area {
     position: relative;
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     flex-shrink: 0;
     margin-right: 12px;
 }
@@ -184,7 +187,7 @@ onMounted(async () => {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #e5e5e5;
+    background: linear-gradient(135deg, #c8f24e, #78eb3f);
 }
 
 .status-dot {
@@ -208,9 +211,8 @@ onMounted(async () => {
     justify-content: center;
     gap: 6px;
     min-width: 0;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
-    /* Figma subtle divider */
-    padding-bottom: 12px;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .message-item-wrapper:last-child .content-area {
@@ -226,12 +228,12 @@ onMounted(async () => {
 .user-name {
     font-size: 16px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #fff;
 }
 
 .time-text {
     font-size: 12px;
-    color: #b3b3b3;
+    color: rgba(255, 255, 255, 0.3);
     font-weight: 510;
 }
 
@@ -245,7 +247,7 @@ onMounted(async () => {
 .msg-preview {
     margin: 0;
     font-size: 14px;
-    color: #808080;
+    color: rgba(255, 255, 255, 0.6);
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
@@ -253,7 +255,7 @@ onMounted(async () => {
 }
 
 .unread-badge {
-    background-color: #ff4d4f;
+    background-color: #ff3c4b;
     color: #ffffff;
     font-size: 11px;
     font-weight: 600;
@@ -277,22 +279,23 @@ onMounted(async () => {
     height: 100%;
     display: flex;
     align-items: center;
-    padding-left: 12px;
+    padding-left: 18px;
     padding-right: 20px;
+    background: #1a1a1a;
 }
 
 .delete-btn {
-    width: 52px;
-    height: 52px;
-    background-color: #ff4d4f;
-    border-radius: 50%;
+    width: 78px;
+    height: 78px;
+    background-color: #ff3c4b;
+    border-radius: 20px;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     padding: 0;
-    box-shadow: 0 4px 10px rgba(255, 77, 79, 0.2);
+    box-shadow: none;
 }
 
 .bottom-placeholder {
