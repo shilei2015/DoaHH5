@@ -203,8 +203,8 @@ onUnmounted(() => {
 .sl-spinner {
     width: 28px;
     height: 28px;
-    border: 3px solid rgba(0, 0, 0, 0.1);
-    border-top-color: #ff1ad0;
+    border: 3px solid rgba(255, 255, 255, 0.12);
+    border-top-color: #65d941;
     border-radius: 50%;
     animation: sl-spin 0.8s linear infinite;
 }

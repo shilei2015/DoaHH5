@@ -8,13 +8,10 @@ import {
   CellGroup as VanCellGroup,
   Uploader as VanUploader,
   Picker as VanPicker,
-  Icon as VanIcon,
-  Icon
 } from 'vant';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ossUploadService } from '@/utils/net/OSSUploadService';
-import { showLoadingToast, closeToast } from 'vant';
 import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 
@@ -63,9 +60,14 @@ let initialDataSnapshot = "";
 let avatarFile: File | null = null;
 // Uploader 引用，用于手动点击触发
 const avatarUploaderRef = ref();
+const showAvatarAction = ref(false);
 
 const triggerChooseAvatar = () => {
-  // 通过 Ref 找到 Uploader 内部隐藏的 input 选择框并触发
+  showAvatarAction.value = true;
+};
+
+const openAvatarFileInput = () => {
+  showAvatarAction.value = false;
   const input = avatarUploaderRef.value?.$el?.querySelector('input');
   input?.click();
 };
@@ -222,7 +224,7 @@ onMounted(() => {
         <img :src="backIcon" alt="Back" />
       </button>
       <h1 class="title">Edit Profile</h1>
-      <button class="save-btn" @click="onSave">Save</button>
+      <div class="header-spacer"></div>
     </header>
 
     <div class="content">
@@ -285,23 +287,29 @@ onMounted(() => {
     </div>
 
     <!-- Pickers -->
-    <van-popup v-model:show="showGenderPicker" position="bottom" round>
+    <van-popup v-model:show="showGenderPicker" position="bottom" round class="dark-picker-popup">
       <van-picker :columns="genderOptions.map(text => ({ text, value: text }))"
         @confirm="({ selectedOptions }) => { formData.gender = selectedOptions[0].text; showGenderPicker = false }"
         @cancel="showGenderPicker = false" />
     </van-popup>
 
-    <van-popup v-model:show="showAgePicker" position="bottom" round>
+    <van-popup v-model:show="showAgePicker" position="bottom" round class="dark-picker-popup">
       <van-picker :columns="ageOptions.map(num => ({ text: num.toString(), value: num }))"
         @confirm="({ selectedOptions }) => { formData.age = Number(selectedOptions[0].text); showAgePicker = false }"
         @cancel="showAgePicker = false" />
     </van-popup>
 
-    <van-popup v-model:show="showCountryPicker" position="bottom" round>
+    <van-popup v-model:show="showCountryPicker" position="bottom" round class="dark-picker-popup">
       <van-loading v-if="countryList.length == 0" />
       <van-picker v-else :columns="countryList.map(country => ({ text: country.Value, value: country.Key }))"
         @confirm="({ selectedOptions }) => { formData.countryCode = selectedOptions[0].value; formData.country = selectedOptions[0].text; showCountryPicker = false }"
         @cancel="showCountryPicker = false" />
+    </van-popup>
+
+    <van-popup v-model:show="showAvatarAction" position="bottom" round class="avatar-action-popup">
+      <button class="avatar-action" @click="openAvatarFileInput">Take Pictures</button>
+      <button class="avatar-action" @click="openAvatarFileInput">Select From the Album</button>
+      <button class="avatar-action" @click="showAvatarAction = false">Cancel</button>
     </van-popup>
 
     <!-- Nickname Editor Popup -->
@@ -316,6 +324,10 @@ onMounted(() => {
           class="nickname-field-input" />
       </div>
     </van-popup>
+
+    <footer class="save-footer">
+      <button class="footer-save-btn" @click="onSave">Save</button>
+    </footer>
   </div>
 </template>
 
@@ -323,15 +335,17 @@ onMounted(() => {
 .edit-profile-page {
   width: 100%;
   height: 100vh;
-  background-color: #F8F9FB;
+  background-color: #1a1a1a;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  color: #fff;
+  font-family: "Avenir Next", "Trebuchet MS", sans-serif;
 }
 
 .topSpace {
   position: fixed;
-  background-color: #fff;
+  background-color: #1a1a1a;
   width: 100%;
   top: 0;
   height: env(safe-area-inset-top);
@@ -340,7 +354,7 @@ onMounted(() => {
 /* Header */
 .header {
   height: 44px;
-  background-color: #fff;
+  background-color: #1a1a1a;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -358,41 +372,31 @@ onMounted(() => {
 
 .back-btn img {
   width: 100%;
+  filter: brightness(0) invert(1);
 }
 
 .title {
   font-size: 18px;
-  font-weight: 600;
-  color: #1A1A1A;
+  font-weight: 800;
+  color: #fff;
 }
 
-.save-btn {
-  width: 86px;
-  height: 38px;
-  background: linear-gradient(135deg, #FED627 0%, #FF1AD0 100%);
-  color: #fff;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+.header-spacer {
+  width: 24px;
+  height: 24px;
 }
 
 /* Content */
 .content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(124px + env(safe-area-inset-bottom));
 }
 
 /* Avatar Section */
 .avatar-section {
-  background-color: #fff;
-  padding: 40px 0 20px;
+  background-color: #1a1a1a;
+  padding: 36px 0 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -411,7 +415,7 @@ onMounted(() => {
   /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
   overflow: hidden;
   position: relative;
-  background-color: #f0f0f0;
+  background-color: #242424;
 }
 
 .avatar-image img {
@@ -449,7 +453,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff;
+  border: 2px solid #1a1a1a;
   z-index: 20;
 }
 
@@ -466,19 +470,20 @@ onMounted(() => {
 
 .nickname-text {
   font-size: 18px;
-  font-weight: 600;
-  color: #1A1A1A;
+  font-weight: 800;
+  color: #fff;
 }
 
 .editName {
   width: 16px;
   height: 16px;
+  filter: brightness(0) invert(1);
 }
 
 /* Edit Popup Styles */
 .nickname-edit-popup {
   padding: 0 0 20px 0;
-  background-color: #F8F9FB;
+  background-color: #1a1a1a;
 }
 
 .popup-header {
@@ -487,26 +492,25 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  background-color: #fff;
-  border-bottom: 1px solid #F1F2F3;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #242424;
 }
 
 .popup-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #fff;
 }
 
 .popup-cancel {
   font-size: 14px;
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .popup-confirm {
   font-size: 14px;
   font-weight: 600;
-  color: #FF1AD0;
-  /* 采用保存按钮渐变的主色调 */
+  color: #78eb3f;
 }
 
 .popup-content {
@@ -514,28 +518,48 @@ onMounted(() => {
 }
 
 .nickname-field-input {
-  background-color: #fff !important;
+  background-color: #212121 !important;
   border-radius: 12px;
   padding: 12px 16px;
+  color: #fff;
 }
 
 /* Details Section */
 .form-section {
-  margin-top: 12px;
+  margin: 0 20px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #242424;
 }
 
 :deep(.van-cell) {
-  padding: 16px;
-  font-size: 16px;
+  padding: 16px 0;
+  font-size: 17px;
+  background: transparent;
+  color: #fff;
 }
 
 :deep(.van-cell__title) {
-  color: #999;
+  color: #fff;
+  font-weight: 800;
 }
 
 :deep(.van-cell__value) {
-  color: #1A1A1A;
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
+}
+
+:deep(.van-cell::after),
+:deep(.van-cell-group::after) {
+  display: none;
+}
+
+:deep(.van-cell-group--inset) {
+  margin: 0;
+  background: transparent;
+}
+
+:deep(.van-cell__right-icon) {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 /* ====================================================== */
@@ -543,15 +567,17 @@ onMounted(() => {
 /* ====================================================== */
 
 .album-section {
-  background-color: #fff;
-  margin-top: 12px;
-  padding: 16px;
+  background-color: #1a1a1a;
+  margin: 28px 20px 0;
+  padding: 0 0 30px;
+  border-bottom: 1px solid #242424;
+  overflow-x: auto;
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1A1A1A;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
   margin-bottom: 12px;
 }
 
@@ -589,8 +615,8 @@ onMounted(() => {
 .add-box {
   width: 106px;
   height: 141px;
-  border: 1px dashed #EBECED;
-  border-radius: 12px;
+  border: 2px dashed #555;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -599,11 +625,12 @@ onMounted(() => {
 .add-box img {
   width: 24px;
   height: 24px;
-  opacity: 0.5;
+  opacity: 0.55;
+  filter: brightness(0) invert(1);
 }
 
 :deep(.van-uploader__preview-image) {
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
 }
 
@@ -611,16 +638,16 @@ onMounted(() => {
 
 /* About Section */
 .about-section {
-  background-color: #fff;
-  margin-top: 12px;
-  padding: 16px;
+  background-color: #1a1a1a;
+  margin: 28px 20px 20px;
+  padding: 0;
   margin-bottom: 20px;
 }
 
 .textarea-wrapper {
-  background-color: #F8F9FB;
-  border-radius: 12px;
-  padding: 12px;
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 textarea {
@@ -629,7 +656,96 @@ textarea {
   border: none;
   background: none;
   font-size: 14px;
-  color: #1A1A1A;
+  color: #fff;
   resize: none;
+  line-height: 24px;
+  outline: none;
+}
+
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+.save-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(98px + env(safe-area-inset-bottom));
+  padding: 12px 20px calc(34px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: #1a1a1a;
+  z-index: 20;
+}
+
+.footer-save-btn {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #c8f24e 0%, #78eb3f 100%);
+  color: #1a1a1a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.avatar-action-popup,
+.dark-picker-popup {
+  background: #1a1a1a;
+  padding: 20px;
+}
+
+.avatar-action {
+  width: 100%;
+  height: 59px;
+  border: none;
+  border-radius: 20px;
+  background: #212121;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.avatar-action:last-child {
+  margin-bottom: 0;
+}
+
+:deep(.van-popup--bottom.van-popup--round) {
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+}
+
+:deep(.van-picker) {
+  background: #1a1a1a;
+}
+
+:deep(.van-picker__toolbar) {
+  background: #1a1a1a;
+}
+
+:deep(.van-picker__title),
+:deep(.van-picker-column__item) {
+  color: #fff;
+}
+
+:deep(.van-picker-column__item--disabled),
+:deep(.van-picker__cancel) {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+:deep(.van-picker__confirm) {
+  color: #78eb3f;
+}
+
+:deep(.van-picker__mask) {
+  background-image: linear-gradient(180deg, #1a1a1a 0%, rgba(26, 26, 26, 0.42) 45%, rgba(26, 26, 26, 0.42) 55%, #1a1a1a 100%);
+}
+
+:deep(.van-picker__frame) {
+  left: 20px;
+  right: 20px;
+  border-radius: 16px;
+  background: #212121;
 }
 </style>

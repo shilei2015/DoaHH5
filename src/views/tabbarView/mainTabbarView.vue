@@ -60,6 +60,7 @@ const isShowLimitOfferView = ref(false)
     height: 100vh;
     overflow: hidden;
     z-index: 0;
+    background: #1a1a1a;
 }
 
 .limitOffer {

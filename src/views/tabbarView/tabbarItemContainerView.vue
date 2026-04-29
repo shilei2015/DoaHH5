@@ -40,18 +40,20 @@ const switchTo = (name: string) => {
     position: fixed;
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     height: 88px;
-    background-color: #ffffff;
+    background-color: #1a1a1a;
     left: 0;
     right: 0;
     bottom: 0;
-    box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
+    padding-top: 12px;
+    box-sizing: border-box;
 }
 
 .tabbarItem {
-    height: 100%;
+    height: 44px;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -77,7 +79,7 @@ const switchTo = (name: string) => {
     width: 10px;
     height: 10px;
     background-color: #FF3B30;
-    border: 2px solid #fff;
+    border: 2px solid #1a1a1a;
     border-radius: 50%;
     z-index: 10;
 }
