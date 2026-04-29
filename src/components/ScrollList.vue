@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 
 const props = defineProps<{
     refreshing: boolean;
@@ -111,7 +112,7 @@ onUnmounted(() => {
 
             <!-- 空页面状态 -->
             <div v-if="props.isEmpty" class="empty-container">
-                <img src="@/assets/comm/comm-no-more-data.svg" alt="No data" class="empty-icon" />
+                <EmptyState type="empty" />
             </div>
 
             <!-- 底部加载更多指示器 -->
@@ -131,6 +132,7 @@ onUnmounted(() => {
 .scroll-list-container {
     width: 100%;
     height: 100%;
+    background: transparent;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -148,17 +150,11 @@ onUnmounted(() => {
 
 .empty-container {
     flex: 1;
+    min-height: 320px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* padding-top: 100px; */
-    /* Adjust based on navbar height if needed */
-}
-
-.empty-icon {
-    width: 200px;
-    height: auto;
 }
 
 /* 下拉刷新指示器区 */
@@ -203,8 +199,8 @@ onUnmounted(() => {
 .sl-spinner {
     width: 28px;
     height: 28px;
-    border: 3px solid rgba(0, 0, 0, 0.1);
-    border-top-color: #ff1ad0;
+    border: 3px solid rgba(255, 255, 255, 0.12);
+    border-top-color: var(--app-accent, #65d941);
     border-radius: 50%;
     animation: sl-spin 0.8s linear infinite;
 }

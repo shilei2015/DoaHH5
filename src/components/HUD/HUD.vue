@@ -44,6 +44,7 @@ defineExpose({
         <svg class="spinner" viewBox="0 0 50 50">
           <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
         </svg>
+        <p class="loading-text">Loading...</p>
       </div>
     </div>
 
@@ -68,6 +69,7 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   z-index: 99999;
   pointer-events: none;
   /* 让外层不阻挡点击 */
@@ -80,8 +82,8 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.15);
-  /* 轻微暗色透明遮罩 */
+  background:
+    linear-gradient(180deg, rgba(26, 26, 26, 0.98) 0%, rgba(26, 26, 26, 0.9) 100%);
   pointer-events: auto;
   /* 阻止交互 */
   display: flex;
@@ -90,26 +92,38 @@ defineExpose({
 }
 
 .loading-box {
-  background-color: rgba(0, 0, 0, 0.85);
-  width: 76px;
-  height: 76px;
-  border-radius: 12px;
+  min-width: 112px;
+  min-height: 112px;
+  border-radius: 18px;
+  background: rgba(37, 37, 37, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
+  flex-direction: column;
+  gap: 12px;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  padding: 18px 20px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.42);
 }
 
 .spinner {
   animation: rotate 2s linear infinite;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
 }
 
 .spinner .path {
-  stroke: #ffffff;
+  stroke: var(--app-accent, #65d941);
   stroke-linecap: round;
   animation: dash 1.5s ease-in-out infinite;
+}
+
+.loading-text {
+  margin: 0;
+  color: var(--app-text-secondary, rgba(255, 255, 255, 0.72));
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
 }
 
 @keyframes rotate {
@@ -152,12 +166,13 @@ defineExpose({
 }
 
 .toast-box {
-  background-color: rgba(0, 0, 0, 0.85);
-  color: #ffffff;
+  background-color: rgba(37, 37, 37, 0.96);
+  color: var(--app-text-primary, #ffffff);
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 15px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
   word-break: break-all;
   max-width: 100%;
   text-align: center;

@@ -55,17 +55,28 @@ const isShowLimitOfferView = ref(false)
 </template>
 
 <style scoped>
+.main-tabbar-root {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--app-bg, #1a1a1a);
+    color: var(--app-text-primary, #ffffff);
+}
+
 .mainTabView {
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     z-index: 0;
+    background: var(--app-bg, #1a1a1a);
 }
 
 .limitOffer {
     height: 86px;
     position: fixed;
-    bottom: calc(88px + 21px);
+    bottom: calc(var(--app-tabbar-height, 86px) + 21px);
     left: 17px;
     right: 17px;
 }

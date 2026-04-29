@@ -91,11 +91,14 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 .app-container {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     position: relative;
+    background: var(--app-bg, #1a1a1a);
+    color: var(--app-text-primary, #ffffff);
 }
 
-/* 全局基础页面容器：白底 + 顶/底与安全区渐变，与原生壳 #141414 衔接 */
+/* 全局基础页面容器：深色底与原生安全区保持一致 */
 .page-view {
     position: absolute;
     top: 0;
@@ -105,15 +108,8 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
     transition: transform 0.4s cubic-bezier(0.3, 0.8, 0.3, 1), opacity 0.4s ease;
     overflow: hidden;
     z-index: 1;
-    background-color: #fff;
-    background-image:
-        linear-gradient(180deg, #141414 0%, rgba(255, 255, 255, 0) 100%),
-        linear-gradient(0deg, #141414 0%, rgba(255, 255, 255, 0) 100%);
-    background-size:
-        100% calc(env(safe-area-inset-top, 0px) + 44px),
-        100% calc(env(safe-area-inset-bottom, 0px) + 28px);
-    background-position: top, bottom;
-    background-repeat: no-repeat;
+    background-color: var(--app-bg, #1a1a1a);
+    color: var(--app-text-primary, #ffffff);
 }
 
 /* --- Push (前进) 动画 --- */
@@ -159,16 +155,16 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 }
 
 html {
-    background-color: #ffffff;
+    background-color: var(--app-bg, #1a1a1a);
 }
 
-/* 白色背景，橡皮筋露底时不出现白边 */
+/* 深色背景，橡皮筋露底时不出现白边 */
 body {
     overflow: hidden;
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
-    background-color: #ffffff;
+    background-color: var(--app-bg, #1a1a1a);
 }
 </style>
