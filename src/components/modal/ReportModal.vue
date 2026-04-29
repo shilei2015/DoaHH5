@@ -54,27 +54,30 @@ const handleSubmit = async () => {
 
 <style scoped>
 .report-modal {
-    width: 335px;
-    background: #FFFFFF;
-    border-radius: 24px;
-    padding: 24px;
+    width: 100vw;
+    background: #1A1A1A;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 20px calc(49px + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 .modal-header {
     width: 100%;
-    position: relative;
     display: flex;
+    align-items: center;
     justify-content: center;
-    margin-bottom: 24px;
+    position: relative;
+    margin-bottom: 18px;
 }
 
 .title {
-    font-size: 20px;
+    font-size: 17px;
+    line-height: 26px;
     font-weight: 700;
-    color: #333333;
+    color: #FFFFFF;
 }
 
 .close-icon {
@@ -82,8 +85,12 @@ const handleSubmit = async () => {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 24px;
-    color: #CCCCCC;
+    width: 24px;
+    height: 24px;
+    font-size: 32px;
+    line-height: 22px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
 }
 
@@ -94,19 +101,21 @@ const handleSubmit = async () => {
 
 .report-textarea {
     width: 100%;
-    height: 180px;
-    background: #F8F8F8;
-    border-radius: 16px;
-    border: 1px solid #EEEEEE;
+    height: 188px;
+    background: #212121;
+    border-radius: 20px;
+    border: none;
     padding: 16px;
     font-size: 15px;
-    color: #333333;
+    line-height: 22px;
+    font-weight: 500;
+    color: #FFFFFF;
     resize: none;
     outline: none;
 }
 
 .report-textarea::placeholder {
-    color: #BBBBBB;
+    color: rgba(255, 255, 255, 0.2);
 }
 
 .modal-footer {
@@ -118,11 +127,11 @@ const handleSubmit = async () => {
 .btn {
     flex: 1;
     height: 52px;
-    border-radius: 26px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s;
@@ -133,13 +142,12 @@ const handleSubmit = async () => {
 }
 
 .btn-cancel {
-    background: #F5F5F5;
-    color: #333333;
+    background: #292929;
+    color: #FFFFFF;
 }
 
 .btn-submit {
-    background: linear-gradient(to right, #FFD034, #FF7634, #FF00CC);
-    color: #FFFFFF;
-    box-shadow: 0 4px 15px rgba(255, 118, 52, 0.3);
+    background: linear-gradient(90deg, #C8F24E 0%, #78EB3F 100%);
+    color: #1A1A1A;
 }
 </style>

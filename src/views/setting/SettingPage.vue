@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  NavBar as VanNavBar,
-  Cell as VanCell,
-  CellGroup as VanCellGroup,
-  Popup as VanPopup,
-  Picker as VanPicker,
-  Button as VanButton
-} from 'vant';
 import HUD from '@/components/HUD';
 
 import backIcon from '@/assets/comm/comm-back.png';
@@ -45,6 +37,14 @@ const clearCache = () => {
   }, 1000);
 };
 
+const openPrivacyPolicy = () => {
+  showWebviewModal('Privacy Policy', NET_CONFIG.ppUrl);
+};
+
+const openTermsOfService = () => {
+  showWebviewModal('Terms of Service', NET_CONFIG.tsUrl);
+};
+
 </script>
 
 <template>
@@ -59,34 +59,38 @@ const clearCache = () => {
     </header>
 
     <div class="content">
-      <!-- Main Settings Group -->
-      <section class="menu-group">
-        <van-cell-group inset round>
-          <!-- Version with Update Badge -->
-          <van-cell title="Version" :value="currentVersion" />
-          <van-cell title="Privacy Policy" is-link @click="showWebviewModal('Privacy Policy', NET_CONFIG.ppUrl)" />
-          <van-cell title="Terms of Service" is-link @click="showWebviewModal('Terms of Service', NET_CONFIG.tsUrl)" />
-          <!-- <van-cell title="Language" :value="currentLanguage" is-link @click="showLanguagePicker = true" /> -->
-
-          <!-- <van-cell title="Clear Cache" is-link @click="clearCache" /> -->
-
-
-        </van-cell-group>
-      </section>
-
-      <!-- Legal & Privacy Group -->
-      <!-- <section class="menu-group">
-        <van-cell-group inset round>
-
-        </van-cell-group>
-      </section> -->
-
-      <!-- Account Settings Group -->
-      <section class="menu-group">
-        <van-cell-group inset round>
-          <van-cell title="Blacklist" is-link @click="router.push('/setting/blacklist')" />
-          <van-cell title="Account Settings" is-link @click="router.push('/setting/account')" />
-        </van-cell-group>
+      <section class="settings-list">
+        <button class="settings-row" type="button">
+          <span class="row-title">Version</span>
+          <span class="row-meta">
+            <i v-if="hasUpdate" class="update-dot"></i>
+            <span>{{ currentVersion }}</span>
+            <span class="chevron">›</span>
+          </span>
+        </button>
+        <button class="settings-row" type="button" @click="openPrivacyPolicy">
+          <span class="row-title">Privacy Policy</span>
+          <span class="chevron">›</span>
+        </button>
+        <button class="settings-row" type="button" @click="openTermsOfService">
+          <span class="row-title">Terms of Service</span>
+          <span class="chevron">›</span>
+        </button>
+        <button class="settings-row" type="button" @click="showLanguagePicker = true">
+          <span class="row-title">Language</span>
+          <span class="row-meta">
+            <span>{{ currentLanguage }}</span>
+            <span class="chevron">›</span>
+          </span>
+        </button>
+        <button class="settings-row" type="button" @click="router.push('/setting/blacklist')">
+          <span class="row-title">Blacklist</span>
+          <span class="chevron">›</span>
+        </button>
+        <button class="settings-row" type="button" @click="router.push('/setting/account')">
+          <span class="row-title">Account Settings</span>
+          <span class="chevron">›</span>
+        </button>
       </section>
     </div>
 
@@ -104,109 +108,149 @@ const clearCache = () => {
 .setting-page {
   width: 100%;
   height: 100vh;
-  background-color: #fff;
-  /* Neutral light grey background */
+  background-color: #1A1A1A;
   display: flex;
   flex-direction: column;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 /* Header */
 .header {
   height: 44px;
-  background-color: #fff;
+  background-color: #1A1A1A;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 20px;
   flex-shrink: 0;
   margin-top: env(safe-area-inset-top);
 }
 
 .back-btn {
-  width: 24px;
+  width: 28px;
+  height: 28px;
   background: none;
   border: none;
   padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .back-btn img {
   width: 100%;
+  height: 100%;
+  filter: invert(1);
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1A1A1A;
+  font-size: 17px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 26px;
 }
 
 .header-right {
-  width: 24px;
+  width: 28px;
 }
 
 /* Content */
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 0;
-  background-color: #F5F6F7;
+  padding: 8px 20px calc(34px + env(safe-area-inset-bottom));
+  background-color: #1A1A1A;
 }
 
-.menu-group {
-  margin-bottom: 20px;
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding-top: 4px;
 }
 
-:deep(.van-cell-group__title) {
-  padding: 8px 32px;
-  font-size: 14px;
-  color: #999;
-}
-
-:deep(.van-cell) {
-  padding: 16px 20px;
-  align-items: center;
-}
-
-:deep(.van-cell__title) {
-  font-size: 16px;
-  color: #1A1A1A;
-  font-weight: 500;
-}
-
-:deep(.van-cell__value) {
-  font-size: 15px;
-  color: #999;
-}
-
-/* Version Cell Customization */
-.version-right {
+.settings-row {
+  width: 100%;
+  min-height: 20px;
+  border: none;
+  background: transparent;
+  padding: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  color: #FFFFFF;
+  text-align: left;
 }
 
-.version-text {
+.row-title {
+  font-size: 17px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 15px;
-  color: #999;
+  line-height: 18px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .update-dot {
   width: 8px;
   height: 8px;
-  background-color: #FF3B30;
-  /* Notification red */
+  background: #FF4A78;
   border-radius: 50%;
+  display: inline-block;
+}
+
+.chevron {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 28px;
+  line-height: 16px;
+  font-weight: 300;
 }
 
 /* Picker */
+:deep(.van-popup) {
+  background: #1A1A1A;
+  color: #fff;
+}
+
 .picker-header {
   padding: 16px;
   text-align: center;
-  border-bottom: 1px solid #F2F2F2;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .picker-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #FFFFFF;
+}
+
+:deep(.van-picker) {
+  background: #1A1A1A;
+}
+
+:deep(.van-picker__toolbar),
+:deep(.van-picker__columns) {
+  background: #1A1A1A;
+}
+
+:deep(.van-picker-column__item) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+:deep(.van-picker-column__item--selected) {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+:deep(.van-picker__mask) {
+  background-image: linear-gradient(180deg, rgba(26, 26, 26, 0.9), rgba(26, 26, 26, 0.4)), linear-gradient(0deg, rgba(26, 26, 26, 0.9), rgba(26, 26, 26, 0.4));
 }
 </style>

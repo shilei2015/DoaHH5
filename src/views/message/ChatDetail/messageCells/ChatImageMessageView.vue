@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
+const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
 
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void,
@@ -61,6 +62,9 @@ onUnmounted(() => {
                     :style="{ opacity: isImageLoading ? 0 : 1 }" class="sharedImage">
             </div>
         </div>
+        <div v-if="isMe" class="userAvatar meAvatar">
+            <img :src="currentUserAvatar" alt="" class="avatarImg">
+        </div>
     </div>
 </template>
 
@@ -90,13 +94,13 @@ onUnmounted(() => {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #eee;
+    background-color: #292929;
 }
 
 .messageContainer {
     display: flex;
     flex-direction: row;
-    max-width: 100%;
+    max-width: calc(100% - 48px);
     margin: 0 10px;
 }
 
@@ -108,7 +112,7 @@ onUnmounted(() => {
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    background-color: #f0f0f0;
+    background-color: #292929;
     line-height: 0;
     min-width: 120px;
     min-height: 160px;
@@ -130,19 +134,16 @@ onUnmounted(() => {
     transition: opacity 0.3s ease;
 }
 
-.other .imageBubble {
-    border-bottom-left-radius: 0px;
-}
-
-.me .imageBubble {
-    border-bottom-right-radius: 0px;
-}
-
 .sendFaildView {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     position: relative;
     bottom: 4px;
     right: 10px;
+}
+
+.sendFaildView img {
+    width: 100%;
+    height: 100%;
 }
 </style>

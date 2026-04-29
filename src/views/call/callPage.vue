@@ -13,6 +13,7 @@ import { showCoinShop } from '@/utils/tools/shopService';
 const router = useRouter();
 const route = useRoute();
 const callStore = useCallStore();
+const userStore = useUserStore();
 const { currentCallInfo } = storeToRefs(callStore);
 
 const callRole = (route.query.role as string) || 'caller';
@@ -44,7 +45,7 @@ const isFreeCall = computed(() => {
     return freeTime > 0 || coins <= 0;
 });
 
-const currentCoins = ref(useUserStore().userInfo?.Coins)
+const currentCoins = computed(() => userStore.userInfo?.Coins ?? 0);
 
 const totalTime = 30;
 /** 响铃结束时刻（墙钟），避免系统权限弹窗等场景下 setInterval 被节流导致倒计时「停住」 */
@@ -54,29 +55,7 @@ const timeNow = ref(Date.now());
 const countdown = computed(() =>
     Math.max(0, Math.ceil((countdownEndsAt.value - timeNow.value) / 1000))
 );
-const circleProgress = computed(() => {
-    const remainingSec = Math.max(0, (countdownEndsAt.value - timeNow.value) / 1000);
-    const percent = totalTime > 0 ? (remainingSec / totalTime) * 100 : 100;
-    return `${percent}, 100`;
-});
-
-/** 接听按钮波纹：用时间相位驱动，避免纯 CSS animation 在系统弹窗期间被暂停后不连续 */
-function rippleStyleFromPhase(phase01: number) {
-    const scale = 1 + 1.5 * phase01;
-    const opacity = 0.8 * (1 - phase01);
-    return {
-        transform: `scale(${scale})`,
-        opacity: String(opacity),
-    };
-}
-const ripple1Style = computed(() => {
-    const ms = timeNow.value % 2000;
-    return rippleStyleFromPhase(ms / 2000);
-});
-const ripple2Style = computed(() => {
-    const ms = (timeNow.value + 1000) % 2000;
-    return rippleStyleFromPhase(ms / 2000);
-});
+const countdownLabel = computed(() => `00:${String(countdown.value).padStart(2, '0')}`);
 
 let rafId: number | null = null;
 let countdownEndFired = false;
@@ -164,95 +143,53 @@ onUnmounted(() => {
         <div class="gradient-top"></div>
         <div class="gradient-bottom"></div>
 
-        <!-- Top Bar Area -->
         <div class="top-bar">
-            <!-- Back Button -->
             <button class="back-btn" @click="goBack">
                 <img src="@/assets/profile/back_arrow.png" alt="Back" class="back-icon" />
             </button>
 
-            <!-- Coin Balance (Placeholder for actual balance, currently showing price/info) -->
+            <div class="top-user-card">
+                <img :src="anchor.HeadImage" alt="Avatar" class="top-avatar" />
+                <div class="top-name-row">
+                    <span class="top-name">{{ anchor.Nickname }}</span>
+                    <span v-if="anchor.CountryCode" class="top-flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
+                </div>
+            </div>
+
+            <button class="top-call-btn" @click="goBack" aria-label="End call">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                        d="M6.8 10.6c2.9-1.7 7.5-1.7 10.4 0 .6.4 1 1.1.8 1.8l-.5 2.1c-.1.5-.5.8-1 .8h-3c-.5 0-.9-.3-1-.8l-.3-1.4c-.1-.3-.3-.5-.6-.5s-.5.2-.6.5l-.3 1.4c-.1.5-.5.8-1 .8h-3c-.5 0-.9-.3-1-.8l-.5-2.1c-.2-.7.1-1.4.8-1.8Z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="call-bottom-status" :class="{ incoming: callState === 'incoming' }">
             <div class="coin-badge" @click="showCoinShop">
                 <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="diamond-icon" />
                 <span class="coin-text">{{ currentCoins }}</span>
                 <div class="add-btn">+</div>
             </div>
-        </div>
 
-        <!-- Incoming specific UI -->
-        <div v-if="callState === 'incoming'" class="incoming-wrapper">
-            <div v-if="isFreeCall" class="free-call-text">✨ Free Call ✨</div>
-            <div class="info-box glass-card">
-                <div class="user-info-row">
-                    <img :src="anchor.HeadImage" alt="Avatar" class="avatar" />
-                    <div class="user-details">
-                        <div class="name-age">{{ anchor.Nickname }}<span v-if="anchor.Age">, {{ anchor.Age }}</span>
-                        </div>
-                        <div class="country-row">
-                            <span v-if="anchor.CountryCode" class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
-                            <span class="country-text">{{ anchor.Country || 'Unknown' }}</span>
-                        </div>
-                        <!-- Callee specific price info -->
-                        <div class="price-info-callee">
-                            <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="small-diamond" />
-                            <span v-if="isFreeCall" class="free-text">FREE</span>
-                            <span v-else class="coin-amount">{{ callCoins }}/min</span>
-                        </div>
-                    </div>
-                    <div class="countdown-circle">
-                        <svg viewBox="0 0 36 36" class="circular-chart">
-                            <path class="circle-bg"
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="circle" :stroke-dasharray="circleProgress"
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        </svg>
-                        <span class="countdown-text">{{ countdown }}</span>
-                    </div>
-                </div>
-            </div>
+            <button v-if="callState === 'incoming'" class="accept-button" @click="answerCall">
+                <span v-if="isFreeCall" class="free-ribbon">FREE</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="accept-icon">
+                    <path
+                        d="M4 8.4c0-1.3 1.1-2.4 2.4-2.4h7.2c1.3 0 2.4 1.1 2.4 2.4v7.2c0 1.3-1.1 2.4-2.4 2.4H6.4C5.1 18 4 16.9 4 15.6V8.4Zm13.2 2.2 2.8-2c.7-.5 1.7 0 1.7.9v5c0 .9-1 1.4-1.7.9l-2.8-2v-2.8Z"
+                        fill="currentColor" />
+                </svg>
+                <span>Accept</span>
+            </button>
 
-            <div class="answer-btn-container" @click="answerCall">
-                <div class="ripple" :style="ripple1Style"></div>
-                <div class="ripple" :style="ripple2Style"></div>
-                <img src="@/assets/call/callButton.png" alt="Answer" class="answer-img-btn" />
-            </div>
-        </div>
-
-        <!-- Outgoing specific UI -->
-        <div v-else-if="callState === 'outgoing'" class="info-box-wrapper">
-            <div class="info-box glass-card">
-                <!-- User Info Row -->
-                <div class="user-info-row">
-                    <img :src="anchor.HeadImage" alt="Avatar" class="avatar" />
-                    <div class="user-details">
-                        <div class="name-age">{{ anchor.Nickname }}<span v-if="anchor.Age">, {{ anchor.Age }}</span>
-                        </div>
-                        <div class="country-row">
-                            <span v-if="anchor.CountryCode" class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
-                            <span class="country-text">{{ anchor.Country || 'Unknown' }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Countdown Circle -->
-                    <div class="countdown-circle">
-                        <svg viewBox="0 0 36 36" class="circular-chart">
-                            <path class="circle-bg" d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="circle" :stroke-dasharray="circleProgress" d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        </svg>
-                        <span class="countdown-text">{{ countdown }}</span>
-                    </div>
-                </div>
-
-                <!-- Price Row -->
-                <div class="price-row">
-                    <span class="charge-text">You'll be charged</span>
+            <div class="status-copy">
+                <div class="timer-text">{{ countdownLabel }}</div>
+                <div v-if="callState === 'incoming'" class="sub-text">Connecting your call. Please wait...</div>
+                <div v-else class="charge-row">
+                    <span>You’ll be charged</span>
                     <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="small-diamond" />
                     <span v-if="oldCoins" class="old-price">{{ oldCoins }}</span>
-                    <span class="new-price">{{ callCoins }} coins per time</span>
+                    <span>{{ callCoins }} coins per time.</span>
                 </div>
             </div>
         </div>
@@ -277,7 +214,7 @@ onUnmounted(() => {
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background-color: #000;
+    background-color: #14121f;
     overflow: hidden;
     color: white;
     font-family: system-ui, -apple-system, sans-serif;
@@ -307,61 +244,134 @@ onUnmounted(() => {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 340px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
+    height: 375px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0) 100%);
     pointer-events: none;
 }
 
 .top-bar {
     position: absolute;
-    top: 56px;
-    /* Status bar spacing */
-    left: 0;
-    right: 0;
+    top: calc(47px + env(safe-area-inset-top, 0px));
+    left: 20px;
+    right: 20px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
-    padding: 0 20px;
     z-index: 10;
+    gap: 8px;
 }
 
 .back-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
+    background: transparent;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 .back-icon {
-    width: 18px;
-    height: 18px;
-    /* transform: rotate(90deg) if needed based on the icon used */
+    width: 28px;
+    height: 28px;
     filter: brightness(0) invert(1);
 }
 
+.top-user-card {
+    min-width: 0;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.top-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.top-name-row {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.top-name {
+    max-width: 176px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.top-flag {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.top-call-btn {
+    width: 52px;
+    height: 36px;
+    border-radius: 18px;
+    border: none;
+    background: rgba(26, 26, 26, 0.34);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.top-call-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.call-bottom-status {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: calc(46px + env(safe-area-inset-bottom, 0px));
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .coin-badge {
-    background-color: white;
+    background-color: rgba(0, 0, 0, 0.2);
     height: 32px;
     border-radius: 16px;
     display: flex;
     align-items: center;
-    padding: 0 6px;
+    justify-content: center;
+    padding: 0 4px;
     gap: 4px;
+    min-width: 102px;
+    border: 1px solid #ffde09;
+    box-sizing: border-box;
+    cursor: pointer;
 }
 
 .diamond-icon {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
 }
 
 .coin-text {
-    color: #ff5290;
+    color: #ffde09;
     font-size: 16px;
     font-weight: 600;
 }
@@ -369,251 +379,94 @@ onUnmounted(() => {
 .add-btn {
     width: 20px;
     height: 20px;
-    background: #FF5290;
-    color: white;
+    background: transparent;
+    border: 1px solid #ffde09;
+    color: #ffde09;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1;
-}
-
-.info-box-wrapper {
-    position: absolute;
-    bottom: 98px;
-    left: 20px;
-    right: 20px;
-    z-index: 10;
-}
-
-.incoming-wrapper {
-    position: absolute;
-    bottom: 98px;
-    left: 20px;
-    right: 20px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.free-call-text {
-    color: #FFEA00;
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 20px;
-    text-shadow: 0 0 15px rgba(255, 234, 0, 0.6);
-    letter-spacing: 0.5px;
-}
-
-.glass-card {
-    background: rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 24px;
-    width: 100%;
-}
-
-.info-box {
-    padding: 20px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.user-info-row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-}
-
-.price-info-callee {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 6px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 2px 8px;
-    border-radius: 12px;
-    width: fit-content;
-}
-
-.price-info-callee .free-text {
-    font-size: 13px;
-    font-weight: 700;
-    color: #4CAF50;
-    /* Green for trust */
-}
-
-.price-info-callee .coin-amount {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffd700;
-}
-
-.avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.user-details {
-    flex: 1;
-    margin-left: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.name-age {
     font-size: 18px;
-    font-weight: 600;
-    color: white;
+    font-weight: 700;
+    line-height: 18px;
 }
 
-.country-row {
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.country-text {
-    font-weight: 500;
-    color: white;
-}
-
-.flag {
-    font-size: 14px;
-}
-
-.countdown-circle {
+.accept-button {
     position: relative;
-    width: 56px;
-    height: 56px;
-    flex-shrink: 0;
+    width: min(260px, calc(100vw - 80px));
+    height: 52px;
+    margin-top: 18px;
+    border: none;
+    border-radius: 18px;
+    background: linear-gradient(100deg, #c8f24e 0%, #78eb3f 100%);
+    color: #1a1a1a;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 800;
+    cursor: pointer;
 }
 
-.circular-chart {
+.accept-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.free-ribbon {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    right: 15px;
+    top: -18px;
+    min-width: 70px;
+    height: 34px;
+    border-radius: 12px;
+    background: #ffb13d;
+    color: #ffffe5;
+    font-size: 18px;
+    font-weight: 900;
+    font-style: italic;
+    line-height: 34px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(236, 126, 46, 0.45);
 }
 
-.circle-bg {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.3);
-    stroke-width: 1.5;
+.status-copy {
+    margin-top: 16px;
+    text-align: center;
 }
 
-.circle {
-    fill: none;
-    stroke: white;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    transition: stroke-dasharray 0.5s ease;
+.timer-text {
+    color: #fff;
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
 }
 
-.countdown-text {
-    position: relative;
-    font-size: 20px;
-    font-weight: 600;
-    color: white;
-    z-index: 1;
+.sub-text,
+.charge-row {
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 500;
 }
 
-/* Price Row */
-.price-row {
+.charge-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #d9d9d9;
-    padding-left: 0px;
-}
-
-.charge-text {
-    margin-right: 4px;
+    justify-content: center;
+    gap: 3px;
+    flex-wrap: wrap;
 }
 
 .small-diamond {
-    width: 16px;
-    height: 16px;
-    margin-right: 2px;
+    width: 14px;
+    height: 14px;
 }
 
 .old-price {
     text-decoration: line-through;
-    color: #d9d9d9;
-    margin-right: 4px;
-}
-
-.new-price {
-    color: #d9d9d9;
-}
-
-/* Dots */
-.pagination-dots {
-    position: absolute;
-    bottom: 54px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    z-index: 10;
-}
-
-.pagination-dots .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.4);
-}
-
-.pagination-dots .dot.active {
-    background-color: white;
-    width: 16px;
-    border-radius: 3px;
-}
-
-/* Incoming Call Styles */
-.answer-btn-container {
-    position: relative;
-    width: 62px;
-    height: 62px;
-    margin-top: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.answer-img-btn {
-    position: relative;
-    width: 62px;
-    height: 62px;
-    z-index: 2;
-    border-radius: 50%;
-}
-
-.ripple {
-    position: absolute;
-    width: 62px;
-    height: 62px;
-    background: rgba(255, 82, 144, 0.5);
-    border-radius: 50%;
-    z-index: 1;
-    will-change: transform, opacity;
+    color: rgba(255, 255, 255, 0.46);
 }
 </style>

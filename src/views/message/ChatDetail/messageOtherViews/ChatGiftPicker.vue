@@ -62,14 +62,13 @@ onMounted(() => {
     <div class="gift-picker-container">
         <!-- Header -->
         <div class="gift-header">
-            <div class="close-btn" @click="emit('close')">
-                <VanIcon name="cross" size="18" />
-            </div>
-            <div class="title">Gift</div>
             <div class="balance-container" @click="showCoinShop()">
                 <img src="@/assets/profile/diamond_icon.svg" class="diamond-icon" alt="diamond" />
                 <span class="coins-total">{{ props.coins }}</span>
                 <div class="add-btn">+</div>
+            </div>
+            <div class="close-btn" @click="emit('close')">
+                <VanIcon name="cross" size="24" />
             </div>
         </div>
 
@@ -94,20 +93,23 @@ onMounted(() => {
 
 <style scoped>
 .gift-picker-container {
-    /* height: 60vh; */
-    /* 设定相对屏幕高度 */
+    width: 100vw;
+    height: min(429px, 62vh);
     display: flex;
     flex-direction: column;
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
+    background: #1A1A1A;
+    border-radius: 24px 24px 0 0;
+    padding-bottom: calc(34px + env(safe-area-inset-bottom));
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 .gift-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    padding: 16px 20px 10px;
     position: relative;
+    flex-shrink: 0;
 }
 
 .close-btn {
@@ -116,42 +118,40 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #999;
-}
-
-.title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #333;
+    color: rgba(255, 255, 255, 0.4);
 }
 
 .balance-container {
     display: flex;
     align-items: center;
-    background-color: #FFF0F5;
-    padding: 4px 8px;
-    padding-right: 4px;
-    border-radius: 100px;
+    height: 32px;
+    min-width: 102px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid #FFDE09;
+    padding: 0 4px;
+    border-radius: 16px;
     gap: 4px;
 }
 
 .diamond-icon {
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
 }
 
 .coins-total {
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 19px;
     font-weight: 600;
-    color: #FF5290;
+    color: #FFDE09;
     margin-right: 4px;
 }
 
 .add-btn {
     width: 20px;
     height: 20px;
-    background: #FF5290;
-    color: white;
+    border: 1px solid #FFDE09;
+    background: transparent;
+    color: #FFDE09;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -165,34 +165,34 @@ onMounted(() => {
     flex: 1;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 15px 12px;
+    padding: 20px 19px 0;
 }
 
 .gift-grid {
     display: grid;
-    grid-template-rows: repeat(2, 138px);
+    grid-template-rows: repeat(2, 133px);
     grid-auto-flow: column;
-    grid-auto-columns: 100px;
-    gap: 8px;
+    grid-auto-columns: 106px;
+    gap: 10px 8px;
 }
 
 .gift-item {
-    height: 138px;
-    width: 100px;
-    background-color: #F8F8F8;
-    border-radius: 12px;
+    height: 133px;
+    width: 106px;
+    background-color: transparent;
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8px;
+    padding: 12px 8px 8px;
     transition: all 0.2s ease;
-    border: 2px solid transparent;
+    border: 1px solid transparent;
 }
 
 .gift-item.selected {
-    background-color: #FFF0F5;
-    border-color: #FF5290;
+    background-color: rgba(255, 222, 9, 0.08);
+    border-color: rgba(255, 222, 9, 0.75);
 }
 
 .gift-img-wrap {
@@ -205,8 +205,8 @@ onMounted(() => {
 }
 
 .gift-img {
-    max-width: 80%;
-    max-height: 80%;
+    max-width: 80px;
+    max-height: 80px;
     object-fit: contain;
 }
 
@@ -214,29 +214,30 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 4px;
-    background-color: rgba(0, 0, 0, 0.05);
-    padding: 2px 8px;
+    background-color: transparent;
+    padding: 0;
     border-radius: 100px;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 .gift-item.selected .gift-info {
-    background-color: rgba(255, 82, 144, 0.1);
+    background-color: transparent;
 }
 
 .price-icon {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
 }
 
 .gift-price {
-    font-size: 12px;
-    font-weight: 600;
-    color: #666;
+    font-size: 14px;
+    line-height: 17px;
+    font-weight: 500;
+    color: #FFDE09;
 }
 
 .gift-item.selected .gift-price {
-    color: #FF5290;
+    color: #FFDE09;
 }
 
 .gift-footer {

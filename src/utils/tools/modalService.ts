@@ -92,7 +92,13 @@ export function showUserActionModal(targetUserId: string, callbacks: {
                 onSuccess: () => {
                     if (callbacks.onBlacklistSuccess) callbacks.onBlacklistSuccess();
                 }
-            }, { position: 'center', round: true });
+            }, {
+                position: 'bottom',
+                round: true,
+                customStyle: {
+                    background: 'transparent'
+                }
+            });
         },
         // 第一级：底部菜单点击 Report
         onReport: () => {
@@ -101,7 +107,13 @@ export function showUserActionModal(targetUserId: string, callbacks: {
                 onSuccess: () => {
                     if (callbacks.onReportSuccess) callbacks.onReportSuccess();
                 }
-            }, { position: 'center', round: true });
+            }, {
+                position: 'bottom',
+                round: true,
+                customStyle: {
+                    background: 'transparent'
+                }
+            });
         }
     }, {
         position: 'bottom',
@@ -120,7 +132,10 @@ export function showExitCallConfirmModal(onConfirm: () => void) {
         onConfirm: onConfirm
     }, {
         position: 'center',
-        round: true
+        round: true,
+        customStyle: {
+            background: 'transparent'
+        }
     });
 }
 
@@ -143,7 +158,10 @@ export function showEvaluateCallModal(props: {
     }, {
         position: 'center',
         round: true,
-        closeOnClickOverlay: false
+        closeOnClickOverlay: false,
+        customStyle: {
+            background: 'transparent'
+        }
     });
 }
 

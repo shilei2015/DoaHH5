@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useLimitOfferStore } from '@/stores/limitOfferStore';
 import { LHTimer } from '@/utils/Timer';
-import { paymentService } from '@/utils/tools/paymentService';
 
 const props = defineProps<{
     visible: boolean;
@@ -13,6 +12,20 @@ const emit = defineEmits(['update:visible', 'close', 'buy']);
 const limitOfferStore = useLimitOfferStore();
 const countDonwText = ref("");
 let timer: LHTimer;
+
+const countdownParts = computed(() => {
+    const [hours = '00', minutes = '00', seconds = '00'] = countDonwText.value.split(':');
+    return [
+        { value: hours, label: 'HRS' },
+        { value: minutes, label: 'MIN' },
+        { value: seconds, label: 'SEC' },
+    ];
+});
+
+const product = computed(() => limitOfferStore.limitOffInfoModel?.Product);
+const coins = computed(() => product.value?.Coins || '200');
+const currentPrice = computed(() => product.value?.ApplePrice || '1.99');
+const originalPrice = computed(() => product.value?.AppleOriginalPrice || '3.99');
 
 const formatTime = (total: number): string => {
     const h = Math.floor(total / 3600);
@@ -56,41 +69,31 @@ onUnmounted(() => {
 <template>
     <div v-if="visible" class="modal-overlay" @click.self="closeModal">
         <div class="modal-content">
-            <!-- 50% OFF Badge -->
-            <div class="discount-badge">50% OFF</div>
+            <button class="close-btn" type="button" aria-label="Close" @click="closeModal">×</button>
+            <div class="modal-title">Limited Time Offer</div>
 
-            <!-- Diamond Image Section -->
-            <div class="diamond-section">
-                <div class="diamond-info">
-                    <div class="diamond-count">{{ limitOfferStore.limitOffInfoModel?.Product?.Coins }}</div>
-                    <div class="diamond-label">Diamonds</div>
+            <div class="countdown-row">
+                <div v-for="part in countdownParts" :key="part.label" class="countdown-box">
+                    <div class="countdown-value">{{ part.value }}</div>
+                    <div class="countdown-label">{{ part.label }}</div>
                 </div>
             </div>
 
-            <!-- Description -->
-            <div class="desc-text">The hidden discount ends with the countdown.</div>
-
-            <!-- Countdown Banner -->
-            <div class="countdown-banner">
-                <div class="banner-inner">
-                    <span class="banner-label">THE DISCOUNT WILL EXPIRE IN</span>
-                    <span class="banner-time">{{ countDonwText }}</span>
-                </div>
-                <div class="banner-tag">Limited Time!</div>
+            <div class="gift-stage">
+                <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="gift-image">
             </div>
 
-            <!-- Price Button -->
-            <div class="buy-button" @click="handleBuy">
-                <span class="current-price">${{ limitOfferStore.limitOffInfoModel?.Product?.ApplePrice || '1.99'
-                    }}</span>
-                <span class="original-price">${{ limitOfferStore.limitOffInfoModel?.Product?.AppleOriginalPrice ||
-                    '3.99' }}</span>
+            <div class="coin-row">
+                <span class="coin-plus">+</span>
+                <span class="coin-count">{{ coins }}</span>
             </div>
 
-            <!-- Close Button -->
-            <div class="close-btn" @click="closeModal">
-                <div class="close-icon">×</div>
+            <div class="price-row">
+                <span class="original-price">${{ originalPrice }}</span>
+                <span class="current-price">${{ currentPrice }}</span>
             </div>
+
+            <button class="buy-button" type="button" @click="handleBuy">Get Now</button>
         </div>
     </div>
 </template>
@@ -102,8 +105,8 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.58);
+    backdrop-filter: blur(8px);
     z-index: 9999;
     display: flex;
     align-items: center;
@@ -112,168 +115,187 @@ onUnmounted(() => {
 }
 
 .modal-content {
-    background-image: url("@/assets/limitOff/limit-big-bg.svg");
-    background-repeat: no-repeat;
-    position: absolute;
-    width: 375px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.discount-badge {
-    padding-top: 54px;
-    color: white;
-    font-weight: 800;
-    font-size: 18px;
-}
-
-.diamond-section {
-    display: flex;
-    align-items: center;
-}
-
-.diamond-info {
     position: relative;
-    padding-top: 35px;
-    text-align: left;
-    padding-left: 100px;
-}
-
-.diamond-count {
-    font-size: 44px;
-    font-weight: 900;
-    color: #A93FED;
-    line-height: 1;
-}
-
-.diamond-label {
-    font-size: 20px;
-    font-weight: 600;
-    color: #A93FED;
-}
-
-.desc-text {
-    width: 227px;
-    padding-top: 18px;
-    font-size: 14px;
-    color: #A93FED;
-    text-align: left;
-    margin-bottom: 40px;
-    font-weight: 500;
-    opacity: 0.8;
-    line-height: 22px;
-}
-
-.countdown-banner {
-    position: relative;
-    width: 120vw;
-    background: linear-gradient(135deg, #AD5CFF 0%, #FF99EB 100%);
-    height: 145px;
-    padding: 15px 0;
-    transform: rotate(-4deg);
+    width: min(310px, calc(100vw - 40px));
+    min-height: 402px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, #ccf056 0%, #44d44a 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 20px rgba(173, 92, 255, 0.4);
+    overflow: hidden;
+    padding: 28px 22px 22px;
+    color: #111;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
 }
 
-.banner-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-
-.banner-label {
-    color: #FFFFFF;
-    font-size: 20px;
-    font-weight: 800;
-}
-
-.banner-time {
-    color: #F7F719;
-    font-size: 32px;
-    font-weight: 900;
-}
-
-.banner-tag {
-    position: absolute;
-    background: #FF1AD0;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 14px;
-    font-weight: 700;
-    transform: rotate(4deg);
-    margin-bottom: 8px;
-    height: 32px;
-    line-height: 24px;
-    top: -25px;
-    margin-left: 155px;
-    /* 留出空间给尖尖 */
-}
-
-/* 底部居中的尖尖 */
-.banner-tag::after {
+.modal-content::before {
     content: '';
     position: absolute;
-    bottom: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 6px solid #FF1AD0;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    top: -86px;
+    right: -86px;
 }
 
-.buy-button {
-    background: linear-gradient(to right, #AD5CFF, #FF1AD0);
-    width: 180px;
-    height: 52px;
-    border-radius: 26px;
+.modal-title {
+    position: relative;
+    z-index: 1;
+    font-size: 26px;
+    line-height: 31px;
+    font-weight: 900;
+    text-align: center;
+    color: #111;
+}
+
+.countdown-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.countdown-box {
+    width: 54px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(26, 26, 26, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.countdown-value {
+    color: #fff;
+    font-size: 18px;
+    line-height: 20px;
+    font-weight: 900;
+}
+
+.countdown-label {
+    margin-top: 2px;
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 9px;
+    line-height: 11px;
+    font-weight: 700;
+}
+
+.gift-stage {
+    position: relative;
+    z-index: 1;
+    width: 142px;
+    height: 118px;
+    margin-top: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    color: white;
-    cursor: pointer;
-    /* transition: transform 0.2s; */
-    margin-top: 40px;
 }
 
-.buy-button:active {
-    transform: scale(0.95);
+.gift-stage::before {
+    content: '';
+    position: absolute;
+    width: 118px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    bottom: 4px;
+    filter: blur(10px);
 }
 
-.current-price {
-    font-size: 20px;
-    font-weight: 800;
+.gift-image {
+    position: relative;
+    width: 122px;
+    height: 122px;
+    object-fit: contain;
+}
+
+.coin-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    color: #111;
+    margin-top: 2px;
+}
+
+.coin-plus {
+    font-size: 27px;
+    line-height: 1;
+    font-weight: 900;
+}
+
+.coin-count {
+    font-size: 45px;
+    line-height: 48px;
+    font-weight: 900;
+}
+
+.price-row {
+    position: relative;
+    z-index: 1;
+    margin-top: 2px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
 }
 
 .original-price {
-    font-size: 14px;
+    color: rgba(0, 0, 0, 0.46);
+    font-size: 16px;
+    font-weight: 700;
     text-decoration: line-through;
-    opacity: 0.6;
+}
+
+.current-price {
+    color: #111;
+    font-size: 24px;
+    line-height: 29px;
+    font-weight: 900;
+}
+
+.buy-button {
+    position: relative;
+    z-index: 1;
+    width: 244px;
+    max-width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 26px;
+    background: #1a1a1a;
+    color: #65d941;
+    cursor: pointer;
+    margin-top: 18px;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.buy-button:active {
+    transform: scale(0.97);
 }
 
 .close-btn {
-    margin-top: 40px;
-    width: 44px;
-    height: 44px;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(26, 26, 26, 0.14);
+    border: none;
+    color: rgba(0, 0, 0, 0.58);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-}
-
-.close-icon {
-    color: white;
-    font-size: 30px;
+    font-size: 28px;
+    line-height: 28px;
+    padding: 0 0 2px;
 }
 </style>

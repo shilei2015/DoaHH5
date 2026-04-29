@@ -24,6 +24,7 @@ import MOMORTC from '@/utils/MOMORTC';
 import { getChatTask, upsertChatTask } from '@/utils/msg/DBService';
 import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
+import { getFlagEmoji } from '@/utils/tools';
 import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
 import ChatGiftPicker from './messageOtherViews/ChatGiftPicker.vue';
 import { showModal, showUserActionModal } from '@/utils/tools/modalService';
@@ -49,6 +50,8 @@ const inputText = ref('');
 const msgListContainer = ref<HTMLElement | null>(null);
 const partnerName = ref('Chat');
 const partnerAvatar = ref('');
+const partnerCountryCode = ref('');
+const partnerCountryFlag = computed(() => getFlagEmoji(partnerCountryCode.value));
 
 const targetUserId = ref<string>(route.query.userId as string || '888');
 
@@ -205,6 +208,12 @@ const openGiftPicker = () => {
   showModal(ChatGiftPicker, {
     coins: userCoins.value,
     onSend: onSendGift,
+  }, {
+    position: 'bottom',
+    round: true,
+    customStyle: {
+      background: 'transparent'
+    }
   });
 }
 
@@ -320,6 +329,8 @@ onMounted(async () => {
   const chatUser = await userStore.getUserInfoById(targetUserId.value)
   if (chatUser) {
     partnerName.value = chatUser.Nickname
+    partnerAvatar.value = chatUser.HeadImage
+    partnerCountryCode.value = chatUser.CountryCode
   }
 
 
@@ -348,7 +359,10 @@ onUnmounted(() => {
         <div class="naviLeft">
           <img class="backButton" :src="back" alt="" @click="goBack">
         </div>
-        <div class="naviTitle">{{ partnerName }}</div>
+        <div class="naviTitle">
+          <span v-if="partnerCountryFlag" class="titleFlag">{{ partnerCountryFlag }}</span>
+          <span>{{ partnerName }}</span>
+        </div>
         <div class="naviRight">
           <img v-if="!isSystemNoti" class="naviReport" :src="msgReport" @click="handlerActionModel">
         </div>
@@ -376,7 +390,7 @@ onUnmounted(() => {
         <img src="@/assets/message/msg-send-img.svg" alt="">
       </div>
       <form action="javascript:void(0)" class="messageForm" @submit.prevent="onSendText">
-        <input type="text" placeholder="message..." class="messageTextView" v-model="inputText" enterkeyhint="send">
+        <input type="text" placeholder="say something..." class="messageTextView" v-model="inputText" enterkeyhint="send">
       </form>
       <div class="giftButton" @click="openGiftPicker">
         <img src="@/assets/call/video-gift.png" alt="">
@@ -393,7 +407,7 @@ onUnmounted(() => {
 <style scoped>
 /* 1. 外层容器：占满视口高度，垂直flex布局 */
 .detailPage {
-  background-color: #fff;
+  background-color: #1A1A1A;
   width: 100%;
   height: 100vh;
   /* Changed from min-height: 100vh to force fixed height */
@@ -404,11 +418,13 @@ onUnmounted(() => {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 /* 2. 头部：高度包含安全区域，不伸缩 */
 .detailHeader {
-  background-color: #fff;
+  background-color: #1A1A1A;
   height: calc(env(safe-area-inset-top) + 44px);
   /* 固定头部高度，不参与flex伸缩 */
   flex-shrink: 0;
@@ -424,27 +440,25 @@ onUnmounted(() => {
   /* Move the scrolling responsibility to msgList */
   box-sizing: border-box;
   display: flex;
-  background-color: rgba(0, 0, 0, 0.0);
+  background-color: #1A1A1A;
 }
 
 /* 4. 底部：固定高度，不伸缩，适配安全区域 */
 .detailFooter {
   position: relative;
-  background-color: #F2F1F4;
-  height: 88px;
+  background-color: #1A1A1A;
   width: 100%;
   /* 固定底部，不参与flex伸缩 */
   flex-shrink: 0;
   /* 适配底部安全区域（替代你原来的bottom: env(...)） */
   padding-bottom: env(safe-area-inset-bottom);
   /* 修正高度：包含安全区域 */
-  height: calc(64px + env(safe-area-inset-bottom));
+  height: calc(86px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  padding-left: 20px;
-  padding-right: 20px;
-  gap: 12px;
+  padding: 10px 20px calc(28px + env(safe-area-inset-bottom));
+  gap: 10px;
 }
 
 .naviContent {
@@ -468,56 +482,67 @@ onUnmounted(() => {
 
 .naviLeft {
   justify-content: flex-start;
-  padding-left: 16px;
+  padding-left: 20px;
 }
 
 .naviRight {
   justify-content: flex-end;
-  padding-right: 16px;
+  padding-right: 20px;
 }
 
 .backButton {
   width: 28px;
   height: 28px;
   display: block;
+  filter: invert(1);
 }
 
 .naviReport {
   width: 28px;
   height: 28px;
   display: block;
+  filter: invert(1);
 }
 
 .naviTitle {
   flex: 0 1 auto;
   max-width: min(56%, 240px);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  font-size: 16px;
+  font-size: 17px;
+  line-height: 26px;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #FFFFFF;
+}
+
+.titleFlag {
+  flex-shrink: 0;
+  font-size: 20px;
+  line-height: 24px;
 }
 
 .msgList {
   flex: 1;
-  background-color: #F2F1F4;
-  border-radius: 24px 24px 0px 0px;
+  background-color: #1A1A1A;
+  border-radius: 0;
   overflow-y: auto;
   overflow-x: hidden;
   /* 仅纵向交给列表滚动，减轻与 App 侧缘返回手势的冲突（iOS / WebView） */
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   /* Enable inner scrolling for messages */
-  padding-bottom: 12px;
-  padding-top: 20px;
+  padding: 20px 0 12px;
 }
 
 .callButton {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
 }
 
 .callButton img {
@@ -526,8 +551,9 @@ onUnmounted(() => {
 }
 
 .sendImg {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
 }
 
 .sendImg img {
@@ -544,28 +570,30 @@ onUnmounted(() => {
 .messageTextView {
   height: 40px;
   border: none;
-  background-color: #fff;
+  background-color: #292929;
   border-radius: 20px;
-  padding: 12px;
+  padding: 0 12px;
   flex: 1;
   /* 自动占满剩余空间 */
   width: 100%;
+  color: #FFFFFF;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  outline: none;
 }
 
-:deep(.inputBox::placeholder) {
-  color: #c0c0c0;
-  /* 浅灰色 */
-  font-size: 14px;
+.messageTextView::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 15px;
   opacity: 1;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  font-weight: 510;
-  /* 修复iOS变灰 */
+  font-weight: 500;
 }
 
 .giftButton {
   width: 40px;
   height: 40px;
-  background-color: #fff;
+  background-color: transparent;
   border-radius: 50%;
   display: flex;
   /* 开启弹性布局 */
@@ -576,14 +604,14 @@ onUnmounted(() => {
 }
 
 .giftButton img {
-  width: 25px;
-  height: 25px;
+  width: 32px;
+  height: 32px;
 }
 
 .bottomMissionView {
   position: absolute;
-  bottom: calc(100% + 16px);
-  left: 0px;
+  bottom: calc(100% + 8px);
+  left: 8px;
   height: 40px;
 }
 </style>

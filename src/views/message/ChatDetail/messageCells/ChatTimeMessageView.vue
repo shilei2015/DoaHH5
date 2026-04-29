@@ -19,12 +19,12 @@ const props = defineProps<{
 .timeView {
     display: flex;
     justify-content: center;
-    padding: 0px 20px 20px 20px;
+    padding: 0px 20px 16px 20px;
     width: 100%;
 }
 
 .timeLabel {
-    color: #999;
+    color: rgba(255, 255, 255, 0.35);
     font-size: 11px;
     padding: 2px 10px;
     border-radius: 10px;

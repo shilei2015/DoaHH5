@@ -27,7 +27,7 @@ const emit = defineEmits<{
 <template>
     <div class="viewContent">
         <div v-if="!props.missionData.helloMission.completed" class="helloView"
-            @click="emit('clickMission', MissionType.hello)">👋 say hello</div>
+            @click="emit('clickMission', MissionType.hello)">👋 Say “Hi~”</div>
         <!-- <div v-if="!props.missionData.giftMission.completed && props.missionData.giftMission.show" class="sendGiftView"
             @click="emit('clickMission', MissionType.gift)">
             <img class="giftIcon" :src="props.missionData.giftMission.giftIcon" alt="">
@@ -43,21 +43,22 @@ const emit = defineEmits<{
     display: flex;
     align-self: flex-start;
     max-width: 100%;
-    padding: 12px;
+    padding: 0 12px;
     gap: 9px;
     height: 40px;
 }
 
 .helloView,
 .sendGiftView {
-    background-color: #fff;
-    border-radius: 20px;
-    padding: 12px;
-    height: 30px;
+    background-color: #292929;
+    border-radius: 16px;
+    padding: 5px 8px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    color: #FFFFFF;
 }
 
 .giftIcon {
@@ -75,6 +76,7 @@ const emit = defineEmits<{
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     font-size: 12px;
     font-weight: 510;
+    white-space: nowrap;
 }
 
 .diamondCount {
