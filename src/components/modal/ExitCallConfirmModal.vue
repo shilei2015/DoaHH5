@@ -42,10 +42,10 @@ const onConfirm = () => {
 
 <style scoped>
 .exit-modal {
-    width: 320px;
-    background: white;
+    width: 310px;
+    background: #1a1a1a;
     border-radius: 24px;
-    padding: 32px 24px 24px;
+    padding: 36px 20px 20px;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -55,8 +55,8 @@ const onConfirm = () => {
 
 .close-icon-btn {
     position: absolute;
-    top: 16px;
-    left: 16px;
+    top: 12px;
+    right: 12px;
     background: transparent;
     border: none;
     padding: 0;
@@ -69,28 +69,31 @@ const onConfirm = () => {
 }
 
 .close-icon-btn img {
-    width: 14px;
-    height: 14px;
-    filter: invert(0.6);
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+    opacity: 0.35;
 }
 
 .modal-content {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 30px;
 }
 
 .title {
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 26px;
     font-weight: 700;
-    color: #000;
+    color: #fff;
     margin: 0 0 12px 0;
 }
 
 .description {
-    font-size: 14px;
-    color: #808080;
-    line-height: 1.5;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 24px;
     margin: 0;
+    max-width: 230px;
 }
 
 .action-row {
@@ -102,9 +105,9 @@ const onConfirm = () => {
 .btn {
     flex: 1;
     height: 52px;
-    border-radius: 26px;
+    border-radius: 18px;
     border: none;
-    font-size: 16px;
+    font-size: 17px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -117,13 +120,13 @@ const onConfirm = () => {
 }
 
 .btn-yes {
-    background-color: #f2f1f4;
-    color: #000;
+    background-color: #292929;
+    color: #fff;
 }
 
 .btn-cancel {
-    background: linear-gradient(136.89deg, #FED627 14.81%, #FF1AD0 85.19%);
-    color: white;
+    background: linear-gradient(100deg, #c8f24e 0%, #78eb3f 100%);
+    color: #1a1a1a;
 }
 
 .font-bold {

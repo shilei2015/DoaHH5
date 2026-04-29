@@ -11,6 +11,7 @@ const props = defineProps<{
 const msg = computed(() => props.msg);
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
+const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void
 }>()
@@ -79,6 +80,9 @@ watch(() => props.msg.sendStatus, (val) => {
             </div>
 
         </div>
+        <div v-if="isMe" class="userAvatar meAvatar">
+            <img :src="currentUserAvatar" alt="" class="avatarImg">
+        </div>
     </div>
 </template>
 
@@ -108,14 +112,14 @@ watch(() => props.msg.sendStatus, (val) => {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #947474;
+    background-color: #292929;
 }
 
 .messageContainer {
     display: flex;
     flex-direction: row;
     align-items: flex-end;
-    max-width: 100%;
+    max-width: calc(100% - 48px);
     margin: 0 10px;
 }
 
@@ -125,40 +129,44 @@ watch(() => props.msg.sendStatus, (val) => {
 
 .bubbleView {
     padding: 8px 12px;
-    border-radius: 18px;
+    border-radius: 16px;
     position: relative;
-    word-break: normal;
+    word-break: break-word;
+    max-width: 230px;
 }
 
 /* Styles for others (Left) */
 .other .bubbleView {
-    background-color: #F763A6;
+    background-color: #292929;
     color: #fff;
-    border-bottom-left-radius: 0px;
     align-items: flex-end;
 }
 
 /* Styles for me (Right) */
 .me .bubbleView {
-    background: #fff;
-    color: #000;
-    border-bottom-right-radius: 0px;
+    background: #58D339;
+    color: #060000;
     align-items: flex-start;
 }
 
 .messageText {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 510;
-    line-height: 22px;
+    line-height: 24px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .sendFaildView {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     position: relative;
     bottom: 4px;
     right: 10px;
+}
+
+.sendFaildView img {
+    width: 100%;
+    height: 100%;
 }
 
 .translateView img {
@@ -175,7 +183,7 @@ watch(() => props.msg.sendStatus, (val) => {
 .translateContianer .line {
     width: 100%;
     height: 1px;
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
     margin-bottom: 8px;
 }
 

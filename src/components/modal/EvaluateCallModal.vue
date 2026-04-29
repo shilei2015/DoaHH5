@@ -67,7 +67,7 @@ const selectRating = (value: number) => {
 
         <!-- Content Area -->
         <div class="modal-content">
-            <h3 class="title">Please evaluate this video call ?</h3>
+            <h3 class="title">What do you think of her?</h3>
 
             <!-- User Profile -->
             <div class="user-info">
@@ -83,10 +83,15 @@ const selectRating = (value: number) => {
             <!-- Rating Area -->
             <div class="rating-container">
                 <div class="rating-strip">
-                    <div v-for="item in ratings" :key="item.value" class="rating-item"
+                    <button v-for="item in ratings" :key="item.value" class="rating-item"
                         :class="{ 'is-selected': selectedRating === item.value }" @click="selectRating(item.value)">
-                        <img :src="item.value == selectedRating ? item.selectedIcon : item.icon" class="rating-icon" />
-                    </div>
+                        <svg viewBox="0 0 40 40" aria-hidden="true" class="rating-icon"
+                            :class="{ active: item.value <= selectedRating }">
+                            <path
+                                d="m20 4.2 4.7 9.6 10.6 1.5-7.7 7.5 1.8 10.6-9.4-5-9.4 5 1.8-10.6-7.7-7.5 10.6-1.5L20 4.2Z"
+                                fill="currentColor" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -100,10 +105,10 @@ const selectRating = (value: number) => {
 
 <style scoped>
 .evaluate-modal {
-    width: 320px;
-    background: #ffffff;
+    width: 310px;
+    background: #1a1a1a;
     border-radius: 24px;
-    padding: 32px 24px 24px;
+    padding: 20px;
     position: relative;
     box-sizing: border-box;
 }
@@ -135,20 +140,20 @@ const selectRating = (value: number) => {
 }
 
 .title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
-    color: #000000;
+    color: #fff;
     text-align: center;
     line-height: 26px;
-    margin: 0 0 20px 0;
-    padding: 0 10px;
+    margin: 0 0 24px 0;
+    padding: 0;
 }
 
 .user-info {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .avatar-wrapper {
@@ -160,10 +165,11 @@ const selectRating = (value: number) => {
 }
 
 .avatar {
-    width: 62px;
-    height: 62px;
-    border-radius: 31px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50px;
     object-fit: cover;
+    margin-bottom: 12px;
 }
 
 .user-details {
@@ -172,30 +178,31 @@ const selectRating = (value: number) => {
 
 .name {
     font-size: 14px;
-    font-weight: 500;
-    color: #2b2b2b;
+    font-weight: 700;
+    color: #fff;
     margin: 0 0 4px 0;
 }
 
 .duration {
     font-size: 14px;
-    color: #afb1b3;
+    color: rgba(255, 255, 255, 0.6);
     margin: 0;
 }
 
 .rating-container {
     width: 100%;
-    background: #f5f6f7;
-    border-radius: 16px;
-    padding: 12px;
-    margin-bottom: 32px;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 28px;
     box-sizing: border-box;
 }
 
 .rating-strip {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    gap: 12px;
 }
 
 .rating-item {
@@ -207,6 +214,9 @@ const selectRating = (value: number) => {
     cursor: pointer;
     position: relative;
     transition: transform 0.2s;
+    border: none;
+    background: transparent;
+    padding: 0;
 }
 
 .rating-item:active {
@@ -216,27 +226,21 @@ const selectRating = (value: number) => {
 .rating-icon {
     width: 40px;
     height: 40px;
-    opacity: 0.3;
-    /* Unselected state is greyed out/faint */
+    color: #292929;
 }
 
-/* Selected state: fully colorful and has a highlight background if needed, 
-   but according to figma it seems only one is "active" at a time with its natural color */
-.rating-item.is-selected .rating-icon {
-    opacity: 1;
+.rating-icon.active {
+    color: #ffde30;
 }
-
-/* If figma design shows some glow or background for selected one, we can add it here.
-   Looking at the screenshot, the 4th icon is orange/yellow while others are muted. */
 
 .submit-btn {
     width: 100%;
     height: 52px;
-    border-radius: 26px;
+    border-radius: 18px;
     border: none;
-    background: linear-gradient(155.57deg, #FED627 14.81%, #FF1AD0 85.19%);
-    color: #ffffff;
-    font-size: 16px;
+    background: linear-gradient(100deg, #c8f24e 0%, #78eb3f 100%);
+    color: #1a1a1a;
+    font-size: 17px;
     font-weight: 700;
     cursor: pointer;
     display: flex;

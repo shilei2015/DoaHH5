@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  NavBar as VanNavBar,
-  Field as VanField,
-  Uploader as VanUploader,
-  Button as VanButton
-} from 'vant';
 import HUD from '@/components/HUD';
 import { ossUploadService } from '@/utils/net/OSSUploadService';
 import { post } from '@/utils/net/request';
@@ -106,7 +100,7 @@ const onSubmit = async () => {
 
       <!-- Media Upload -->
       <section class="section">
-        <van-uploader v-model="fileList" multiple :max-count="9" :preview-size="['106px', '141px']"
+        <van-uploader v-model="fileList" multiple :max-count="9" :preview-size="['120px', '160px']"
           class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">
@@ -121,7 +115,7 @@ const onSubmit = async () => {
         <label class="section-label">Email</label>
         <div class="input-wrapper">
           <input v-model="contactEmail" type="email" class="email-input"
-            placeholder="Please enter details of your report" />
+            placeholder="Please enter your email address" />
         </div>
       </section>
     </div>
@@ -137,9 +131,11 @@ const onSubmit = async () => {
 .feedback-page {
   width: 100%;
   height: 100vh;
-  background-color: #fff;
+  background-color: #1A1A1A;
   display: flex;
   flex-direction: column;
+  color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 .header {
@@ -147,80 +143,101 @@ const onSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 20px;
   margin-top: env(safe-area-inset-top);
-  background: #fff;
+  background: #1A1A1A;
 }
 
 .back-btn {
-  width: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   background: none;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .back-btn img {
   width: 100%;
+  height: 100%;
+  filter: invert(1);
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1A1A1A;
+  font-size: 17px;
+  line-height: 26px;
+  font-weight: 700;
+  color: #FFFFFF;
 }
 
 .header-right {
-  width: 24px;
+  width: 28px;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 16px;
+  padding: 8px 20px 20px;
 }
 
 .section {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .section-label {
   display: block;
-  font-size: 16px;
+  font-size: 17px;
+  line-height: 20px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #FFFFFF;
   margin-bottom: 12px;
 }
 
 .textarea-wrapper {
-  background-color: #F8F9FB;
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid #EBECED;
+  background-color: #212121;
+  border-radius: 16px;
+  padding: 16px;
 }
 
 .feedback-textarea {
   width: 100%;
-  height: 160px;
+  height: 168px;
   border: none;
   background: none;
-  font-size: 14px;
-  color: #1A1A1A;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #FFFFFF;
   resize: none;
+  outline: none;
 }
 
 .input-wrapper {
-  background-color: #F8F9FB;
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid #EBECED;
+  height: 54px;
+  background-color: #212121;
+  border-radius: 16px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
 }
 
 .email-input {
   width: 100%;
+  height: 100%;
   border: none;
   background: none;
-  font-size: 14px;
-  color: #1A1A1A;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  color: #FFFFFF;
+  outline: none;
+}
+
+.feedback-textarea::placeholder,
+.email-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
 }
 
 /* ====================================================== */
@@ -256,18 +273,19 @@ const onSubmit = async () => {
 
 .media-uploader {
   margin-top: 4px;
+  width: 100%;
 }
 
 .upload-placeholder {
-  width: 106px;
-  height: 141px;
+  width: 120px;
+  height: 160px;
 }
 
 .add-box {
-  width: 106px;
-  height: 141px;
-  border: 1px dashed #EBECED;
-  border-radius: 12px;
+  width: 120px;
+  height: 160px;
+  border: 2px dashed #555555;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,30 +294,42 @@ const onSubmit = async () => {
 .add-box img {
   width: 24px;
   height: 24px;
-  opacity: 0.5;
+  opacity: 0.55;
+  filter: invert(1);
 }
 
 :deep(.van-uploader__preview-image) {
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
 }
 
+:deep(.van-uploader__wrapper) {
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+:deep(.van-uploader__preview) {
+  margin: 0 !important;
+}
+
 .footer {
-  padding: 16px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding: 12px 20px;
+  padding-bottom: calc(34px + env(safe-area-inset-bottom));
   flex-shrink: 0;
+  background: #1A1A1A;
 }
 
 .submit-btn {
   width: 100%;
-  height: 50px;
-  background: linear-gradient(90.2deg, #FED627 0.17%, #FF1AD0 99.85%);
-  color: #fff;
+  height: 52px;
+  background: linear-gradient(90deg, #C8F24E 0%, #78EB3F 100%);
+  color: #1A1A1A;
   border: none;
-  border-radius: 25px;
-  font-size: 16px;
+  border-radius: 18px;
+  font-size: 17px;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(255, 26, 208, 0.2);
 }
 
 .submit-btn:active {

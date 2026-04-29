@@ -9,8 +9,9 @@ import { paymentService } from '@/utils/tools/paymentService';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 
 // Assets
-import backIcon from '@/assets/shop/close.png';
+import backIcon from '@/assets/profile/back_arrow.png';
 import diamondIcon from '@/assets/profile/diamond_icon.svg';
+import diamondLarge from '@/assets/shop/diamond_large.png';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -23,6 +24,14 @@ const currentCoins = computed(() => userInfo.value?.Coins ?? 0);
 
 const products = ref<ProductModel[]>([]);
 const currentFeaturedProduct = ref<ProductModel | null>(null)
+const featuredCoins = computed(() => {
+  const product = currentFeaturedProduct.value;
+  return product?.PurposeObj?.NumberBase || product?.Coins || product?.ProductName || '';
+});
+const featuredPrice = computed(() => currentFeaturedProduct.value?.ShowPrice || currentFeaturedProduct.value?.ApplePrice || '');
+const productCoins = (product: ProductModel) => product.PurposeObj?.NumberBase || product.Coins || product.ProductName;
+const productBonus = (product: ProductModel) => product.PurposeObj?.NumberEx || product.ExtraCoins || '';
+const productImage = (product?: ProductModel | null) => product?.ProductCover || diamondLarge;
 
 /**
  * Handle direct purchase using the global payment service
@@ -79,7 +88,15 @@ onMounted(async () => {
     <div class="shop-content">
       <!-- Featured Banner -->
       <div v-if="currentFeaturedProduct" class="featured-banner" @click="onPurchase(currentFeaturedProduct)">
-        <img :src="currentFeaturedProduct.ProductCover" alt="">
+        <img :src="productImage(currentFeaturedProduct)" alt="" class="featured-image">
+        <div class="featured-copy">
+          <div class="featured-main">
+            <span class="featured-coins">{{ featuredCoins }}</span>
+            <span class="featured-tag">Only Once</span>
+          </div>
+          <div class="featured-subtitle">New user only</div>
+        </div>
+        <div v-if="featuredPrice" class="featured-price">{{ featuredPrice }}</div>
       </div>
 
       <!-- Products Grid -->
@@ -87,12 +104,11 @@ onMounted(async () => {
         <div v-for="product in products" :key="product.ProductId" class="product-card"
           @click="onPurchase(product)">
           <div class="card-image-wrap">
-            <img :src="product.ProductCover" alt="" class="card-image" />
+            <img :src="productImage(product)" alt="" class="card-image" />
           </div>
           <div class="card-coins-row">
-            <span class="card-coins">{{ product.PurposeObj?.NumberBase }}</span>
-            <span v-if="Number(product.PurposeObj?.NumberEx) > 0" class="card-bonus">{{
-              product.PurposeObj?.NumberEx }}</span>
+            <span class="card-coins">{{ productCoins(product) }}</span>
+            <span v-if="Number(productBonus(product)) > 0" class="card-bonus">+{{ productBonus(product) }}</span>
           </div>
           <div class="card-price-btn">
             <span>{{ product.ShowPrice }}</span>
@@ -107,7 +123,7 @@ onMounted(async () => {
 .shop-page {
   width: 100%;
   height: 100vh;
-  background-color: #ffffff;
+  background-color: #1a1a1a;
   display: flex;
   flex-direction: column;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
@@ -117,10 +133,11 @@ onMounted(async () => {
 .shop-header {
   display: flex;
   align-items: center;
-  height: 44px;
+  height: 56px;
   flex-shrink: 0;
   margin-top: calc(0px + env(safe-area-inset-top));
   min-width: 0;
+  background: #1a1a1a;
 }
 
 .shop-header-left,
@@ -151,8 +168,9 @@ onMounted(async () => {
 }
 
 .back-btn img {
-  width: 100%;
-  height: 100%;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .shop-title {
@@ -164,16 +182,20 @@ onMounted(async () => {
   white-space: nowrap;
   font-size: 18px;
   font-weight: 700;
-  color: #000;
+  color: #fff;
 }
 
 .balance-badge {
   display: flex;
   align-items: center;
   gap: 4px;
-  background-color: #F2F1F4;
-  padding: 6px 8px;
+  min-width: 82px;
+  height: 32px;
+  justify-content: center;
+  background-color: transparent;
+  padding: 0 8px;
   border-radius: 16px;
+  border: 1px solid #ffde09;
   flex-shrink: 0;
 }
 
@@ -185,49 +207,132 @@ onMounted(async () => {
 .badge-coins {
   font-size: 16px;
   font-weight: 600;
-  color: #FF5290;
+  color: #fff;
 }
 
 /* === Scrollable Content === */
 .shop-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  padding: 8px 20px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  background: #1a1a1a;
 }
 
 .featured-banner {
   width: 100%;
-  margin-bottom: 13px;
+  min-height: 80px;
+  margin-bottom: 11px;
   cursor: pointer;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(100deg, #c8f24e 0%, #78eb3f 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 10px 13px 16px;
+  position: relative;
+  color: #111;
 }
 
-.featured-banner img {
-  width: 100%;
+.featured-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 88% -20%, rgba(255, 255, 255, 0.38), transparent 45%);
+  pointer-events: none;
+}
+
+.featured-image {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.featured-copy {
+  min-width: 0;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.featured-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.featured-coins {
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 800;
+  color: #111;
+}
+
+.featured-tag {
+  min-width: 74px;
+  height: 22px;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #222;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+
+.featured-subtitle {
+  margin-top: 6px;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.featured-price {
+  min-width: 72px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #2a6b18;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
 }
 
 /* === Products Grid === */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 13px;
+  gap: 11px;
 }
 
 .product-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #fff;
-  border: 1px solid #EBECED;
+  justify-content: flex-start;
+  min-height: 178px;
+  background-color: #212121;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 16px;
-  padding: 16px 0;
+  padding: 18px 10px 14px;
   cursor: pointer;
 }
 
 .card-image-wrap {
-  width: 100px;
-  aspect-ratio: 100 / 70;
-  margin-bottom: 16px;
+  width: 92px;
+  aspect-ratio: 1;
+  margin-bottom: 13px;
 }
 
 .card-image {
@@ -238,19 +343,22 @@ onMounted(async () => {
 
 .card-coins-row {
   display: flex;
+  align-items: baseline;
   gap: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  min-height: 24px;
 }
 
 .card-coins {
   font-size: 18px;
   font-weight: 700;
+  color: #fff;
 }
 
 .card-bonus {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 700;
-  color: #FF1AD0;
+  color: #ffde09;
 }
 
 .card-price-btn {
@@ -259,13 +367,14 @@ onMounted(async () => {
   justify-content: center;
   width: 100px;
   height: 36px;
-  border: 1.5px solid #EBECED;
+  background: #292929;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 18px;
 }
 
 .card-price-btn span {
   font-size: 14px;
-  font-weight: 500;
-  color: #999;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
 }
 </style>

@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  NavBar as VanNavBar,
-  Dialog
-} from 'vant';
 
 // Utils
 import backIcon from '@/assets/comm/comm-back.png';
@@ -13,6 +9,7 @@ import ScrollList from '@/components/ScrollList.vue';
 import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import HUD from '@/components/HUD';
+import { getFlagEmoji } from '@/utils/tools';
 
 const router = useRouter();
 
@@ -109,7 +106,10 @@ onMounted(() => {
           <img :src="user.HeadImage" class="user-avatar" />
           <div class="user-info">
             <span class="user-nickname">{{ user.Nickname }}</span>
-            <!-- <span class="block-time">{{ user.BlockTime }}</span> -->
+            <span v-if="user.Country || user.CountryCode" class="country-line">
+              <span class="flag">{{ getFlagEmoji(user.CountryCode) }}</span>
+              <span class="country-name">{{ user.Country }}</span>
+            </span>
           </div>
           <button class="remove-btn" @click="removeFromBlacklist(user)">Remove</button>
         </div>
@@ -124,35 +124,39 @@ onMounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #FFFFFF;
+  background-color: #1A1A1A;
+  color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 .header {
   margin-top: env(safe-area-inset-top);
-  height: 56px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid #f5f5f5;
+  padding: 0 20px;
   flex-shrink: 0;
 }
 
 .header-left,
 .header-right {
-  width: 40px;
+  width: 28px;
+  height: 28px;
 }
 
 .back-btn {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   cursor: pointer;
+  filter: invert(1);
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: 17px;
+  line-height: 26px;
   font-weight: 700;
-  color: #333;
+  color: #FFFFFF;
 }
 
 .content {
@@ -162,55 +166,82 @@ onMounted(() => {
 }
 
 .list-container {
-  padding: 0 16px;
+  padding: 8px 20px calc(34px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .blacklist-item {
   display: flex;
   align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #f9f9f9;
+  min-height: 60px;
 }
 
 .user-avatar {
-  width: 54px;
-  height: 54px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 12px;
+  background: #292929;
 }
 
 .user-info {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  gap: 6px;
 }
 
 .user-nickname {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
+  line-height: 19px;
+  color: #FFFFFF;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.block-time {
-  font-size: 12px;
-  color: #999;
+.country-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 17px;
+}
+
+.flag {
+  font-size: 16px;
+  line-height: 17px;
+}
+
+.country-name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 17px;
+  color: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .remove-btn {
-  padding: 6px 16px;
-  background: #f5f5f5;
+  width: 86px;
+  height: 36px;
+  padding: 0;
+  background: #292929;
   border: none;
-  border-radius: 17px;
+  border-radius: 26px;
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .remove-btn:active {
-  background-color: #eeeeee;
+  background-color: #333333;
 }
 </style>

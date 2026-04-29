@@ -1,11 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  Cell as VanCell,
-  CellGroup as VanCellGroup,
-  showConfirmDialog,
-  showToast
-} from 'vant';
+import { showToast } from 'vant';
 
 // Assets
 import backIcon from '@/assets/comm/comm-back.png';
@@ -15,44 +11,25 @@ import { closeWebView, logoutApp } from '@/utils/native/A0019Bridge';
 
 const userStore = useUserStore();
 const router = useRouter();
+const showLogoutConfirm = ref(false);
 
 /**
  * Handle logout action
  */
 const handleLogout = () => {
-  showConfirmDialog({
-    title: 'Logout',
-    message: 'Are you sure you want to log out?',
-    confirmButtonText: 'Confirm',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#000000',
-  }).then(() => {
-    userStore.logout();
-    showToast('Logged out successfully');
-    logoutApp();
-    closeWebView();
-  }).catch(() => {
-    // Cancelled
-  });
+  showLogoutConfirm.value = true;
 };
 
-/**
- * Handle delete account action
- */
-const handleDeleteAccount = () => {
-  showConfirmDialog({
-    title: 'Delete Account',
-    message: 'Warning: This action is permanent and all data will be lost. Do you want to proceed?',
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#FF3B30',
-  }).then(() => {
-    // Implement delete account logic
-    showToast('Account deletion request submitted');
-    // router.push('/login');
-  }).catch(() => {
-    // Cancelled
-  });
+const cancelLogout = () => {
+  showLogoutConfirm.value = false;
+};
+
+const confirmLogout = () => {
+  showLogoutConfirm.value = false;
+  userStore.logout();
+  showToast('Logged out successfully');
+  logoutApp();
+  closeWebView();
 };
 
 </script>
@@ -70,15 +47,27 @@ const handleDeleteAccount = () => {
 
     <div class="content">
       <!-- Account Actions Group -->
-      <section class="menu-group">
-        <van-cell-group inset round class="custom-cell-group">
-          <!-- 暂时隐藏注销账户选项 -->
-          <!-- <van-cell title="Delete Account" is-link @click="handleDeleteAccount" class="account-cell" />
-          <div class="divider"></div> -->
-          <van-cell title="Logout" is-link @click="handleLogout" class="account-cell" />
-        </van-cell-group>
+      <section class="account-list">
+        <button class="account-row" type="button" @click="handleLogout">
+          <span>Logout</span>
+          <span class="chevron">›</span>
+        </button>
       </section>
     </div>
+
+    <Teleport to="body">
+      <div v-if="showLogoutConfirm" class="logout-overlay" @click.self="cancelLogout">
+        <div class="logout-dialog">
+          <button class="dialog-close" type="button" aria-label="Close" @click="cancelLogout">×</button>
+          <h2 class="dialog-title">Logout</h2>
+          <p class="dialog-message">Are you sure you want to logout?</p>
+          <div class="dialog-actions">
+            <button class="dialog-btn dialog-btn-cancel" type="button" @click="cancelLogout">Cancel</button>
+            <button class="dialog-btn dialog-btn-confirm" type="button" @click="confirmLogout">Yes</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -86,26 +75,28 @@ const handleDeleteAccount = () => {
 .account-page {
   width: 100%;
   height: 100vh;
-  background-color: #FFFFFF;
-  /* Based on Figma design */
+  background-color: #1A1A1A;
   display: flex;
   flex-direction: column;
+  color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 /* Header */
 .header {
   height: 44px;
-  background-color: #fff;
+  background-color: #1A1A1A;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 20px;
   flex-shrink: 0;
   margin-top: env(safe-area-inset-top);
 }
 
 .back-btn {
-  width: 24px;
+  width: 28px;
+  height: 28px;
   background: none;
   border: none;
   padding: 0;
@@ -116,74 +107,131 @@ const handleDeleteAccount = () => {
 
 .back-btn img {
   width: 28px;
-  /* Based on Figma 28x28px */
   height: 28px;
+  filter: invert(1);
 }
 
 .title {
-  font-size: 18px;
+  font-size: 17px;
+  line-height: 26px;
   font-weight: 700;
-  /* Bold as per Figma */
-  color: #000000;
+  color: #FFFFFF;
   margin: 0;
 }
 
 .header-right {
-  width: 24px;
+  width: 28px;
 }
 
 /* Content */
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 0;
-  /* Vertical spacing */
+  padding: 8px 20px calc(34px + env(safe-area-inset-bottom));
 }
 
-.menu-group {
-  padding: 0 20px;
-  /* 20px margin on both sides */
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding-top: 4px;
 }
 
-/* Customizing Vant Cell Group */
-.custom-cell-group {
-  background-color: #FFFFFF;
-  border: 1px solid #EBECED;
-  /* Based on Figma 1px solid #EBECED */
-  overflow: hidden;
-}
-
-:deep(.van-cell-group--inset) {
-  margin: 0;
-  /* Reset default inset margin since we pad the container */
-}
-
-/* Customizing Vant Cell */
-.account-cell {
-  padding: 16px;
+.account-row {
+  width: 100%;
+  min-height: 20px;
+  border: none;
   background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #FFFFFF;
+  font-size: 17px;
+  line-height: 20px;
+  font-weight: 700;
+  text-align: left;
 }
 
-:deep(.van-cell__title) {
-  font-size: 16px;
-  color: #2B2B2B;
-  /* Based on Figma #2B2B2B */
-  font-weight: 600;
-  /* Semibold (590) effectively 600 */
+.chevron {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 28px;
+  line-height: 16px;
+  font-weight: 300;
 }
 
-:deep(.van-cell__right-icon) {
-  color: #C8C7CC;
-  /* Grey arrow */
-  font-size: 16px;
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(12px);
 }
 
-/* Custom Divider */
-.divider {
-  height: 1px;
-  background-color: #F5F6F7;
-  /* Based on Figma #F5F6F7 */
-  margin-left: 16px;
-  /* Align with text padding */
+.logout-dialog {
+  position: relative;
+  width: min(310px, calc(100vw - 40px));
+  background: #1A1A1A;
+  border-radius: 24px;
+  padding: 36px 20px 20px;
+  color: #FFFFFF;
+  text-align: center;
+}
+
+.dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 30px;
+  line-height: 22px;
+  font-weight: 300;
+}
+
+.dialog-title {
+  font-size: 17px;
+  line-height: 26px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.dialog-message {
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 30px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dialog-btn {
+  flex: 1;
+  height: 52px;
+  border: none;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.dialog-btn-cancel {
+  background: #292929;
+  color: #FFFFFF;
+}
+
+.dialog-btn-confirm {
+  background: linear-gradient(90deg, #C8F24E 0%, #78EB3F 100%);
+  color: #1A1A1A;
 }
 </style>

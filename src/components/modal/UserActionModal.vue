@@ -31,30 +31,37 @@ const handleCancel = () => {
 <style scoped>
 .user-action-sheet {
     width: 100%;
-    background-color: transparent;
-    padding: 0 16px 34px; /* 底部预留安全区 */
+    background-color: #1A1A1A;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 20px calc(49px + env(safe-area-inset-bottom));
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
-.action-group, .cancel-group {
-    background-color: #FFFFFF;
-    border-radius: 16px;
+.action-group,
+.cancel-group {
+    background-color: transparent;
+    border-radius: 20px;
     overflow: hidden;
 }
 
 .action-group {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .action-item {
-    height: 56px;
+    height: 59px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 20px;
     font-weight: 600;
-    color: #333333;
-    background-color: #FFFFFF;
-    border-bottom: 1px solid #F5F5F5;
+    color: #FFFFFF;
+    background-color: #212121;
+    border-radius: 20px;
 }
 
 .action-item:last-child {
@@ -62,10 +69,10 @@ const handleCancel = () => {
 }
 
 .action-item:active {
-    background-color: #F9F9F9;
+    background-color: #292929;
 }
 
 .action-item.cancel {
-    color: #999999;
+    color: #FFFFFF;
 }
 </style>

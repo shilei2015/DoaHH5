@@ -121,7 +121,6 @@ onUnmounted(() => {
 <template>
     <div class="limit-offer-wrapper" v-if="isShowLimitOfferView">
         <div class="limit-page" @click="payLimitOff">
-            <div class="leftWihtView"></div>
             <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="giftLogo">
             <div class="limitInfoContent">
                 <div class="topInfo">
@@ -131,7 +130,7 @@ onUnmounted(() => {
                         :
                         'Buy' }}</div>
                 </div>
-                <div class="bottomInfo">Will miss the offer the countdown ends.</div>
+                <div class="bottomInfo">Will miss the offer when countdown ends.</div>
             </div>
         </div>
 
@@ -143,38 +142,40 @@ onUnmounted(() => {
 
 <style scoped>
 .limit-offer-wrapper {
-    /* pointer-events: none; */
-    /* width: 100%;
-    height: 100%; */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
 }
 
 .limit-page {
-    /* pointer-events: auto; */
     position: relative;
-    background: linear-gradient(to right, #AD5CFF, #FF99EB);
+    width: 100%;
+    background: linear-gradient(100deg, #c8f24e 0%, #78eb3f 100%);
     border-radius: 16px;
     overflow: hidden;
     display: flex;
-    padding-right: 17px;
-    height: 86px;
+    align-items: center;
+    padding: 0 14px 0 10px;
+    height: 72px;
     cursor: pointer;
+    color: #111;
 }
 
-.leftWihtView {
-    background-color: rgba(255, 255, 255, 0.1);
-    width: 118px;
-    height: 118px;
-    border-radius: 50%;
+.limit-page::after {
+    content: '';
     position: absolute;
-    top: -14px;
-    left: -31px;
+    inset: 0;
+    background: radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.4), transparent 42%);
+    pointer-events: none;
 }
 
 .giftLogo {
     position: relative;
-    top: 6px;
-    width: 74px;
-    height: 74px;
+    width: 58px;
+    height: 58px;
+    z-index: 1;
+    flex-shrink: 0;
 }
 
 .limitInfoContent {
@@ -182,51 +183,63 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 8px;
-    margin-left: 4px;
+    gap: 6px;
+    margin-left: 8px;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .topInfo {
     display: flex;
     align-items: center;
+    min-width: 0;
 }
 
 .priceView {
     position: absolute;
-    right: 17px;
-    height: 27px;
-    line-height: 27px;
-    background-color: rgba(255, 255, 255, 0.25);
-    padding-left: 12px;
-    padding-right: 12px;
-    border-radius: 13.5px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 32px;
+    line-height: 32px;
+    background-color: #1a1a1a;
+    padding-left: 14px;
+    padding-right: 14px;
+    border-radius: 16px;
+    color: #65d941;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
+    white-space: nowrap;
 }
 
 .countDonwView {
-    background-color: #A93FED;
-    margin-left: 12px;
-    padding: 0 8px;
+    background-color: #ffde09;
+    margin-left: 10px;
+    padding: 0 9px;
     height: 22px;
     line-height: 22px;
     border-radius: 11px;
-    color: #fff;
+    color: #111;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 800;
+    white-space: nowrap;
 }
 
 .bottomInfo {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(0, 0, 0, 0.5);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 88px;
 }
 
 .coinsCount {
-    color: #fff;
-    font-size: 22px;
+    color: #111;
+    font-size: 24px;
+    line-height: 1;
     font-weight: 800;
 }
 </style>

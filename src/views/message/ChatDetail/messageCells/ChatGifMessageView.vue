@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
+const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
 const isImageLoading = ref(true);
 
 const emit = defineEmits<{
@@ -43,6 +44,9 @@ const onGifLoad = () => {
                 <!-- 直接展示 SVGA 动画，不再等待加载事件 -->
                 <AnimationPlayer v-if="gifUrl" :src="gifUrl" :loop="true" class="sharedImage" />
             </div>
+        </div>
+        <div v-if="isMe" class="userAvatar meAvatar">
+            <img :src="currentUserAvatar" alt="" class="avatarImg">
         </div>
     </div>
 </template>
@@ -73,13 +77,13 @@ const onGifLoad = () => {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #eee;
+    background-color: #292929;
 }
 
 .messageContainer {
     display: flex;
     flex-direction: row;
-    max-width: 100%;
+    max-width: calc(100% - 48px);
     margin: 0 10px;
 }
 
@@ -91,7 +95,7 @@ const onGifLoad = () => {
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    background-color: #f0f0f0;
+    background-color: #292929;
     line-height: 0;
     width: 120px;
     height: 160px;
@@ -111,22 +115,19 @@ const onGifLoad = () => {
     display: block;
     object-fit: cover;
     transition: opacity 0.3s ease;
-    background-color: #fff;
-}
-
-.other .imageBubble {
-    border-bottom-left-radius: 0px;
-}
-
-.me .imageBubble {
-    border-bottom-right-radius: 0px;
+    background-color: #292929;
 }
 
 .sendFaildView {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     position: relative;
     bottom: 4px;
     right: 10px;
+}
+
+.sendFaildView img {
+    width: 100%;
+    height: 100%;
 }
 </style>

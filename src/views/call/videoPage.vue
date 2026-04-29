@@ -167,10 +167,27 @@ const openGiftPicker = () => {
     showModal(ChatGiftPicker, {
         coins: Number(coins.value),
         onSend: onSendGift
+    }, {
+        position: 'bottom',
+        round: true,
+        customStyle: { background: 'transparent' }
     });
 };
 
 const inputText = ref('');
+const messageInputRef = ref<HTMLInputElement | null>(null);
+const isMessageInputFocused = ref(false);
+
+const focusMessageInput = async () => {
+    isMessageInputFocused.value = true;
+    await nextTick();
+    messageInputRef.value?.focus();
+};
+
+const handleInputBlur = () => {
+    isMessageInputFocused.value = Boolean(inputText.value.trim());
+};
+
 const onSendText = async () => {
     if (!inputText.value.trim() || !anchor.value?.UserId) return;
     const fromUid = userInfo.value?.UserId || '';
@@ -299,6 +316,8 @@ onUnmounted(async () => {
                 <img :src="anchor.HeadImage" class="bg-blur" />
             </div>
         </div>
+        <div class="video-gradient video-gradient-top"></div>
+        <div class="video-gradient video-gradient-bottom"></div>
 
         <div class="connected-wrapper">
             <!-- Connected Top Bar -->
@@ -324,7 +343,7 @@ onUnmounted(async () => {
             </div>
 
             <!-- Local Video PiP -->
-            <div class="local-video-container">
+            <div class="local-video-container" :class="{ 'is-masked': rtc.isVideoMasked.value }">
                 <div class="pip-controls">
                     <button class="pip-btn" @click="toggleMask">
                         <img v-if="rtc.isVideoMasked.value" src="@/assets/call/video-camare-off.png" alt="">
@@ -347,19 +366,35 @@ onUnmounted(async () => {
             </div>
 
             <!-- Connected Bottom Bar -->
-            <div class="connected-bottom-bar" :style="bottomBarStyle">
-                <button class="toggleCamare-button" @click="toggleCamera">
+            <div class="connected-bottom-bar" :class="{ 'is-editing': isMessageInputFocused }" :style="bottomBarStyle">
+                <button class="circle-btn compact-action message-mode-btn" @click="focusMessageInput">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M12 4.5c-4.4 0-8 3-8 6.8 0 2 1 3.8 2.7 5.1l-.6 2.2c-.2.6.5 1.1 1 .8l2.6-1.4c.7.2 1.5.3 2.3.3 4.4 0 8-3 8-6.9 0-3.8-3.6-6.9-8-6.9Zm-3.2 7.8a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm3.2 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm3.2 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+                <button class="toggleCamare-button compact-action" @click="toggleCamera">
                     <img class="switch-camare" src="@/assets/call/videoSwitchCamare.png" alt="">
                 </button>
+                <button class="circle-btn compact-action mask-action" @click="toggleMask">
+                    <img v-if="rtc.isVideoMasked.value" src="@/assets/call/video-camare-off.png" alt="">
+                    <img v-else src="@/assets/call/video-camare-on.png" alt="">
+                </button>
                 <div class="message-input-wrapper">
-                    <input type="text" placeholder="Message..." class="message-input" v-model="inputText"
+                    <input ref="messageInputRef" type="text" placeholder="Message..." class="message-input"
+                        v-model="inputText" @focus="isMessageInputFocused = true" @blur="handleInputBlur"
                         @keyup.enter="onSendText" />
+                    <button class="send-message-btn" @pointerdown.prevent="onSendText">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 4 5.4 10.6h4.2V20h4.8v-9.4h4.2L12 4Z" fill="currentColor" />
+                        </svg>
+                    </button>
                 </div>
-                <button class="circle-btn action-btn" @click="openGiftPicker"
-                    style="background-color: rgba(255, 255, 255, 0.25)">
+                <button class="circle-btn action-btn compact-action" @click="openGiftPicker">
                     <img src="@/assets/call/video-gift.png" style="width: 24px; height: 24px;" alt="">
                 </button>
-                <div class="coin-badge connected-coin" @click="showCoinShop">
+                <div class="coin-badge connected-coin compact-action" @click="showCoinShop">
                     <img src="@/assets/profile/diamond_icon.svg" alt="Diamond" class="diamond-icon" />
                     <span class="coin-text">{{ coins }}</span>
                     <div class="add-btn">
@@ -394,7 +429,8 @@ onUnmounted(async () => {
 .remote-video {
     width: 100%;
     height: 100%;
-    position: relative;
+    position: absolute;
+    inset: 0;
 }
 
 .remote-video :deep(video),
@@ -413,6 +449,26 @@ onUnmounted(async () => {
     z-index: 2;
 }
 
+.video-gradient {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.video-gradient-top {
+    top: 0;
+    height: 200px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+
+.video-gradient-bottom {
+    bottom: 0;
+    height: 400px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.68), rgba(0, 0, 0, 0));
+}
+
 .bg-img {
     position: absolute;
     inset: 0;
@@ -420,6 +476,20 @@ onUnmounted(async () => {
     height: 100%;
     object-fit: cover;
     pointer-events: none;
+}
+
+.video-placeholder,
+.bg-blur {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.bg-blur {
+    object-fit: cover;
+    filter: blur(16px);
+    transform: scale(1.08);
 }
 
 .connected-wrapper {
@@ -430,18 +500,19 @@ onUnmounted(async () => {
 
 .connected-top-bar {
     position: absolute;
-    top: 56px;
+    top: calc(56px + env(safe-area-inset-top, 0px));
     left: 20px;
     right: 20px;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     z-index: 20;
 }
 
 .connected-user-info {
     display: flex;
     align-items: center;
+    min-width: 0;
 }
 
 .small-avatar {
@@ -455,6 +526,7 @@ onUnmounted(async () => {
 .connected-details {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .country-flag {
@@ -466,7 +538,7 @@ onUnmounted(async () => {
     color: white;
     font-size: 16px;
     font-weight: 600;
-    width: 150px;
+    max-width: 210px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -480,24 +552,39 @@ onUnmounted(async () => {
 
 .connected-actions {
     display: flex;
-    gap: 12px;
+    gap: 16px;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .circle-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0);
+    background: rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
     cursor: pointer;
+    color: #fff;
+    padding: 0;
 }
 
 .circle-btn img {
     width: 100%;
     height: 100%;
+}
+
+.circle-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.connected-actions .circle-btn {
+    width: 28px;
+    height: 28px;
+    background: transparent;
 }
 
 .icon-text {
@@ -508,18 +595,15 @@ onUnmounted(async () => {
 /* Local Video PiP */
 .local-video-container {
     position: absolute;
-    top: 120px;
+    top: 132px;
     right: 20px;
     z-index: 20;
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .pip-controls {
-    width: 32px;
-    height: 32px;
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    z-index: 21;
+    display: none;
 }
 
 .pip-btn {
@@ -546,20 +630,29 @@ onUnmounted(async () => {
 }
 
 .local-video {
-    width: 105px;
-    height: 140px;
+    width: 92px;
+    height: 123px;
     background-color: #222;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
     position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: none;
+}
+
+.local-video-container.is-masked .local-video::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(18px);
 }
 
 /* Chat Area */
 .chat-area {
     position: absolute;
     left: 20px;
-    width: 280px;
+    width: min(300px, calc(100vw - 40px));
     max-height: 250px;
     overflow-y: auto;
     z-index: 20;
@@ -572,28 +665,27 @@ onUnmounted(async () => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    align-items: flex-start;
 }
 
 .message-bubble {
-    padding: 10px 14px;
+    padding: 7px 12px;
     border-radius: 16px;
     color: white;
-    font-size: 14px;
-    line-height: 1.4;
+    font-size: 15px;
+    line-height: 24px;
     word-break: break-word;
+    max-width: 300px;
 }
 
 .message-remote {
-    background: rgba(134, 59, 95, 0.85);
+    background: rgba(0, 0, 0, 0.3);
     align-self: flex-start;
-    border-top-left-radius: 4px;
 }
 
 .message-me {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
+    background: rgba(101, 217, 65, 0.4);
     align-self: flex-start;
-    border-top-left-radius: 4px;
 }
 
 /* Connected Bottom Bar */
@@ -603,25 +695,27 @@ onUnmounted(async () => {
     right: 20px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
     z-index: 20;
+    min-height: 40px;
+    transition: left 0.18s ease, right 0.18s ease, background-color 0.18s ease;
 }
 
 .action-btn {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
 }
 
 .message-input-wrapper {
+    display: none;
     flex: 1;
-    height: 42px;
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
-    border-radius: 21px;
-    padding: 0 16px;
-    display: flex;
+    height: 40px;
+    background: #292929;
+    border-radius: 22px;
+    padding: 0 0 0 12px;
     align-items: center;
+    min-width: 0;
 }
 
 .message-input {
@@ -630,19 +724,38 @@ onUnmounted(async () => {
     outline: none;
     color: white;
     width: 100%;
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 24px;
 }
 
 .message-input::placeholder {
     color: rgba(255, 255, 255, 0.6);
 }
 
+.send-message-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #c8f24e 0%, #78eb3f 100%);
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.send-message-btn svg {
+    width: 28px;
+    height: 28px;
+}
+
 .coin-badge.connected-coin {
-    height: 42px;
-    border-radius: 21px;
+    height: 40px;
+    border-radius: 70px;
     padding: 0 8px;
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.3);
     border: none;
     color: white;
     display: flex;
@@ -658,14 +771,15 @@ onUnmounted(async () => {
 .coin-text {
     font-size: 16px;
     font-weight: 600;
+    color: #ffde09;
 }
 
 .add-btn {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background-color: #ff5290;
-    color: white;
+    background-color: transparent;
+    color: #ffde09;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -675,12 +789,13 @@ onUnmounted(async () => {
 .add-icon {
     width: 100%;
     height: 100%;
+    filter: brightness(0) saturate(100%) invert(86%) sepia(68%) saturate(1983%) hue-rotate(358deg) brightness(106%) contrast(102%);
 }
 
 .toggleCamare-button {
     width: 40px;
     height: 40px;
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(0, 0, 0, 0.3);
     border-radius: 50%;
     border: none;
     display: flex;
@@ -692,5 +807,36 @@ onUnmounted(async () => {
 .switch-camare {
     width: 24px;
     height: 24px;
+}
+
+.mask-action img {
+    width: 24px;
+    height: 24px;
+}
+
+.message-mode-btn {
+    flex-shrink: 0;
+}
+
+.compact-action {
+    flex-shrink: 0;
+}
+
+.connected-bottom-bar.is-editing {
+    left: 0;
+    right: 0;
+    min-height: 64px;
+    padding: 12px 20px;
+    background: #1a1a1a;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.connected-bottom-bar.is-editing .compact-action {
+    display: none;
+}
+
+.connected-bottom-bar.is-editing .message-input-wrapper {
+    display: flex;
 }
 </style>

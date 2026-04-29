@@ -65,7 +65,7 @@ onMounted(() => {
         <div class="info-container">
             <div v-if="loading" class="loading-box">
                 <!-- 显式使用局部注册的组件 -->
-                <VanLoading color="#FF7634" size="24px" />
+                <VanLoading color="#A8F54A" size="24px" />
             </div>
 
             <div v-else-if="anchorData" class="user-card">
@@ -73,8 +73,7 @@ onMounted(() => {
                 <div class="info">
                     <div class="name">{{ anchorData.Nickname }}</div>
                     <div class="country-line">
-                        <img v-if="anchorData.CountryCode" :src="getFlagEmoji(anchorData.CountryCode || '')"
-                            class="flag" />
+                        <span v-if="anchorData.CountryCode" class="flag">{{ getFlagEmoji(anchorData.CountryCode || '') }}</span>
                         <span class="country-name">{{ anchorData.Country }}</span>
                     </div>
                 </div>
@@ -90,13 +89,14 @@ onMounted(() => {
 
 <style scoped>
 .block-confirm-modal {
-    width: 335px;
-    background: #FFFFFF;
-    border-radius: 24px;
-    padding: 24px;
+    width: 100vw;
+    background: #1A1A1A;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 20px calc(49px + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
 .modal-header {
@@ -104,13 +104,14 @@ onMounted(() => {
     position: relative;
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .title {
-    font-size: 20px;
+    font-size: 17px;
+    line-height: 26px;
     font-weight: 700;
-    color: #333333;
+    color: #FFFFFF;
 }
 
 .close-icon {
@@ -118,27 +119,33 @@ onMounted(() => {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 24px;
-    color: #CCCCCC;
+    width: 24px;
+    height: 24px;
+    font-size: 32px;
+    line-height: 22px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
 }
 
 .confirm-text {
-    font-size: 16px;
-    color: #999999;
+    width: 100%;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
     line-height: 24px;
-    margin-bottom: 24px;
-    padding: 0 10px;
+    margin-bottom: 20px;
+    padding: 0;
 }
 
 .info-container {
     width: 100%;
-    min-height: 108px;
+    min-height: 183px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
 }
 
 .loading-box {
@@ -151,51 +158,59 @@ onMounted(() => {
 
 .user-card {
     width: 100%;
-    background: #FFFFFF;
-    border: 1px solid #EEEEEE;
-    border-radius: 16px;
+    min-height: 183px;
+    background: #212121;
+    border-radius: 20px;
     padding: 16px;
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 .avatar {
-    width: 74px;
-    height: 74px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     object-fit: cover;
-    margin-right: 16px;
-    background-color: #F8F8F8;
+    margin: 0 0 12px;
+    background-color: #292929;
 }
 
 .name {
-    font-size: 18px;
-    font-weight: 700;
-    color: #333333;
+    font-size: 15px;
+    line-height: 18px;
+    font-weight: 600;
+    color: #FFFFFF;
     margin-bottom: 4px;
-    text-align: left;
+    text-align: center;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .info {
-    flex: 1;
+    width: 100%;
     overflow: hidden;
 }
 
 .country-line {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
 }
 
 .flag {
-    width: 20px;
-    height: 14px;
-    object-fit: contain;
+    font-size: 14px;
+    line-height: 17px;
 }
 
 .country-name {
     font-size: 14px;
-    color: #999999;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .modal-footer {
@@ -207,24 +222,23 @@ onMounted(() => {
 .btn {
     flex: 1;
     height: 52px;
-    border-radius: 26px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     cursor: pointer;
 }
 
 .btn-cancel {
-    background: #F5F5F5;
-    color: #333333;
+    background: #292929;
+    color: #FFFFFF;
 }
 
 .btn-confirm {
-    background: linear-gradient(to right, #FFD034, #FF7634, #FF00CC);
-    color: #FFFFFF;
-    box-shadow: 0 4px 15px rgba(255, 118, 52, 0.3);
+    background: linear-gradient(90deg, #C8F24E 0%, #78EB3F 100%);
+    color: #1A1A1A;
 }
 
 .btn:active {
