@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 // Utils
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/comm-back.png';
 import { type UserInfoModel } from '@/components/appModels/UserInfoModel';
 import ScrollList from '@/components/ScrollList.vue';
 import { post } from '@/utils/net/request';

@@ -53,7 +53,7 @@ onMounted(async () => {
         <header class="header">
             <h1 class="title">Messages</h1>
             <button class="clear-btn" @click="onClearAll">
-                <img src="@/assets/message/msg-list-clear-unread.svg" alt="">
+                <img src="@/assets/msg-list-clear-unread.svg" alt="">
                 <span class="clear-text">Clear All</span>
             </button>
         </header>

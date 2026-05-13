@@ -4,11 +4,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { getFlagEmoji, getAge } from '@/utils/tools';
 import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
-import HUD from '@/components/HUD';
 import type { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showImagePreview } from 'vant';
 import MOMORTC from '@/utils/MOMORTC';
-import { generateSessionId } from '@/utils/msg/MessageModel';
 import { showUserActionModal } from '@/utils/tools/modalService';
 
 const route = useRoute();
@@ -18,11 +16,23 @@ const anchorInfo = ref<AnchorInfoModel | null>(null);
 
 const statusInfo = computed(() => {
     switch (anchorInfo.value?.OnlineState) {
-        case '1': return { text: 'Online', colorClass: 'is-online' };
-        case '2': return { text: 'Busy', colorClass: 'is-busy' };
-        default: return { text: 'Offline', colorClass: 'is-offline' };
+        case '1': return { text: 'Online', colorClass: 'is-online', dotColor: '#76f337' };
+        case '2': return { text: 'Busy', colorClass: 'is-busy', dotColor: '#ffa339' };
+        default: return { text: 'Offline', colorClass: 'is-offline', dotColor: '#d8d8d8' };
     }
 });
+
+const displayAge = computed(() => {
+    const birthdayAge = getAge(anchorInfo.value?.Birthday);
+    if (birthdayAge > 0) {
+        return String(birthdayAge);
+    }
+    return anchorInfo.value?.Age ? String(anchorInfo.value.Age) : "";
+});
+
+const isMale = computed(() => anchorInfo.value?.Gender === '1');
+
+const ageChipClass = computed(() => isMale.value ? 'male-chip' : 'age-chip');
 
 // 相册轮播状态
 const activeIndex = ref(0);
@@ -111,21 +121,10 @@ const clickActionMore = () => {
             <!-- 顶部导航栏 -->
             <div class="nav-bar">
                 <button class="icon-btn" @click="goBack">
-                    <img src="@/assets/profile/close_icon.svg" alt="Close" />
+                    <img class="icon-back" src="@/assets/anchor_profile_back.svg" alt="Back" />
                 </button>
-                <div class="title-area">
-                    <div class="name-age">{{ anchorInfo.Nickname }}, {{ getAge(anchorInfo.Birthday) }}</div>
-                    <div class="status-row">
-                        <span class="flag">{{ getFlagEmoji(anchorInfo.CountryCode) }}</span>
-                        <span class="country">{{ anchorInfo.Country }}</span>
-                        <span class="dot" :class="statusInfo.colorClass">·</span>
-                        <span class="online-status" :class="statusInfo.colorClass">
-                            {{ statusInfo.text }}
-                        </span>
-                    </div>
-                </div>
                 <button class="icon-btn" @click="clickActionMore">
-                    <img src="@/assets/profile/report_icon.svg" alt="Report" />
+                    <img class="icon-more" src="@/assets/anchor_profile_more.svg" alt="More" />
                 </button>
             </div>
 
@@ -136,7 +135,13 @@ const clickActionMore = () => {
                         alt="Cover" @click="handleImageClick(index)" />
                 </div>
 
+                <div class="cover-top-gradient"></div>
                 <div class="cover-gradient"></div>
+
+                <div class="hero-status-badge" :class="statusInfo.colorClass">
+                    <span class="hero-status-dot" :style="{ backgroundColor: statusInfo.dotColor }"></span>
+                    <span>{{ statusInfo.text }}</span>
+                </div>
 
                 <!-- 轮播指示器 -->
                 <div class="pagination-dots" v-if="displayAlbums.length > 1">
@@ -150,23 +155,15 @@ const clickActionMore = () => {
                     <!-- 私信按钮 -->
                     <button class="action-btn msg-btn" @click="goMessage">
                         <div class="msg-circle">
-                            <img src="@/assets/profile/msg_icon.svg" alt="Message" />
+                            <img class="chat-icon" src="@/assets/anchor_profile_chat.svg" alt="Message" />
                         </div>
                         <span>Chat</span>
                     </button>
 
                     <!-- 视频通话按钮 (居中大尺寸) -->
                     <button class="action-btn call-btn" @click="MOMORTC.startAnchorCall(anchorInfo.UserId)">
-                        <img src="@/assets/profile/video_call_btn.svg" alt="Video Call" />
+                        <img class="video-icon" src="@/assets/anchor_profile_video.svg" alt="Video Call" />
                         <span>Video Chat</span>
-                    </button>
-
-                    <!-- 心形关注按钮 -->
-                    <button class="action-btn heart-btn" @click="likeAnchor">
-                        <div class="heart-circle">
-                            <img v-if="anchorInfo.IsLike" src="@/assets/profile/heart_liked.svg" />
-                            <img v-else src="@/assets/profile/heart_icon.png" alt="Favorite" />
-                        </div>
                     </button>
                 </div>
             </div>
@@ -177,20 +174,23 @@ const clickActionMore = () => {
                     <div class="summary-main">
                         <h1 class="profile-name">{{ anchorInfo.Nickname }}</h1>
                         <div class="summary-chips">
-                            <span class="summary-chip age-chip">{{ getAge(anchorInfo.Birthday) }}</span>
-                            <span class="summary-chip">
+                            <span v-if="displayAge" class="summary-chip" :class="ageChipClass">
+                                <img v-if="isMale" class="gender-icon" src="@/assets/anchor_profile_male.svg" alt="" />
+                                <img v-else class="gender-icon" src="@/assets/anchor_profile_female.svg" alt="" />
+                                {{ displayAge }}
+                            </span>
+                            <span v-if="anchorInfo.Country" class="summary-chip country-chip">
                                 <span class="flag">{{ getFlagEmoji(anchorInfo.CountryCode) }}</span>
                                 {{ anchorInfo.Country }}
                             </span>
-                            <span class="summary-chip" :class="statusInfo.colorClass">{{ statusInfo.text }}</span>
                         </div>
                     </div>
                     <button class="summary-like" @click="likeAnchor">
-                        <img v-if="anchorInfo.IsLike" src="@/assets/profile/heart_liked.svg" alt="Liked" />
-                        <img v-else src="@/assets/profile/heart_icon.png" alt="Favorite" />
+                        <img v-if="anchorInfo.IsLike" class="liked-icon" src="@/assets/heart_liked.svg" alt="Liked" />
+                        <img v-else src="@/assets/anchor_profile_heart.svg" alt="Favorite" />
                     </button>
                 </div>
-                <h2 class="about-title">About me</h2>
+                <h2 class="about-title">About Me</h2>
                 <p class="about-desc">
                     {{ anchorInfo.Introduce || "" }}
                 </p>
@@ -200,7 +200,7 @@ const clickActionMore = () => {
         <template v-else>
             <!-- Lightweight loading state for smooth transition -->
             <div class="inner-loading">
-                <van-loading type="spinner" color="#FF1AD0" />
+                <van-loading type="spinner" color="#65D941" />
             </div>
         </template>
     </div>
@@ -210,6 +210,7 @@ const clickActionMore = () => {
 .profile-page {
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     background-color: #1a1a1a;
     display: flex;
     flex-direction: column;
@@ -222,7 +223,7 @@ const clickActionMore = () => {
 /* 导航栏 */
 .nav-bar {
     position: fixed;
-    top: calc(56px + env(safe-area-inset-top));
+    top: calc(56px + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
     z-index: 20;
@@ -247,64 +248,18 @@ const clickActionMore = () => {
 }
 
 .icon-btn img {
-    width: 100%;
-    height: 100%;
+    display: block;
     object-fit: contain;
 }
 
-.title-area {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+.icon-back {
+    width: 28px;
+    height: 28px;
 }
 
-.name-age {
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: black;
-    line-height: 20px;
-}
-
-.status-row {
-    font-family: system-ui, -apple-system, sans-serif;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 14px;
-    line-height: 18px;
-}
-
-.country {
-    color: #808080;
-    font-weight: 500;
-}
-
-.dot {
-    margin: 0 4px;
-}
-
-/* 状态颜色：Online */
-.dot.is-online,
-.online-status.is-online {
-    color: #5EE413;
-}
-
-/* 状态颜色：Busy */
-.dot.is-busy,
-.online-status.is-busy {
-    color: #ff8000;
-}
-
-/* 状态颜色：Offline */
-.dot.is-offline,
-.online-status.is-offline {
-    color: #cccccc;
-}
-
-.online-status {
-    font-weight: 600;
+.icon-more {
+    width: 23.333px;
+    height: 5.556px;
 }
 
 /* 封面区与相册轮播 */
@@ -313,9 +268,11 @@ const clickActionMore = () => {
     width: 100%;
     margin: 0;
     height: min(66.5vh, 540px);
+    height: min(66.5dvh, 540px);
     min-height: 500px;
     border-radius: 0;
     background-color: #242424;
+    overflow: hidden;
 }
 
 /* 轮播滑动容器 */
@@ -351,20 +308,65 @@ const clickActionMore = () => {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 180px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(26, 26, 26, 0.86) 100%);
+    height: 100px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     pointer-events: none;
 }
 
-.pagination-dots {
+.cover-top-gradient {
     position: absolute;
-    bottom: 38px;
+    top: 0;
     left: 0;
     right: 0;
+    height: 120px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+}
+
+.hero-status-badge {
+    position: absolute;
+    left: 20px;
+    bottom: 36px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px 0 8px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 28px;
+}
+
+.hero-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: 0 0 6px;
+}
+
+.hero-status-badge.is-online {
+    color: #76f337;
+}
+
+.hero-status-badge.is-busy {
+    color: #ffa339;
+}
+
+.hero-status-badge.is-offline {
+    color: #d8d8d8;
+}
+
+.pagination-dots {
+    position: absolute;
+    bottom: 46px;
+    right: 20px;
+    z-index: 4;
     display: flex;
-    justify-content: center;
     align-items: center;
     gap: 6px;
 }
@@ -375,18 +377,20 @@ const clickActionMore = () => {
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.4);
     transition: all 0.3s ease;
+    margin: 0;
 }
 
 .pagination-dots .dot.active {
     background-color: white;
-    width: 16px;
-    border-radius: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
 }
 
 /* 悬浮操作按钮区 */
 .action-buttons {
     position: fixed;
-    bottom: calc(34px + env(safe-area-inset-bottom));
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), 34px) + 8px);
     left: 20px;
     right: 20px;
     display: flex;
@@ -403,7 +407,7 @@ const clickActionMore = () => {
     padding: 0;
     cursor: pointer;
     transition: transform 0.2s;
-    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
 }
 
 .action-btn:active {
@@ -419,8 +423,9 @@ const clickActionMore = () => {
     justify-content: center;
     gap: 6px;
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 700;
     color: #1a1a1a;
+    line-height: normal;
 }
 
 .msg-btn {
@@ -433,11 +438,18 @@ const clickActionMore = () => {
     background: linear-gradient(90deg, #c8f24e 0%, #78eb3f 100%);
 }
 
-.msg-circle img,
-.call-btn img {
-    width: 26px;
-    height: 26px;
+.chat-icon {
+    width: 28px;
+    height: 28px;
     display: block;
+    object-fit: contain;
+}
+
+.video-icon {
+    width: 26px;
+    height: 16.679px;
+    display: block;
+    object-fit: contain;
 }
 
 .msg-circle {
@@ -446,16 +458,12 @@ const clickActionMore = () => {
     justify-content: center;
 }
 
-.heart-btn {
-    display: none;
-}
-
 /* 关于我资料区 */
 .about-section {
     position: relative;
     z-index: 5;
     margin-top: -24px;
-    padding: 20px 20px 124px 20px;
+    padding: 20px 20px calc(118px + max(env(safe-area-inset-bottom, 0px), 0px));
     flex: 1;
     background: #1a1a1a;
     border-radius: 24px 24px 0 0;
@@ -465,16 +473,25 @@ const clickActionMore = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 28px;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.summary-main {
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .profile-name {
     margin: 0 0 16px;
     color: #fff;
-    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
     font-size: 20px;
     line-height: 20px;
-    font-weight: 800;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .summary-chips {
@@ -486,29 +503,36 @@ const clickActionMore = () => {
 .summary-chip {
     display: inline-flex;
     align-items: center;
+    gap: 4px;
     min-height: 28px;
-    padding: 0 8px;
+    padding: 0 8px 0 7px;
     border-radius: 16px;
     background: #292929;
     color: #fff;
     font-size: 14px;
     font-weight: 600;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.summary-chip .gender-icon {
+    width: 16px;
+    height: 16px;
+    display: block;
+    object-fit: contain;
 }
 
 .age-chip {
     color: #ff7aff;
 }
 
-.summary-chip.is-online {
-    color: #76f337;
+.male-chip {
+    color: #47d4ff;
 }
 
-.summary-chip.is-busy {
-    color: #ffa339;
-}
-
-.summary-chip.is-offline {
-    color: #d8d8d8;
+.flag {
+    font-size: 14px;
+    line-height: 1;
 }
 
 .summary-like {
@@ -521,23 +545,30 @@ const clickActionMore = () => {
     align-items: center;
     justify-content: center;
     padding: 0;
+    flex: 0 0 52px;
 }
 
 .summary-like img {
-    width: 100%;
-    height: 100%;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
 }
 
+.summary-like .liked-icon {
+    width: 52px;
+    height: 52px;
+}
+
 .about-title {
-    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
     font-size: 16px;
     font-weight: 700;
     color: #fff;
-    margin-bottom: 12px;
+    line-height: 20px;
+    margin: 0 0 12px;
     display: inline-flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .about-title::after {
@@ -549,11 +580,13 @@ const clickActionMore = () => {
 }
 
 .about-desc {
-    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
     font-size: 15px;
     color: rgba(255, 255, 255, 0.5);
     line-height: 24px;
-    font-weight: 510;
+    font-weight: 500;
+    margin: 0;
+    white-space: pre-wrap;
 }
 
 .inner-loading {

@@ -25,11 +25,11 @@ const emit = defineEmits(['close', 'confirm']);
 const selectedRating = ref(5);
 
 const ratings = [
-    { value: 1, icon: new URL('../../assets/call/evaluate/rate_1_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/call/evaluate/rate_1_sel.svg', import.meta.url).href },
-    { value: 2, icon: new URL('../../assets/call/evaluate/rate_2_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/call/evaluate/rate_2_sel.svg', import.meta.url).href },
-    { value: 3, icon: new URL('../../assets/call/evaluate/rate_3_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/call/evaluate/rate_3_sel.svg', import.meta.url).href },
-    { value: 4, icon: new URL('../../assets/call/evaluate/rate_4_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/call/evaluate/rate_4_sel.svg', import.meta.url).href },
-    { value: 5, icon: new URL('../../assets/call/evaluate/rate_5_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/call/evaluate/rate_5_sel.svg', import.meta.url).href },
+    { value: 1, icon: new URL('../../assets/rate_1_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/rate_1_sel.svg', import.meta.url).href },
+    { value: 2, icon: new URL('../../assets/rate_2_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/rate_2_sel.svg', import.meta.url).href },
+    { value: 3, icon: new URL('../../assets/rate_3_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/rate_3_sel.svg', import.meta.url).href },
+    { value: 4, icon: new URL('../../assets/rate_4_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/rate_4_sel.svg', import.meta.url).href },
+    { value: 5, icon: new URL('../../assets/rate_5_nor.svg', import.meta.url).href, selectedIcon: new URL('../../assets/rate_5_sel.svg', import.meta.url).href },
 ];
 
 const onClose = () => {
@@ -62,7 +62,7 @@ const selectRating = (value: number) => {
     <div class="evaluate-modal">
         <!-- Close Button -->
         <!-- <button class="close-btn" @click="onClose">
-            <img src="../../assets/call/evaluate/close.svg" alt="close" />
+            <img src="../../assets/unused-images/close.svg" alt="close" />
         </button> -->
 
         <!-- Content Area -->

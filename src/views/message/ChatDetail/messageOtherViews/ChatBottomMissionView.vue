@@ -32,8 +32,8 @@ const emit = defineEmits<{
             @click="emit('clickMission', MissionType.gift)">
             <img class="giftIcon" :src="props.missionData.giftMission.giftIcon" alt="">
             <span class="sendTitle">send gift</span>
-            <img class="diamondTag" src="@/assets/profile/diamond_icon.svg" alt="">
-            <span class="diamondCount">{{ props.missionData.giftMission.giftPrice }}</span>
+            <img class="coinTag" src="@/assets/coin_icon.png" alt="">
+            <span class="coinCount">{{ props.missionData.giftMission.giftPrice }}</span>
         </div> -->
     </div>
 </template>
@@ -66,7 +66,7 @@ const emit = defineEmits<{
     height: 22px;
 }
 
-.diamondTag {
+.coinTag {
     width: 20px;
     height: 20px;
 }
@@ -79,7 +79,7 @@ const emit = defineEmits<{
     white-space: nowrap;
 }
 
-.diamondCount {
+.coinCount {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     font-size: 14px;
     font-weight: 510;

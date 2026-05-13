@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import AnchorCard from '../../components/AnchorCard.vue';
+import coinIcon from '@/assets/coin_icon.png';
 import ScrollList from '../../components/ScrollList.vue';
 import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
@@ -9,6 +10,7 @@ import HUD from '@/components/HUD';
 import { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showCoinShop } from '@/utils/tools/shopService';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
+import { useUserStore } from '@/stores/userStore';
 
 class AnchorCate {
     NavId: string = ""
@@ -29,6 +31,8 @@ const anchors = ref<AnchorInfoModel[]>([]);
 const isSwitchingCate = ref(false);
 /** 列表接口进行中：避免在结果返回前把「未加载」当成「真的空」 */
 const isAnchorListPending = ref(true);
+const userStore = useUserStore();
+const currentCoins = computed(() => userStore.userInfo?.Coins || '0');
 
 const selectCategory = (NavId: string) => {
     categories.value.forEach(c => c.active = false);
@@ -49,6 +53,11 @@ const scrollToCate = (NavId: string, event: Event) => {
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 };
+
+const getCategoryImage = (cat: AnchorCate): string => {
+    const image = cat.Image?.trim()
+    return image || ''
+}
 
 var currentPage = ref(1)
 
@@ -216,7 +225,9 @@ onMounted(() => {
 })
 
 onActivated(() => {
-    refreshCateList()
+    if (categories.value.length === 0 && anchors.value.length === 0) {
+        refreshCateList()
+    }
 })
 
 
@@ -224,47 +235,53 @@ onActivated(() => {
 
 <template>
     <div class="anchor-list-page">
+        <!-- 顶部标题栏 -->
+        <div class="header">
+            <h1 class="title">Discover</h1>
+            <button type="button" class="balance-container" aria-label="Open coin shop" @click="showCoinShop()">
+                <span class="coin-icon-wrap">
+                    <img :src="coinIcon" class="coin-icon" alt="" />
+                </span>
+                <span class="coins-total">{{ currentCoins }}</span>
+                <span class="coin-add-icon" aria-hidden="true"></span>
+            </button>
+        </div>
+
+        <!-- 水平滑动的标签栏：UP=="1" 时展示 -->
+        <div v-show="showCategoryTabs" class="category-tabs">
+            <button v-for="cat in categories" :key="cat.NavId" :id="'category-tab-' + cat.NavId" class="tab-btn"
+                :class="{ active: cat.active }" @click="selectCategory(cat.NavId); scrollToCate(cat.NavId, $event)">
+                <img v-if="getCategoryImage(cat)" :src="getCategoryImage(cat)" class="tab-icon" alt="" />
+                <span>{{ cat.NavName }}</span>
+            </button>
+        </div>
+
         <!-- 通用的下达拉刷新组件 -->
-        <ScrollList v-model:refreshing="isRefreshing" v-model:loading="isLoadingMore" :finished="isFinished"
-            :isEmpty="showListEmptyState" @refresh="handleRefresh" @load-more="handleLoadMore">
-            <!-- 顶部标题栏 -->
-            <div class="header">
-                <h1 class="title">Discover</h1>
-                <div class="balance-container" @click="showCoinShop()">
-                    <img src="@/assets/profile/diamond_icon.svg" class="diamond-icon" alt="diamond" />
-                    <span class="coins-total">Become VIP</span>
+        <div class="list-scroll-region">
+            <ScrollList v-model:refreshing="isRefreshing" v-model:loading="isLoadingMore" :finished="isFinished"
+                :isEmpty="showListEmptyState" @refresh="handleRefresh" @load-more="handleLoadMore">
+                <!-- 主播卡片网格 -->
+                <div class="anchor-grid" v-show="anchors.length > 0">
+                    <AnchorCard v-for="anchor in anchors" :key="anchor.UserId" :anchor="anchor" />
                 </div>
-            </div>
 
-            <!-- 水平滑动的标签栏：UP=="1" 时展示 -->
-            <div v-show="showCategoryTabs" class="category-tabs">
-                <button v-for="cat in categories" :key="cat.NavId" :id="'category-tab-' + cat.NavId" class="tab-btn"
-                    :class="{ active: cat.active }" @click="selectCategory(cat.NavId); scrollToCate(cat.NavId, $event)">
-                    {{ cat.NavName }}
-                </button>
-            </div>
+                <!-- 分类切换时的中间加载过渡动画 -->
+                <div class="cate-loading" v-if="isSwitchingCate">
+                    <div class="cate-spinner"></div>
+                </div>
 
-            <!-- 主播卡片网格 -->
-            <div class="anchor-grid" v-show="anchors.length > 0">
-                <AnchorCard v-for="anchor in anchors" :key="anchor.UserId" :anchor="anchor" />
-            </div>
+                <!-- 底部预留 Tabbar 空间，作为内容的一部分以优化滚动感受 -->
+                <div class="bottom-placeholder"></div>
 
-            <!-- 分类切换时的中间加载过渡动画 -->
-            <div class="cate-loading" v-if="isSwitchingCate">
-                <div class="cate-spinner"></div>
-            </div>
-
-            <!-- 底部预留 Tabbar 空间，作为内容的一部分以优化滚动感受 -->
-            <div class="bottom-placeholder"></div>
-
-        </ScrollList>
+            </ScrollList>
+        </div>
     </div>
 </template>
 
 <style scoped>
 .anchor-list-page {
     width: 100%;
-    height: 100vh;
+    height: 100%;
     background: #1a1a1a;
     display: flex;
     flex-direction: column;
@@ -288,6 +305,7 @@ onActivated(() => {
     padding-left: 20px;
     padding-right: 20px;
     margin-bottom: 16px;
+    flex-shrink: 0;
 }
 
 .title {
@@ -300,27 +318,80 @@ onActivated(() => {
 }
 
 .balance-container {
-    display: flex;
+    width: auto;
+    max-width: min(58vw, 180px);
+    height: 32px;
+    display: inline-flex;
     align-items: center;
-    background: linear-gradient(90deg, #fef819 0%, #4ef2d5 100%);
-    padding: 4px 10px 4px 5px;
-    border-radius: 16px;
+    justify-content: center;
     gap: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #ffde09;
+    padding: 4px 4px 4px 5px;
+    border-radius: 16px;
     flex-shrink: 0;
     cursor: pointer;
-    min-height: 34px;
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
 }
 
-.balance-container .diamond-icon {
-    width: 26px;
-    height: 26px;
+.coin-icon-wrap {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    flex: 0 0 22px;
+}
+
+.balance-container .coin-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
 }
 
 .coins-total {
-    font-size: 14px;
-    font-weight: 800;
-    color: #1a1a1a;
+    min-width: 0;
+    max-width: 110px;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Display", "Segoe UI", sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #ffde09;
     white-space: nowrap;
+}
+
+.coin-add-icon {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border: 1.5px solid #ffde09;
+    border-radius: 50%;
+    box-sizing: border-box;
+}
+
+.coin-add-icon::before,
+.coin-add-icon::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 8.8px;
+    height: 1.8px;
+    border-radius: 999px;
+    background: #ffde09;
+    transform: translate(-50%, -50%);
+}
+
+.coin-add-icon::after {
+    transform: translate(-50%, -50%) rotate(90deg);
 }
 
 /* 分类标签栏 */
@@ -332,6 +403,7 @@ onActivated(() => {
     scrollbar-width: none;
     margin-bottom: 12px;
     border-bottom: 3px solid #252525;
+    flex-shrink: 0;
 }
 
 .category-tabs::-webkit-scrollbar {
@@ -341,6 +413,9 @@ onActivated(() => {
 .tab-btn {
     white-space: nowrap;
     position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     padding: 0;
     border-radius: 0;
     border: none;
@@ -350,6 +425,13 @@ onActivated(() => {
     color: #fff;
     cursor: pointer;
     transition: all 0.2s ease;
+}
+
+.tab-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    object-fit: contain;
 }
 
 .tab-btn.active {
@@ -368,6 +450,12 @@ onActivated(() => {
 }
 
 /* 主播列表网格：align-items 避免子项被拉伸成异常行高（部分 WebView 下与 aspect-ratio 组合会塌缩） */
+.list-scroll-region {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .anchor-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

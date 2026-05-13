@@ -7,7 +7,7 @@ import { useUserStore } from '@/stores/userStore';
 import { getFlagEmoji } from '@/utils/tools';
 import rtc, { EndLiveEndState } from '@/utils/MOMORTC';
 import { showExitCallConfirmModal } from '@/utils/tools/modalService';
-import callingSound from '@/assets/audio/call.mp3';
+import callingSound from '@/assets/call.mp3';
 import { showCoinShop } from '@/utils/tools/shopService';
 
 const router = useRouter();
@@ -145,7 +145,7 @@ onUnmounted(() => {
 
         <div class="top-bar">
             <button class="back-btn" @click="goBack">
-                <img src="@/assets/profile/back_arrow.png" alt="Back" class="back-icon" />
+                <img src="@/assets/back_arrow.png" alt="Back" class="back-icon" />
             </button>
 
             <div class="top-user-card">
@@ -167,7 +167,7 @@ onUnmounted(() => {
 
         <div class="call-bottom-status" :class="{ incoming: callState === 'incoming' }">
             <div class="coin-badge" @click="showCoinShop">
-                <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="diamond-icon" />
+                <img src="@/assets/coin_icon.png" alt="" class="coin-icon" />
                 <span class="coin-text">{{ currentCoins }}</span>
                 <div class="add-btn">+</div>
             </div>
@@ -187,7 +187,7 @@ onUnmounted(() => {
                 <div v-if="callState === 'incoming'" class="sub-text">Connecting your call. Please wait...</div>
                 <div v-else class="charge-row">
                     <span>You’ll be charged</span>
-                    <img src="@/assets/setting/ic_diamond.png" alt="Diamond" class="small-diamond" />
+                    <img src="@/assets/coin_icon.png" alt="" class="small-coin" />
                     <span v-if="oldCoins" class="old-price">{{ oldCoins }}</span>
                     <span>{{ callCoins }} coins per time.</span>
                 </div>
@@ -365,9 +365,10 @@ onUnmounted(() => {
     cursor: pointer;
 }
 
-.diamond-icon {
+.coin-icon {
     width: 22px;
     height: 22px;
+    object-fit: contain;
 }
 
 .coin-text {
@@ -460,9 +461,10 @@ onUnmounted(() => {
     flex-wrap: wrap;
 }
 
-.small-diamond {
+.small-coin {
     width: 14px;
     height: 14px;
+    object-fit: contain;
 }
 
 .old-price {

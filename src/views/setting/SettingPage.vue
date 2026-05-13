@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import HUD from '@/components/HUD';
 
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/comm-back.png';
 import { NET_CONFIG } from '@/utils/net/config';
 import { showWebviewModal } from '@/utils/tools/modalService';
 

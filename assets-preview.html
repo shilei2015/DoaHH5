@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assets Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0e1117;
+      --panel: #151a22;
+      --panel-2: #1b222d;
+      --border: #2b3442;
+      --text: #eef2f8;
+      --muted: #8f9aaa;
+      --accent: #ff2ec9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .count {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      min-width: 0;
+      padding: 12px;
+      margin: 0 -12px 20px;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    }
+
+    input[type="search"] {
+      flex: 1 1 280px;
+      width: auto;
+      min-width: 180px;
+      min-height: 40px;
+      padding: 0 12px;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+    }
+
+    input[type="search"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .segmented {
+      display: flex;
+      flex: 0 1 auto;
+      flex-wrap: wrap;
+      max-width: 100%;
+      gap: 4px;
+      padding: 4px;
+      overflow-x: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    button {
+      min-height: 32px;
+      padding: 0 10px;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    button.active {
+      color: #ffffff;
+      background: var(--accent);
+    }
+
+    .size-control {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 10px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    input[type="range"] {
+      width: 110px;
+      accent-color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--card-size, 168px), 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      min-width: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .preview {
+      display: grid;
+      place-items: center;
+      height: var(--preview-size, 160px);
+      padding: 18px;
+      overflow: visible;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview.dark {
+      background: #111827;
+    }
+
+    .preview.light {
+      background: #f8fafc;
+    }
+
+    .preview.checker {
+      background-color: #f8fafc;
+      background-image:
+        linear-gradient(45deg, #d7dde6 25%, transparent 25%),
+        linear-gradient(-45deg, #d7dde6 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d7dde6 75%),
+        linear-gradient(-45deg, transparent 75%, #d7dde6 75%);
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      background-size: 20px 20px;
+    }
+
+    .image-frame {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .image-frame img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      object-position: center;
+    }
+
+    .meta {
+      padding: 10px;
+      min-height: 86px;
+    }
+
+    .name {
+      display: -webkit-box;
+      overflow-wrap: anywhere;
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 600;
+      line-height: 1.3;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .path {
+      display: -webkit-box;
+      overflow-wrap: anywhere;
+      overflow: hidden;
+      margin-top: 4px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .copy-text {
+      appearance: none;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      letter-spacing: 0;
+      cursor: copy;
+      font: inherit;
+    }
+
+    .copy-text:hover,
+    .copy-text:focus-visible {
+      color: #ff2fcf;
+      outline: none;
+    }
+
+    .copy-text:focus-visible {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      padding: 2px 6px;
+      color: var(--muted);
+      background: var(--panel-2);
+      border-radius: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .empty {
+      display: none;
+      padding: 48px 16px;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 20;
+      min-width: 128px;
+      max-width: min(320px, calc(100vw - 32px));
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(17, 24, 39, 0.92);
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.35;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 8px);
+      transition: opacity 160ms ease, transform 160ms ease;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        padding: 16px;
+      }
+
+      header {
+        display: block;
+      }
+
+      .toolbar {
+        margin-inline: 0;
+      }
+
+      .toolbar > * {
+        max-width: 100%;
+      }
+
+      input[type="search"] {
+        min-width: 0;
+      }
+
+      .segmented {
+        width: 100%;
+        flex-wrap: nowrap;
+      }
+
+      .size-control {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      input[type="range"] {
+        width: min(180px, 50vw);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .toolbar,
+      .grid {
+        width: calc(100vw - 32px);
+        max-width: calc(100vw - 32px);
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>Assets Preview</h1>
+        <div class="count" id="count"></div>
+      </div>
+    </header>
+
+    <section class="toolbar" aria-label="Preview controls">
+      <input id="search" type="search" placeholder="Search filename or path">
+
+      <div class="segmented" aria-label="Asset group">
+        <button class="active" type="button" data-group="all">All</button>
+        <button type="button" data-group="root">Root</button>
+        <button type="button" data-group="tabbar">Tabbar</button>
+        <button type="button" data-group="unused">Unused</button>
+        <button type="button" data-group="svg">SVG</button>
+        <button type="button" data-group="png">PNG</button>
+      </div>
+
+      <div class="segmented" aria-label="Preview background">
+        <button class="active" type="button" data-bg="dark">Dark</button>
+        <button type="button" data-bg="checker">Checker</button>
+        <button type="button" data-bg="light">Light</button>
+      </div>
+
+      <label class="size-control">
+        Size
+        <input id="size" type="range" min="128" max="260" value="168">
+      </label>
+    </section>
+
+    <section class="grid" id="grid" aria-live="polite"></section>
+    <div class="empty" id="empty">No assets match the current filters.</div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const assets = [
+      "src/assets/add_icon.svg",
+      "src/assets/anchor_profile_back.svg",
+      "src/assets/anchor_profile_chat.svg",
+      "src/assets/anchor_profile_female.svg",
+      "src/assets/anchor_profile_heart.svg",
+      "src/assets/anchor_profile_male.svg",
+      "src/assets/anchor_profile_more.svg",
+      "src/assets/anchor_profile_video.svg",
+      "src/assets/back_arrow.png",
+      "src/assets/callButton.png",
+      "src/assets/call_btn.png",
+      "src/assets/checkedIcon.svg",
+      "src/assets/close_icon.svg",
+      "src/assets/coin_icon.png",
+      "src/assets/comm-back.png",
+      "src/assets/comm-no-more-data.svg",
+      "src/assets/dark-launch-logo.png",
+      "src/assets/femaleAvatar.png",
+      "src/assets/heart_liked.svg",
+      "src/assets/hot_badge.png",
+      "src/assets/ic_arrow_right.png",
+      "src/assets/ic_edit.svg",
+      "src/assets/ic_menu_feedback.svg",
+      "src/assets/ic_menu_liked.svg",
+      "src/assets/ic_menu_settings.svg",
+      "src/assets/ic_menu_visited.svg",
+      "src/assets/limit-off-gift-icon.png",
+      "src/assets/loginLogo.png",
+      "src/assets/maleAvatar.png",
+      "src/assets/msg-list-clear-unread.svg",
+      "src/assets/msg-report.svg",
+      "src/assets/msg-send-fail.svg",
+      "src/assets/msg-send-img.svg",
+      "src/assets/msg-translate-off.svg",
+      "src/assets/msg-translate-on.svg",
+      "src/assets/new_badge.png",
+      "src/assets/profile-change-avatar.svg",
+      "src/assets/profile-change-name.svg",
+      "src/assets/rate_1_nor.svg",
+      "src/assets/rate_1_sel.svg",
+      "src/assets/rate_2_nor.svg",
+      "src/assets/rate_2_sel.svg",
+      "src/assets/rate_3_nor.svg",
+      "src/assets/rate_3_sel.svg",
+      "src/assets/rate_4_nor.svg",
+      "src/assets/rate_4_sel.svg",
+      "src/assets/rate_5_nor.svg",
+      "src/assets/rate_5_sel.svg",
+      "src/assets/setting-feedback-add.svg",
+      "src/assets/tabbar/anchorList.png",
+      "src/assets/tabbar/anchorList_selected.png",
+      "src/assets/tabbar/messageList.png",
+      "src/assets/tabbar/messageList_selected.png",
+      "src/assets/tabbar/userCenter.png",
+      "src/assets/tabbar/userCenter_selected.png",
+      "src/assets/uncheckedIcon.svg",
+      "src/assets/unused-images/back_circle.svg",
+      "src/assets/unused-images/close.png",
+      "src/assets/unused-images/close.svg",
+      "src/assets/unused-images/coin_p.png",
+      "src/assets/unused-images/coins_1100.png",
+      "src/assets/unused-images/coins_1250.png",
+      "src/assets/unused-images/coins_250.png",
+      "src/assets/unused-images/coins_2500.png",
+      "src/assets/unused-images/coins_500.png",
+      "src/assets/unused-images/coins_5000.png",
+      "src/assets/unused-images/default_avatar.png",
+      "src/assets/unused-images/diamond_icon.svg",
+      "src/assets/unused-images/diamond_large.png",
+      "src/assets/unused-images/discoverBackground.png",
+      "src/assets/unused-images/heart_icon.png",
+      "src/assets/unused-images/heart_icon.svg",
+      "src/assets/unused-images/ic_arrow_white.png",
+      "src/assets/unused-images/ic_diamond.png",
+      "src/assets/unused-images/ic_get_more_bg.svg",
+      "src/assets/unused-images/ic_wallet_bg.svg",
+      "src/assets/unused-images/limit-big-bg.svg",
+      "src/assets/unused-images/limit-big-bottom-bg.svg",
+      "src/assets/unused-images/me_bg.png",
+      "src/assets/unused-images/momof-launch.png",
+      "src/assets/unused-images/msg_icon.svg",
+      "src/assets/unused-images/report_icon.svg",
+      "src/assets/unused-images/video_call_btn.svg",
+      "src/assets/video-camare-off.png",
+      "src/assets/video-camare-on.png",
+      "src/assets/video-gift.png",
+      "src/assets/videoClose.png",
+      "src/assets/videoExport.png",
+      "src/assets/videoSwitchCamare.png"
+    ];
+
+    const assetRatios = {
+      "src/assets/add_icon.svg": 1,
+      "src/assets/anchor_profile_back.svg": 1,
+      "src/assets/anchor_profile_chat.svg": 1,
+      "src/assets/anchor_profile_female.svg": 1,
+      "src/assets/anchor_profile_heart.svg": 1,
+      "src/assets/anchor_profile_male.svg": 1,
+      "src/assets/anchor_profile_more.svg": 4.20001440009216,
+      "src/assets/anchor_profile_video.svg": 1.5588277807107117,
+      "src/assets/checkedIcon.svg": 1,
+      "src/assets/close_icon.svg": 1,
+      "src/assets/comm-no-more-data.svg": 1,
+      "src/assets/heart_liked.svg": 1,
+      "src/assets/ic_edit.svg": 1,
+      "src/assets/ic_menu_feedback.svg": 1,
+      "src/assets/ic_menu_liked.svg": 1,
+      "src/assets/ic_menu_settings.svg": 1,
+      "src/assets/ic_menu_visited.svg": 1,
+      "src/assets/msg-list-clear-unread.svg": 1,
+      "src/assets/msg-report.svg": 1,
+      "src/assets/msg-send-fail.svg": 1,
+      "src/assets/msg-send-img.svg": 1,
+      "src/assets/msg-translate-off.svg": 1,
+      "src/assets/msg-translate-on.svg": 1,
+      "src/assets/profile-change-avatar.svg": 1,
+      "src/assets/profile-change-name.svg": 1,
+      "src/assets/rate_1_nor.svg": 1,
+      "src/assets/rate_1_sel.svg": 1,
+      "src/assets/rate_2_nor.svg": 1,
+      "src/assets/rate_2_sel.svg": 1,
+      "src/assets/rate_3_nor.svg": 1,
+      "src/assets/rate_3_sel.svg": 1,
+      "src/assets/rate_4_nor.svg": 1,
+      "src/assets/rate_4_sel.svg": 1,
+      "src/assets/rate_5_nor.svg": 1,
+      "src/assets/rate_5_sel.svg": 1,
+      "src/assets/setting-feedback-add.svg": 1,
+      "src/assets/uncheckedIcon.svg": 1,
+      "src/assets/unused-images/back_circle.svg": 1,
+      "src/assets/unused-images/close.svg": 1,
+      "src/assets/unused-images/diamond_icon.svg": 1.05,
+      "src/assets/unused-images/heart_icon.svg": 1,
+      "src/assets/unused-images/ic_get_more_bg.svg": 2.611111111111111,
+      "src/assets/unused-images/ic_wallet_bg.svg": 1,
+      "src/assets/unused-images/limit-big-bg.svg": 1,
+      "src/assets/unused-images/limit-big-bottom-bg.svg": 1.893939393939394,
+      "src/assets/unused-images/msg_icon.svg": 1,
+      "src/assets/unused-images/report_icon.svg": 1,
+      "src/assets/unused-images/video_call_btn.svg": 1
+    };
+
+    const state = {
+      group: "all",
+      bg: "dark",
+      query: ""
+    };
+
+    const grid = document.querySelector("#grid");
+    const count = document.querySelector("#count");
+    const empty = document.querySelector("#empty");
+    const search = document.querySelector("#search");
+    const size = document.querySelector("#size");
+    const toast = document.querySelector("#toast");
+    let toastTimer = 0;
+
+    function getInfo(path) {
+      const name = path.split("/").pop();
+      const ext = name.split(".").pop().toLowerCase();
+      const isTabbar = path.includes("/tabbar/");
+      const isUnused = path.includes("/unused-images/");
+      const group = isUnused ? "unused" : isTabbar ? "tabbar" : "root";
+      return { name, ext, group };
+    }
+
+    function matches(path) {
+      const info = getInfo(path);
+      const query = state.query.trim().toLowerCase();
+      const groupOk =
+        state.group === "all" ||
+        state.group === info.group ||
+        state.group === info.ext;
+      const queryOk = !query || path.toLowerCase().includes(query);
+      return groupOk && queryOk;
+    }
+
+    function render() {
+      const visible = assets.filter(matches);
+      grid.innerHTML = visible.map((path) => {
+        const info = getInfo(path);
+        return `
+          <article class="card">
+            <div class="preview ${state.bg}">
+              <div class="image-frame">
+                <img src="${path}" alt="${info.name}" loading="lazy" data-path="${path}">
+              </div>
+            </div>
+            <div class="meta">
+              <button class="copy-text name" type="button" title="复制文件名" data-copy="${info.name}">${info.name}</button>
+              <button class="copy-text path" type="button" title="复制路径" data-copy="${path}">${path}</button>
+              <div class="tags">
+                <span class="tag">${info.ext}</span>
+                <span class="tag">${info.group}</span>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+      count.textContent = `${visible.length} of ${assets.length} image assets`;
+      empty.style.display = visible.length ? "none" : "block";
+      requestAnimationFrame(fitVisibleImages);
+    }
+
+    async function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("show");
+      toastTimer = window.setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1200);
+    }
+
+    function fitImage(img) {
+      const frame = img.closest(".image-frame");
+      if (!frame) return;
+
+      const frameRect = frame.getBoundingClientRect();
+      const naturalRatio = assetRatios[img.dataset.path] || img.naturalWidth / img.naturalHeight;
+      if (!naturalRatio || !Number.isFinite(naturalRatio)) return;
+      const frameRatio = frameRect.width / frameRect.height;
+      let width = frameRect.width;
+      let height = frameRect.height;
+
+      if (frameRatio > naturalRatio) {
+        width = height * naturalRatio;
+      } else {
+        height = width / naturalRatio;
+      }
+
+      img.style.width = `${Math.max(1, Math.floor(width))}px`;
+      img.style.height = `${Math.max(1, Math.floor(height))}px`;
+    }
+
+    function fitVisibleImages() {
+      document.querySelectorAll(".image-frame img").forEach((img) => {
+        if (img.complete) {
+          fitImage(img);
+        } else {
+          img.addEventListener("load", () => fitImage(img), { once: true });
+        }
+      });
+    }
+
+    document.querySelectorAll("[data-group]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-group]").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        state.group = button.dataset.group;
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-bg]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-bg]").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        state.bg = button.dataset.bg;
+        render();
+      });
+    });
+
+    search.addEventListener("input", () => {
+      state.query = search.value;
+      render();
+    });
+
+    grid.addEventListener("click", async (event) => {
+      const target = event.target.closest("[data-copy]");
+      if (!target) return;
+
+      try {
+        await copyToClipboard(target.dataset.copy);
+        showToast("已复制");
+      } catch (error) {
+        showToast("复制失败");
+      }
+    });
+
+    function applySize(nextSize) {
+      document.documentElement.style.setProperty("--card-size", `${nextSize}px`);
+      document.documentElement.style.setProperty("--preview-size", `${Math.round(nextSize * 0.9)}px`);
+    }
+
+    size.addEventListener("input", () => {
+      applySize(Number(size.value));
+      requestAnimationFrame(fitVisibleImages);
+    });
+
+    window.addEventListener("resize", () => {
+      requestAnimationFrame(fitVisibleImages);
+    });
+
+    applySize(Number(size.value));
+    render();
+  </script>
+</body>
+</html>

@@ -19,7 +19,7 @@ const onConfirm = () => {
     <div class="exit-modal">
         <!-- Close Icon -->
         <button class="close-icon-btn" @click="onCancel">
-            <img src="@/assets/profile/close_icon.svg" alt="close" />
+            <img src="@/assets/close_icon.svg" alt="close" />
         </button>
 
         <!-- Content -->

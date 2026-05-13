@@ -88,6 +88,13 @@ img {
   -webkit-user-drag: none;
 }
 
+img.is-solid-image-fallback {
+  background-color: #303030;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
 .app-page {
   min-height: 100%;
   background: var(--app-bg);

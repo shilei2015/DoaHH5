@@ -38,7 +38,7 @@ const onGifLoad = () => {
         <div class="messageContainer">
             <div v-if="msg.sendStatus == MessageSendStatus.Failed && isMe" class="sendFaildView"
                 @click="emit('clickSendFaild', props.msg)">
-                <img src="@/assets/message/msg-send-fail.svg" alt="">
+                <img src="@/assets/msg-send-fail.svg" alt="">
             </div>
             <div class="imageBubble">
                 <!-- 直接展示 SVGA 动画，不再等待加载事件 -->

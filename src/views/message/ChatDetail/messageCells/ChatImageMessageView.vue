@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted, watch } from 'vue';
 import { MessageSendStatus, type LHMessage } from '@/utils/msg/MessageModel';
 import { useUserStore } from '@/stores/userStore';
 
@@ -19,6 +19,7 @@ const emit = defineEmits<{
 // --- Image URL Handling ---
 const objectUrl = ref<string>('');
 const isImageLoading = ref(true);
+const imageLoadFailed = ref(false);
 
 const displayUrl = computed(() => {
     if (props.msg.localBlob) {
@@ -33,7 +34,18 @@ const displayUrl = computed(() => {
 
 const onImageLoad = () => {
     isImageLoading.value = false;
+    imageLoadFailed.value = false;
 }
+
+const onImageError = () => {
+    isImageLoading.value = false;
+    imageLoadFailed.value = true;
+}
+
+watch(displayUrl, () => {
+    isImageLoading.value = true;
+    imageLoadFailed.value = false;
+});
 
 onUnmounted(() => {
     if (objectUrl.value) {
@@ -50,15 +62,15 @@ onUnmounted(() => {
         <div class="messageContainer">
             <div v-if="msg.sendStatus == MessageSendStatus.Failed && isMe" class="sendFaildView"
                 @click="emit('clickSendFaild', props.msg)">
-                <img src="@/assets/message/msg-send-fail.svg" alt="">
+                <img src="@/assets/msg-send-fail.svg" alt="">
             </div>
-            <div class="imageBubble" @click="emit('clickImage', props.msg)">
+            <div :class="['imageBubble', { imageLoadFailed }]" @click="emit('clickImage', props.msg)">
                 <!-- Loading Spinner -->
-                <div v-if="isImageLoading && displayUrl" class="loadingOverlay">
+                <div v-if="isImageLoading && displayUrl && !imageLoadFailed" class="loadingOverlay">
                     <van-loading type="spinner" size="24px" color="#FF1AD0" />
                 </div>
                 <!-- Actual Image -->
-                <img v-if="displayUrl" :src="displayUrl" @load="onImageLoad"
+                <img v-if="displayUrl && !imageLoadFailed" :src="displayUrl" @load="onImageLoad" @error="onImageError"
                     :style="{ opacity: isImageLoading ? 0 : 1 }" class="sharedImage">
             </div>
         </div>
@@ -113,9 +125,18 @@ onUnmounted(() => {
     border-radius: 16px;
     overflow: hidden;
     background-color: #292929;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
     line-height: 0;
     min-width: 120px;
     min-height: 160px;
+}
+
+.imageBubble.imageLoadFailed {
+    width: 120px;
+    height: 160px;
+    background-color: #303030;
 }
 
 .loadingOverlay {

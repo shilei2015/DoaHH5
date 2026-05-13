@@ -16,7 +16,7 @@ import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 
 // Assets
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/comm-back.png';
 import { getAge } from '@/utils/tools';
 import { getFlagEmoji } from '@/utils/tools';
 import HUD from '@/components/HUD';
@@ -238,12 +238,12 @@ onMounted(() => {
             <img :src="formData.avatar" />
           </div>
           <div class="camera-btn">
-            <img src="@/assets/profile/profile-change-avatar.svg" />
+            <img src="@/assets/profile-change-avatar.svg" />
           </div>
         </div>
         <div class="nickname-field" @click="openNicknameEdit">
           <span class="nickname-text">{{ formData.nickname || 'Input Nickname' }}</span>
-          <img class="editName" src="@/assets/profile/profile-change-name.svg" />
+          <img class="editName" src="@/assets/profile-change-name.svg" />
         </div>
       </section>
 
@@ -270,7 +270,7 @@ onMounted(() => {
           class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">
-              <img src="@/assets/setting/setting-feedback-add.svg" alt="Add" />
+              <img src="@/assets/setting-feedback-add.svg" alt="Add" />
             </div>
           </div>
         </van-uploader>

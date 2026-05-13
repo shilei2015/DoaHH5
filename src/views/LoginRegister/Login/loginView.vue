@@ -4,7 +4,7 @@ import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
 import { useUserStore } from '@/stores/userStore';
 import { getUdid } from '@/utils/net/encryption';
-import logoLogo from '@/assets/launch/loginLogo.png'
+import logoLogo from '@/assets/loginLogo.png'
 import HUD from '@/components/HUD'
 import loginedMissions from '@/utils/loginedMissions';
 import { showWebviewModal } from '@/utils/tools/modalService';

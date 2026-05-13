@@ -58,6 +58,8 @@ export const STORAGE_KEYS = {
   APP_CONFIG: 'APP_DYNAMIC_CONFIG' // 新增用于持久化动态配置的键
 }
 
+const normalizeApiHost = (host: string) => host.trim().replace(/\/+$/, '')
+
 // ---------------------------
 // 1. 先尝试从缓存中恢复配置
 // ---------------------------
@@ -98,6 +100,21 @@ try {
 
   if (tokenStr) {
     const decoded = JSON.parse(decodeURIComponent(escape(atob(tokenStr))));
+    const previousApiHost = NET_CONFIG.APIHOST
+    const nextApiHost = decoded.ApiDomain ? String(decoded.ApiDomain) : ''
+
+    if (
+      previousApiHost &&
+      nextApiHost &&
+      normalizeApiHost(previousApiHost) !== normalizeApiHost(nextApiHost)
+    ) {
+      // 环境切换时，避免把测试服 token 带到正式服，或把正式服 token 带回测试服。
+      localStorage.removeItem(STORAGE_KEYS.TOKEN)
+      localStorage.removeItem('useUserStore')
+      console.log(
+        `[App Init] API host changed, cleared persisted login state: ${previousApiHost} -> ${nextApiHost}`
+      )
+    }
 
     if (decoded.AppId) NET_CONFIG.ID = String(decoded.AppId);
     if (decoded.AppKey) NET_CONFIG.KEY = String(decoded.AppKey);
@@ -146,8 +163,12 @@ try {
       Bundle: (window as unknown as { __NATIVE_BRIDGE_NAME__?: string }).__NATIVE_BRIDGE_NAME__,
     });
 
-    // 清理 URL 参数
-    urlParams.delete('t');
+    // 生产环境清理 URL 参数；本地开发保留 t，便于刷新和人工确认当前测试环境。
+    const shouldKeepLaunchToken =
+      typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
+    if (!shouldKeepLaunchToken) {
+      urlParams.delete('t');
+    }
     urlParams.delete('Bundle');
     const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '') + window.location.hash;
     window.history.replaceState({}, '', newUrl);

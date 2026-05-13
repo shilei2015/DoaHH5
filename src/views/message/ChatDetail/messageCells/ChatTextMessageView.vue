@@ -59,7 +59,7 @@ watch(() => props.msg.sendStatus, (val) => {
         <div class="messageContainer">
             <div v-if="msg.sendStatus == MessageSendStatus.Failed && isMe" class="sendFaildView"
                 @click="emit('clickSendFaild', props.msg)">
-                <img src="@/assets/message/msg-send-fail.svg" alt="">
+                <img src="@/assets/msg-send-fail.svg" alt="">
             </div>
             <div class="bubbleView">
                 <div class="messageText">
@@ -74,9 +74,9 @@ watch(() => props.msg.sendStatus, (val) => {
             <!-- Future placeholders for translate/status -->
 
             <div v-if="!isMe" class="translateView" @click="translateMessage">
-                <img v-if="msg.translateState != TranslateState.Noyet" src="@/assets/message/msg-translate-on.svg"
+                <img v-if="msg.translateState != TranslateState.Noyet" src="@/assets/msg-translate-on.svg"
                     alt="" class="translateIcon">
-                <img v-else src="@/assets/message/msg-translate-off.svg" alt="" class="translateIcon">
+                <img v-else src="@/assets/msg-translate-off.svg" alt="" class="translateIcon">
             </div>
 
         </div>

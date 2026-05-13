@@ -6,20 +6,15 @@ import { storeToRefs } from 'pinia';
 import { getFlagEmoji } from '@/utils/tools';
 import { showCoinShop } from '@/utils/tools/shopService';
 
-// 导入从 Figma 下载到 setting 文件夹的真实切图
-import meBg from '@/assets/setting/me_bg.png';
-import icEdit from '@/assets/setting/ic_edit.svg';
-import icDiamond from '@/assets/setting/ic_diamond.png';
-import icWalletBg from '@/assets/setting/ic_wallet_bg.svg';
-import icGetMoreBg from '@/assets/setting/ic_get_more_bg.svg';
-import icArrowWhite from '@/assets/setting/ic_arrow_white.png';
+import icEdit from '@/assets/ic_edit.svg';
+import coinIcon from '@/assets/coin_icon.png';
 
 // 菜单图标
-import icMenuLiked from '@/assets/setting/ic_menu_liked.svg';
-import icMenuVisited from '@/assets/setting/ic_menu_visited.svg';
-import icMenuFeedback from '@/assets/setting/ic_menu_feedback.svg';
-import icMenuSettings from '@/assets/setting/ic_menu_settings.svg';
-import icArrowRight from '@/assets/setting/ic_arrow_right.png';
+import icMenuLiked from '@/assets/ic_menu_liked.svg';
+import icMenuVisited from '@/assets/ic_menu_visited.svg';
+import icMenuFeedback from '@/assets/ic_menu_feedback.svg';
+import icMenuSettings from '@/assets/ic_menu_settings.svg';
+import icArrowRight from '@/assets/ic_arrow_right.png';
 
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
@@ -63,18 +58,10 @@ const goMyLikes = () => {
 
 <template>
     <div class="user-center-page">
-        <!-- Background Layer -->
-        <div class="bg-wrapper">
-            <img :src="meBg" alt="" class="me-background" />
-        </div>
-
         <div class="content">
             <!-- Header Section -->
             <header class="page-header">
                 <span class="title">Personal</span>
-                <button class="edit-btn" @click="handleEdit">
-                    <img :src="icEdit" alt="" class="edit-icon" />
-                </button>
             </header>
 
             <!-- User Info Section -->
@@ -82,45 +69,45 @@ const goMyLikes = () => {
                 <div class="avatar-container">
                     <img :src="userInfo?.HeadImage" alt="Avatar" class="avatar-img" />
                 </div>
-                <h2 class="nickname">{{ userInfo?.Nickname || 'Nickname' }}</h2>
-                <div class="location-badge">
-                    <span class="flag-icon">{{ getFlagEmoji(userInfo?.CountryCode) }}</span>
-                    <span class="country">{{ userInfo?.Country || 'Unknown' }}</span>
+                <div class="user-copy">
+                    <h2 class="nickname">{{ userInfo?.Nickname || 'Nickname' }}</h2>
+                    <div class="location-badge">
+                        <span class="flag-icon">{{ getFlagEmoji(userInfo?.CountryCode) }}</span>
+                        <span class="country">{{ userInfo?.Country || 'Unknown' }}</span>
+                    </div>
                 </div>
+                <button class="edit-btn" @click="handleEdit" aria-label="Edit profile">
+                    <img :src="icEdit" alt="" class="edit-icon" />
+                </button>
             </section>
 
             <!-- Statistics Grid -->
             <div class="stats-card">
                 <div class="stat-box" @click="goLikeMe">
+                    <span class="stats-num">{{ userInfo?.LikeMeNumber || 0 }}</span>
                     <span class="stats-label">Liked me</span>
-                    <span class="stats-num">{{ userInfo?.LikeMeNumber }}</span>
                 </div>
                 <div class="stat-box" @click="goVisitor">
+                    <span class="stats-num">{{ userInfo?.VisitorMeNumber || 0 }}</span>
                     <span class="stats-label">Visitors</span>
-                    <span class="stats-num">{{ userInfo?.VisitorMeNumber }}</span>
                 </div>
                 <div class="stat-box" @click="goMyLikes">
+                    <span class="stats-num">{{ userInfo?.UserLikeNumber || 0 }}</span>
                     <span class="stats-label">Like</span>
-                    <span class="stats-num">{{ userInfo?.UserLikeNumber }}</span>
                 </div>
             </div>
 
             <!-- Wallet Banner -->
             <div class="wallet-banner" @click="showCoinShop()">
                 <div class="wallet-left">
-                    <div class="diamond-icon-wrap">
-                        <img :src="icWalletBg" alt="" class="wallet-bg-icon" />
-                        <img :src="icDiamond" alt="Diamond" class="diamond-img" />
+                    <img :src="coinIcon" alt="" class="coin-img" />
+                    <div class="wallet-copy">
+                        <span class="balance">{{ userInfo?.Coins || 0 }}</span>
+                        <span class="wallet-label">Coins</span>
                     </div>
-                    <span class="balance">{{ userInfo?.Coins }}</span>
                 </div>
-                <!-- Get More Button using Figma background asset -->
                 <div class="get-more-wrap">
-                    <img :src="icGetMoreBg" alt="" class="get-more-bg" />
-                    <button class="get-more-btn">
-                        <span>Get More</span>
-                        <img :src="icArrowWhite" alt="" class="arrow-white" />
-                    </button>
+                    <button class="get-more-btn" type="button">Get More</button>
                 </div>
             </div>
 
@@ -145,32 +132,13 @@ const goMyLikes = () => {
     position: relative;
     width: 100%;
     height: 100%;
-    /* 改为 100% 以适配父级 Tab 显示区域 */
     overflow-y: auto;
-    /* 开启内部垂直滚动 */
     -webkit-overflow-scrolling: touch;
-    /* 增强 iOS 上的滚动顺滑感 */
     background-color: #1a1a1a;
     overflow-x: hidden;
-    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Display", "Segoe UI", sans-serif;
     padding-bottom: 0;
-    /* 外部容器不设置 padding */
     box-sizing: border-box;
-}
-
-.bg-wrapper {
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 0;
-    pointer-events: none;
-}
-
-.me-background {
-    width: 100%;
-    object-fit: cover;
 }
 
 .content {
@@ -183,22 +151,26 @@ const goMyLikes = () => {
 /* Header */
 .page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
 }
 
 .title {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 900;
     color: #fff;
     line-height: 32px;
+    letter-spacing: 0;
 }
 
 .edit-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
     padding: 0;
     background: transparent;
     border-radius: 0;
@@ -212,18 +184,12 @@ const goMyLikes = () => {
     filter: brightness(0) invert(1);
 }
 
-.edit-btn span {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1A1A1A;
-}
-
 /* User Info */
 .user-info {
-    display: grid;
-    grid-template-columns: 90px 1fr;
+    display: flex;
     align-items: center;
-    column-gap: 16px;
+    gap: 16px;
+    min-height: 90px;
     margin-bottom: 20px;
 }
 
@@ -233,7 +199,8 @@ const goMyLikes = () => {
     border-radius: 50%;
     overflow: hidden;
     margin-bottom: 0;
-    grid-row: span 2;
+    flex: 0 0 90px;
+    background: #2a2a2a;
 }
 
 .avatar-img {
@@ -242,12 +209,20 @@ const goMyLikes = () => {
     object-fit: cover;
 }
 
+.user-copy {
+    min-width: 0;
+    flex: 1;
+}
+
 .nickname {
     font-size: 18px;
     font-weight: 800;
+    line-height: 22px;
     color: #fff;
-    margin: 0 0 6px;
-    align-self: end;
+    margin: 0 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .location-badge {
@@ -266,15 +241,19 @@ const goMyLikes = () => {
     font-size: 14px;
     color: rgba(255, 255, 255, 0.5);
     font-weight: 500;
+    line-height: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Stats Card */
 .stats-card {
     display: flex;
-    justify-content: space-around;
     background: #212121;
     border-radius: 20px;
-    padding: 20px 0;
+    height: 91px;
+    padding: 0;
     margin-bottom: 20px;
 }
 
@@ -282,19 +261,29 @@ const goMyLikes = () => {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    flex: 1;
     gap: 8px;
+    min-width: 0;
+    cursor: pointer;
 }
 
 .stats-label {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 18px;
     color: rgba(255, 255, 255, 0.3);
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .stats-num {
     font-size: 20px;
+    line-height: 24px;
     font-weight: 800;
     color: #fff;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Wallet Banner */
@@ -306,76 +295,73 @@ const goMyLikes = () => {
     justify-content: space-between;
     align-items: center;
     padding: 0 16px;
-    margin-bottom: 28px;
+    margin-bottom: 30px;
     color: #061900;
+    cursor: pointer;
+    box-sizing: border-box;
 }
 
 .wallet-left {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 }
 
-.diamond-icon-wrap {
-    position: relative;
+.coin-img {
     width: 44px;
     height: 44px;
+    object-fit: contain;
+    flex: 0 0 44px;
+}
+
+.wallet-copy {
     display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.wallet-bg-icon {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: 0.9;
-}
-
-.diamond-img {
-    position: relative;
-    width: 28px;
-    height: auto;
-    z-index: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
 }
 
 .balance {
     font-size: 20px;
+    line-height: 22px;
     font-weight: 800;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-/* Get More Button with Asset */
+.wallet-label {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+}
+
 .get-more-wrap {
-    position: relative;
     height: 36px;
+    min-width: 88px;
     background: #1a1a1a;
     border-radius: 18px;
     display: flex;
     align-items: center;
-}
-
-.get-more-bg {
-    display: none;
+    justify-content: center;
+    flex: 0 0 auto;
 }
 
 .get-more-btn {
-    position: relative;
-    z-index: 1;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
     background: none;
     border: none;
-    padding: 0 14px;
+    padding: 0 12px;
     color: #fff;
     font-size: 14px;
-    font-weight: 800;
+    line-height: 18px;
+    font-weight: 700;
     cursor: pointer;
-}
-
-.arrow-white {
-    width: 12px;
-    height: 12px;
+    white-space: nowrap;
 }
 
 /* Menu Container */
@@ -406,9 +392,14 @@ const goMyLikes = () => {
 
 .menu-title {
     flex: 1;
-    font-size: 16px;
+    min-width: 0;
+    font-size: 17px;
+    line-height: 22px;
     font-weight: 600;
     color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .chevron {

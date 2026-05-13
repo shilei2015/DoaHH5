@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { showToast } from 'vant';
 
 // Assets
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/comm-back.png';
 
 import { useUserStore } from '@/stores/userStore';
 import { closeWebView, logoutApp } from '@/utils/native/A0019Bridge';

@@ -7,7 +7,7 @@ import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 
 // Assets
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/comm-back.png';
 
 const router = useRouter();
 
@@ -104,7 +104,7 @@ const onSubmit = async () => {
           class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">
-              <img src="@/assets/setting/setting-feedback-add.svg" alt="Add" />
+              <img src="@/assets/setting-feedback-add.svg" alt="Add" />
             </div>
           </div>
         </van-uploader>

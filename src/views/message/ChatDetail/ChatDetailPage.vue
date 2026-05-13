@@ -1,9 +1,9 @@
 <script setup lang="ts">
 
-import msgReport from '@/assets/message/msg-report.svg'
-import msgTranslateOff from '@/assets/message/msg-translate-off.svg'
-import msgTranslateOn from '@/assets/message/msg-translate-on.svg'
-import back from "@/assets/comm/comm-back.png"
+import msgReport from '@/assets/msg-report.svg'
+import msgTranslateOff from '@/assets/msg-translate-off.svg'
+import msgTranslateOn from '@/assets/msg-translate-on.svg'
+import back from "@/assets/comm-back.png"
 import { generateSessionId, MessageType, MessageSendStatus, type LHMessage, createGifMessage } from '@/utils/msg/MessageModel';
 import { getMessageManager } from '@/utils/msg/MessageManager';
 import { getChatRecordManager } from '@/utils/msg/ChatRecordManager';
@@ -14,7 +14,7 @@ import ChatImageMessageView from './messageCells/ChatImageMessageView.vue';
 import ChatTimeMessageView from './messageCells/ChatTimeMessageView.vue';
 import ChatGifMessageView from './messageCells/ChatGifMessageView.vue';
 import ChatBottomMissionView, { type MissionData } from './messageOtherViews/ChatBottomMissionView.vue';
-import videoGift from '@/assets/call/video-gift.png';
+import videoGift from '@/assets/video-gift.png';
 import { MissionType } from '@/utils/Enums/Enums';
 import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
 import { useKeyboardInset } from '@/composables/useKeyboardInset';
@@ -387,16 +387,16 @@ onUnmounted(() => {
     <footer v-if="!isSystemNoti" class="detailFooter">
       <input type="file" ref="fileInput" @change="onFileChange" accept="image/*" hidden />
       <div class="sendImg" @click="onImageClick">
-        <img src="@/assets/message/msg-send-img.svg" alt="">
+        <img src="@/assets/msg-send-img.svg" alt="">
       </div>
       <form action="javascript:void(0)" class="messageForm" @submit.prevent="onSendText">
         <input type="text" placeholder="say something..." class="messageTextView" v-model="inputText" enterkeyhint="send">
       </form>
       <div class="giftButton" @click="openGiftPicker">
-        <img src="@/assets/call/video-gift.png" alt="">
+        <img src="@/assets/video-gift.png" alt="">
       </div>
       <div class="callButton" @click="callAnchor">
-        <img src="@/assets/call/callButton.png" alt="">
+        <img src="@/assets/call_btn.png" alt="">
       </div>
       <ChatBottomMissionView class="bottomMissionView" :missionData="missionData" @clickMission="onClickMission">
       </ChatBottomMissionView>

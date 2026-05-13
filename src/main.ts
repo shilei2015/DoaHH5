@@ -2,8 +2,10 @@
 import '@/utils/net/config'
 
 import { initOptionalVConsole } from '@/utils/debugConsole'
+import { installSolidImageFallback } from '@/utils/imageFallback'
 
 initOptionalVConsole()
+installSolidImageFallback()
 
 import { createApp } from 'vue'
 import App from './App.vue'

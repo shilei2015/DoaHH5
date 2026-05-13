@@ -8,10 +8,10 @@ const router = useRouter()
 
 const selectedGender = ref<'male' | 'female' | null>('male')
 
-import maleAvatar from '@/assets/login/maleAvatar.png';
-import femaleAvatar from '@/assets/login/femaleAvatar.png';
-import checkedIcon from '@/assets/login/checkedIcon.svg';
-import uncheckedIcon from '@/assets/login/uncheckedIcon.svg';
+import maleAvatar from '@/assets/maleAvatar.png';
+import femaleAvatar from '@/assets/femaleAvatar.png';
+import checkedIcon from '@/assets/checkedIcon.svg';
+import uncheckedIcon from '@/assets/uncheckedIcon.svg';
 import { getUdid } from '@/utils/net/encryption';
 import MMHUD from '@/components/HUD'
 import { useUserStore } from '@/stores/userStore';

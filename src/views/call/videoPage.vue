@@ -334,10 +334,10 @@ onUnmounted(async () => {
                 </div>
                 <div class="connected-actions">
                     <button class="circle-btn" @click="reportAnchor">
-                        <img src="@/assets/call/videoExport.png" alt="">
+                        <img src="@/assets/videoExport.png" alt="">
                     </button>
                     <button class="circle-btn hangup-btn" @click="endCall">
-                        <img src="@/assets/call/videoClose.png" alt="">
+                        <img src="@/assets/videoClose.png" alt="">
                     </button>
                 </div>
             </div>
@@ -346,8 +346,8 @@ onUnmounted(async () => {
             <div class="local-video-container" :class="{ 'is-masked': rtc.isVideoMasked.value }">
                 <div class="pip-controls">
                     <button class="pip-btn" @click="toggleMask">
-                        <img v-if="rtc.isVideoMasked.value" src="@/assets/call/video-camare-off.png" alt="">
-                        <img v-else src="@/assets/call/video-camare-on.png" alt="">
+                        <img v-if="rtc.isVideoMasked.value" src="@/assets/video-camare-off.png" alt="">
+                        <img v-else src="@/assets/video-camare-on.png" alt="">
                     </button>
                 </div>
                 <div class="local-video" id="local-video">
@@ -375,11 +375,11 @@ onUnmounted(async () => {
                     </svg>
                 </button>
                 <button class="toggleCamare-button compact-action" @click="toggleCamera">
-                    <img class="switch-camare" src="@/assets/call/videoSwitchCamare.png" alt="">
+                    <img class="switch-camare" src="@/assets/videoSwitchCamare.png" alt="">
                 </button>
                 <button class="circle-btn compact-action mask-action" @click="toggleMask">
-                    <img v-if="rtc.isVideoMasked.value" src="@/assets/call/video-camare-off.png" alt="">
-                    <img v-else src="@/assets/call/video-camare-on.png" alt="">
+                    <img v-if="rtc.isVideoMasked.value" src="@/assets/video-camare-off.png" alt="">
+                    <img v-else src="@/assets/video-camare-on.png" alt="">
                 </button>
                 <div class="message-input-wrapper">
                     <input ref="messageInputRef" type="text" placeholder="Message..." class="message-input"
@@ -392,13 +392,13 @@ onUnmounted(async () => {
                     </button>
                 </div>
                 <button class="circle-btn action-btn compact-action" @click="openGiftPicker">
-                    <img src="@/assets/call/video-gift.png" style="width: 24px; height: 24px;" alt="">
+                    <img src="@/assets/video-gift.png" style="width: 24px; height: 24px;" alt="">
                 </button>
                 <div class="coin-badge connected-coin compact-action" @click="showCoinShop">
-                    <img src="@/assets/profile/diamond_icon.svg" alt="Diamond" class="diamond-icon" />
+                    <img src="@/assets/coin_icon.png" alt="" class="coin-icon" />
                     <span class="coin-text">{{ coins }}</span>
                     <div class="add-btn">
-                        <img src="@/assets/profile/add_icon.svg" alt="Add" class="add-icon" />
+                        <img src="@/assets/add_icon.svg" alt="Add" class="add-icon" />
                     </div>
                 </div>
             </div>
@@ -763,9 +763,10 @@ onUnmounted(async () => {
     gap: 4px;
 }
 
-.diamond-icon {
+.coin-icon {
     width: 20px;
     height: 20px;
+    object-fit: contain;
 }
 
 .coin-text {

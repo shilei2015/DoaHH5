@@ -38,8 +38,6 @@ export const API = {
   how_app: 'appraiseApp',
   how_app_give_gif: 'appraiseGrantCoins',
   tac_out_start: 'matchOutStart',
-  daily_info: 'lastSignIn',
-  dally_checkIn: 'signIn',
   specail_lto: 'ltoCoinsV3',
   app_version: 'getNewVersion',
   stay_time: 'buryingPoint',

@@ -20,7 +20,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 const pullDistance = ref(0);
 const startY = ref(0);
-const REFRESH_THRESHOLD = 60; // 触发刷新的下拉高度 (px)
+const REFRESH_THRESHOLD = 72; // 触发刷新的下拉高度 (px)
 
 // 触摸事件 (用于计算下拉)
 const handleTouchStart = (e: TouchEvent) => {
@@ -41,7 +41,7 @@ const handleTouchMove = (e: TouchEvent) => {
     if (diff > 0) {
         // 在顶部下拉时添加阻力以控制滑动距离
         if (e.cancelable) e.preventDefault();
-        pullDistance.value = Math.min(diff * 0.4, 100);
+        pullDistance.value = Math.min(diff * 0.4, 120);
     }
 };
 
@@ -100,8 +100,7 @@ onUnmounted(() => {
             transition: props.refreshing || pullDistance === 0 ? 'transform 0.3s ease' : 'none'
         }">
 
-            <!-- 头部隐藏的刷新指示器，展示菊花图 -->
-            <!-- 将位置下移并根据拉伸距离显示透明度，以便其不会被系统刘海挡住 -->
+            <!-- 头部隐藏的刷新指示器，列表下拉后从上方露出 -->
             <div class="refresh-indicator"
                 :style="{ opacity: props.refreshing ? 1 : Math.max(0, (pullDistance - 10) / 40) }">
                 <div class="sl-spinner" v-show="pullDistance > 0 || props.refreshing"></div>
@@ -160,11 +159,10 @@ onUnmounted(() => {
 /* 下拉刷新指示器区 */
 .refresh-indicator {
     position: absolute;
-    top: 10px;
-    /* 改为 10px，使其在拉下来后正好出现在标题与刘海的空隙间 */
+    top: -76px;
     left: 0;
     width: 100%;
-    height: 40px;
+    height: 64px;
     display: flex;
     justify-content: center;
     align-items: center;

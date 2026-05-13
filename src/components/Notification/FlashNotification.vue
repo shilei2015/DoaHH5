@@ -40,7 +40,7 @@ const handleTap = () => {
   }, 300);
 };
 
-import notificationSound from '@/assets/audio/msgNoti.mp3';
+import notificationSound from '@/assets/msgNoti.mp3';
 
 onMounted(() => {
   // 提示音加载

@@ -63,7 +63,7 @@ onMounted(() => {
         <!-- Header -->
         <div class="gift-header">
             <div class="balance-container" @click="showCoinShop()">
-                <img src="@/assets/profile/diamond_icon.svg" class="diamond-icon" alt="diamond" />
+                <img src="@/assets/coin_icon.png" class="coin-icon" alt="" />
                 <span class="coins-total">{{ props.coins }}</span>
                 <div class="add-btn">+</div>
             </div>
@@ -82,7 +82,7 @@ onMounted(() => {
                         <img :src="gift.Image" class="gift-img" alt="gift" />
                     </div>
                     <div class="gift-info">
-                        <img src="@/assets/profile/diamond_icon.svg" class="price-icon" alt="price" />
+                        <img src="@/assets/coin_icon.png" class="price-icon" alt="" />
                         <span class="gift-price">{{ gift.Coins }}</span>
                     </div>
                 </div>
@@ -133,9 +133,10 @@ onMounted(() => {
     gap: 4px;
 }
 
-.diamond-icon {
+.coin-icon {
     width: 24px;
     height: 24px;
+    object-fit: contain;
 }
 
 .coins-total {
@@ -227,6 +228,7 @@ onMounted(() => {
 .price-icon {
     width: 14px;
     height: 14px;
+    object-fit: contain;
 }
 
 .gift-price {

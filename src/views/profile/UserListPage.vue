@@ -9,7 +9,7 @@ import HUD from '@/components/HUD';
 import { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 
 // Assets
-import backIcon from '@/assets/comm/comm-back.png';
+import backIcon from '@/assets/comm-back.png';
 
 const router = useRouter();
 const props = defineProps<{

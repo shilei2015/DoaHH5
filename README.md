@@ -40,3 +40,9 @@ npm run dev
 ```sh
 npm run build
 ```
+
+## Distribution
+
+The `dist/` directory is a generated build artifact and is not tracked in this
+source repository. Build it locally with `npm run build`, then publish or sync
+the generated files to the separate distribution repository when needed.

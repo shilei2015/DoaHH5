@@ -80,7 +80,7 @@ onUnmounted(() => {
             </div>
 
             <div class="gift-stage">
-                <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="gift-image">
+                <img src="@/assets/limit-off-gift-icon.png" alt="" class="gift-image">
             </div>
 
             <div class="coin-row">

@@ -45,9 +45,9 @@ const clickCall = () => {
             </div>
 
             <div class="info-area">
-                <img v-if="anchor.IsHotGirls === '1'" src="@/assets/discover/hot_badge.png" class="hot-badge-img"
+                <img v-if="anchor.IsHotGirls === '1'" src="@/assets/hot_badge.png" class="hot-badge-img"
                     alt="HOT" />
-                <img v-else-if="anchor.IsNewGirls === '1'" src="@/assets/discover/new_badge.png" class="hot-badge-img"
+                <img v-else-if="anchor.IsNewGirls === '1'" src="@/assets/new_badge.png" class="hot-badge-img"
                     alt="NEW" />
                 <div class="name-age">{{ anchor.Nickname }}, {{ getAge(anchor.Birthday) }}</div>
                 <div class="country-info">
@@ -57,7 +57,7 @@ const clickCall = () => {
             </div>
 
             <button class="call-btn" @click.stop="clickCall">
-                <img src="@/assets/discover/call_btn.svg" alt="Call" />
+                <img src="@/assets/call_btn.png" alt="Call" />
             </button>
         </div>
     </div>
@@ -226,7 +226,7 @@ const clickCall = () => {
     position: absolute;
     right: 8px;
     bottom: 10px;
-    width: 48px;
+    width: 60px;
     aspect-ratio: 1 / 1;
     border: none;
     background: transparent;

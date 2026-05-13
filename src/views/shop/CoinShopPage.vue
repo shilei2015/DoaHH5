@@ -9,9 +9,8 @@ import { paymentService } from '@/utils/tools/paymentService';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 
 // Assets
-import backIcon from '@/assets/profile/back_arrow.png';
-import diamondIcon from '@/assets/profile/diamond_icon.svg';
-import diamondLarge from '@/assets/shop/diamond_large.png';
+import backIcon from '@/assets/back_arrow.png';
+import coinIcon from '@/assets/coin_icon.png';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -31,7 +30,7 @@ const featuredCoins = computed(() => {
 const featuredPrice = computed(() => currentFeaturedProduct.value?.ShowPrice || currentFeaturedProduct.value?.ApplePrice || '');
 const productCoins = (product: ProductModel) => product.PurposeObj?.NumberBase || product.Coins || product.ProductName;
 const productBonus = (product: ProductModel) => product.PurposeObj?.NumberEx || product.ExtraCoins || '';
-const productImage = (product?: ProductModel | null) => product?.ProductCover || diamondLarge;
+const productImage = (product?: ProductModel | null) => product?.ProductCover || coinIcon;
 
 /**
  * Handle direct purchase using the global payment service
@@ -78,7 +77,7 @@ onMounted(async () => {
       <span class="shop-title">Shop</span>
       <div class="shop-header-right">
         <div class="balance-badge">
-          <img :src="diamondIcon" alt="" class="badge-diamond" />
+          <img :src="coinIcon" alt="" class="badge-coin" />
           <span class="badge-coins">{{ currentCoins }}</span>
         </div>
       </div>
@@ -199,9 +198,10 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.badge-diamond {
+.badge-coin {
   width: 20px;
   height: 20px;
+  object-fit: contain;
 }
 
 .badge-coins {

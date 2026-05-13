@@ -121,7 +121,7 @@ onUnmounted(() => {
 <template>
     <div class="limit-offer-wrapper" v-if="isShowLimitOfferView">
         <div class="limit-page" @click="payLimitOff">
-            <img src="@/assets/limitOff/limit-off-gift-icon.png" alt="" class="giftLogo">
+            <img src="@/assets/limit-off-gift-icon.png" alt="" class="giftLogo">
             <div class="limitInfoContent">
                 <div class="topInfo">
                     <div class="coinsCount">{{ limitOffInfo?.Product?.Coins }}</div>

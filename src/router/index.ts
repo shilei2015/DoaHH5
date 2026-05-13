@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import mainTabView from "@/views/tabbarView/mainTabbarView.vue";
 import anchorList from "@/views/tabbarSubViews/anchorList.vue";
 import messageList from "@/views/tabbarSubViews/messageList.vue";
@@ -7,7 +7,7 @@ import messageDetail from "@/views/message/ChatDetail/ChatDetailPage.vue"
 import { useUserStore } from "@/stores/userStore";
 import { hideGlobalLoading } from "@/utils/native/A0019Bridge";
 
-const routes = [
+const routes: RouteRecordRaw[] = [
     {
         path: "/",
         name: "launch",
@@ -120,6 +120,15 @@ const routes = [
     }
 ]
 
+if (import.meta.env.DEV) {
+    routes.push({
+        path: "/native-bridge-test",
+        name: "NativeBridgeTest",
+        component: () => import("@/views/dev/NativeBridgeTestPage.vue"),
+        meta: { depth: 90 }
+    })
+}
+
 const router = createRouter({
     history: createWebHistory(),
     routes
@@ -128,7 +137,11 @@ const router = createRouter({
 // Navigation Guard
 router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore();
-    const publicPages = ['/'];
+    if (import.meta.env.DEV && to.path === '/native-bridge-test') {
+        return next();
+    }
+
+    const publicPages = import.meta.env.DEV ? ['/', '/native-bridge-test'] : ['/'];
     const authRequired = !publicPages.includes(to.path);
     
     // 1. 引导流程 (SystemInfo, User恢复等)
