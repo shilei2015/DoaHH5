@@ -100,7 +100,7 @@ export function getUdid(externalUdid?: string): string {
  * 生成签名 Signature 字符串。
  * 逻辑参考 Swift: 
  * 1. 追加 Nonce
- * 2. 忽略 "File" 和 "s" (如果加密状态，则是它们的 aes 形式)
+ * 2. 忽略 "File" 和 "s"
  * 3. 排序 keys
  * 4. `${Base64(key)}=${Base64(value)}` -> join("&") + "&" + KEY
  * 5. md5
@@ -115,25 +115,23 @@ export function createSiginString(
   // 按照升序排序 key
   const sortedKeys = Object.keys(mutParams).sort()
 
-  const ignoreKeyFile = isEncrypt ? encryptAES('File') : 'File'
-  const ignoreKeyS = isEncrypt ? encryptAES('s') : 's'
+  const ignoreKeyFile = 'File'
+  const ignoreKeyS = 's'
 
   const encodedPairs: string[] = []
 
   sortedKeys.forEach(key => {
     if (key !== ignoreKeyFile && key !== ignoreKeyS) {
       const value = String(mutParams[key])
+      const keyBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(key))
+      const valueBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(value))
 
-      // key 和 value 转 base64。CryptoJs.enc.Base64.stringify 接收 WordArray 格式
-      const kvBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(`${key}=${value}`))
-      // const valueBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(value))
-
-      encodedPairs.push(kvBase64)
+      encodedPairs.push(`${keyBase64}=${valueBase64}`)
     }
   })
 
   const encodedPairsString = encodedPairs.join('&')
-  const signString = encodedPairsString + '&' + NET_CONFIG.KEY + '&h520260401'
+  const signString = encodedPairsString + '&' + NET_CONFIG.KEY
 
   const md5 = getMD5(signString)
   return md5

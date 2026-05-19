@@ -7,6 +7,7 @@ import { API } from '@/utils/net/api';
 import type { ProductModel } from '@/components/appModels/ProductModel';
 import { paymentService } from '@/utils/tools/paymentService';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
+import CoinBalanceBadge from '@/components/common/CoinBalanceBadge.vue';
 
 // Assets
 import backIcon from '@/assets/back_arrow.png';
@@ -60,6 +61,7 @@ const gerCurrentFeaturedProduct = async () => {
 }
 
 onMounted(async () => {
+  paymentService.preloadApplePaySdk()
   await getCoinProducts()
   await gerCurrentFeaturedProduct()
 })
@@ -76,10 +78,7 @@ onMounted(async () => {
       </div>
       <span class="shop-title">Shop</span>
       <div class="shop-header-right">
-        <div class="balance-badge">
-          <img :src="coinIcon" alt="" class="badge-coin" />
-          <span class="badge-coins">{{ currentCoins }}</span>
-        </div>
+        <CoinBalanceBadge :coins="currentCoins" :config="{ showAdd: false }" />
       </div>
     </header>
 
@@ -87,7 +86,7 @@ onMounted(async () => {
     <div class="shop-content">
       <!-- Featured Banner -->
       <div v-if="currentFeaturedProduct" class="featured-banner" @click="onPurchase(currentFeaturedProduct)">
-        <img :src="productImage(currentFeaturedProduct)" alt="" class="featured-image">
+        <img :src="coinIcon" alt="" class="featured-image">
         <div class="featured-copy">
           <div class="featured-main">
             <span class="featured-coins">{{ featuredCoins }}</span>
@@ -184,32 +183,6 @@ onMounted(async () => {
   color: #fff;
 }
 
-.balance-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 82px;
-  height: 32px;
-  justify-content: center;
-  background-color: transparent;
-  padding: 0 8px;
-  border-radius: 16px;
-  border: 1px solid #ffde09;
-  flex-shrink: 0;
-}
-
-.badge-coin {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
-.badge-coins {
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-}
-
 /* === Scrollable Content === */
 .shop-content {
   flex: 1;
@@ -244,8 +217,8 @@ onMounted(async () => {
 }
 
 .featured-image {
-  width: 54px;
-  height: 54px;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
   flex-shrink: 0;
   position: relative;
@@ -325,14 +298,17 @@ onMounted(async () => {
   background-color: #212121;
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 16px;
-  padding: 18px 10px 14px;
+  padding: 18px 16px 14px;
   cursor: pointer;
 }
 
 .card-image-wrap {
-  width: 92px;
-  aspect-ratio: 1;
+  width: 100%;
+  height: 74px;
   margin-bottom: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .card-image {

@@ -116,7 +116,7 @@ const clickActionMore = () => {
 
 <template>
     <div class="profile-page">
-        <template v-if="anchorInfo">
+        <div v-if="anchorInfo" class="profile-scroll-content">
 
             <!-- 顶部导航栏 -->
             <div class="nav-bar">
@@ -196,7 +196,7 @@ const clickActionMore = () => {
                 </p>
             </div>
 
-        </template>
+        </div>
         <template v-else>
             <!-- Lightweight loading state for smooth transition -->
             <div class="inner-loading">
@@ -220,10 +220,18 @@ const clickActionMore = () => {
     padding-top: 0;
 }
 
+.profile-scroll-content {
+    width: 100%;
+    min-height: calc(100% + 1px);
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+}
+
 /* 导航栏 */
 .nav-bar {
     position: fixed;
-    top: calc(56px + env(safe-area-inset-top, 0px));
+    top: calc(12px + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
     z-index: 20;
@@ -390,7 +398,7 @@ const clickActionMore = () => {
 /* 悬浮操作按钮区 */
 .action-buttons {
     position: fixed;
-    bottom: calc(max(env(safe-area-inset-bottom, 0px), 34px) + 8px);
+    bottom: calc(8px + var(--app-safe-bottom, 0px));
     left: 20px;
     right: 20px;
     display: flex;
@@ -463,7 +471,7 @@ const clickActionMore = () => {
     position: relative;
     z-index: 5;
     margin-top: -24px;
-    padding: 20px 20px calc(118px + max(env(safe-area-inset-bottom, 0px), 0px));
+    padding: 20px 20px calc(118px + var(--app-safe-bottom, 0px));
     flex: 1;
     background: #1a1a1a;
     border-radius: 24px 24px 0 0;

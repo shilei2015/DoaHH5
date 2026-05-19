@@ -41,10 +41,10 @@ const switchTo = (name: string) => {
     justify-content: space-around;
     align-items: flex-start;
     width: 100%;
-    height: var(--app-tabbar-height, 86px);
-    min-height: 86px;
-    padding-top: 10px;
-    padding-bottom: var(--app-tabbar-safe-bottom, 34px);
+    height: var(--app-tabbar-height, 56px);
+    min-height: 56px;
+    padding-top: var(--app-edge-gap, 12px);
+    padding-bottom: var(--app-tabbar-safe-bottom, 12px);
     background-color: var(--app-bg, #1a1a1a);
     left: 0;
     right: 0;
@@ -56,7 +56,7 @@ const switchTo = (name: string) => {
 }
 
 .tabbarItem {
-    height: 52px;
+    height: 32px;
     width: 100%;
     display: flex;
     justify-content: center;

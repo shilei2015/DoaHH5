@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Popup as VanPopup,
@@ -20,6 +20,12 @@ import backIcon from '@/assets/comm-back.png';
 import { getAge } from '@/utils/tools';
 import { getFlagEmoji } from '@/utils/tools';
 import HUD from '@/components/HUD';
+import {
+  A0019PermissionGetType,
+  checkPermission,
+  isA0019Native,
+  openSystemSettings,
+} from '@/utils/native/A0019Bridge';
 
 interface ProfileFormData {
   nickname?: string;
@@ -36,6 +42,7 @@ interface CountryModel {
   Key: string
   Value: string
 }
+type AvatarSource = 'camera' | 'album';
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
@@ -61,14 +68,57 @@ let avatarFile: File | null = null;
 // Uploader 引用，用于手动点击触发
 const avatarUploaderRef = ref();
 const showAvatarAction = ref(false);
+const avatarCapture = ref<string | undefined>(undefined);
 
 const triggerChooseAvatar = () => {
   showAvatarAction.value = true;
 };
 
-const openAvatarFileInput = () => {
+const ensureAvatarNativePermission = async (source: AvatarSource) => {
+  if (!isA0019Native()) {
+    return true;
+  }
+
+  const permissionType = source === 'camera'
+    ? A0019PermissionGetType.Camera
+    : A0019PermissionGetType.PhotoLibrary;
+  const permissionName = source === 'camera' ? 'camera' : 'photo library';
+
+  try {
+    const result = await checkPermission(permissionType);
+    if (result.isOpen) {
+      return true;
+    }
+    HUD.showToast(`Please allow ${permissionName} access in Settings to continue.`);
+    openSystemSettings();
+    return false;
+  } catch (error) {
+    console.error('[EditProfilePage] avatar native permission check failed', error);
+    HUD.showToast('Unable to verify permissions. Please try again.');
+    return false;
+  }
+};
+
+const openAvatarFileInput = async (source: AvatarSource) => {
   showAvatarAction.value = false;
-  const input = avatarUploaderRef.value?.$el?.querySelector('input');
+
+  const allowed = await ensureAvatarNativePermission(source);
+  if (!allowed) {
+    return;
+  }
+
+  avatarCapture.value = source === 'camera' ? 'environment' : undefined;
+  await nextTick();
+
+  const input = avatarUploaderRef.value?.$el?.querySelector('input') as HTMLInputElement | null;
+  if (input) {
+    input.accept = 'image/*';
+    if (source === 'camera') {
+      input.setAttribute('capture', 'environment');
+    } else {
+      input.removeAttribute('capture');
+    }
+  }
   input?.click();
 };
 
@@ -231,7 +281,8 @@ onMounted(() => {
       <!-- Avatar Section -->
       <section class="avatar-section">
         <!-- 隐身 Uploader，仅作为功能组件引用 -->
-        <van-uploader ref="avatarUploaderRef" :after-read="onAvatarRead" style="display: none" />
+        <van-uploader ref="avatarUploaderRef" :after-read="onAvatarRead" accept="image/*" :capture="avatarCapture"
+          style="display: none" />
 
         <div class="avatar-wrapper" @click="triggerChooseAvatar">
           <div class="avatar-image">
@@ -307,8 +358,8 @@ onMounted(() => {
     </van-popup>
 
     <van-popup v-model:show="showAvatarAction" position="bottom" round class="avatar-action-popup">
-      <button class="avatar-action" @click="openAvatarFileInput">Take Pictures</button>
-      <button class="avatar-action" @click="openAvatarFileInput">Select From the Album</button>
+      <button class="avatar-action" @click="openAvatarFileInput('camera')">Take Pictures</button>
+      <button class="avatar-action" @click="openAvatarFileInput('album')">Select From the Album</button>
       <button class="avatar-action" @click="showAvatarAction = false">Cancel</button>
     </van-popup>
 
@@ -390,7 +441,7 @@ onMounted(() => {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(124px + env(safe-area-inset-bottom));
+  padding-bottom: calc(26px + var(--app-fixed-footer-height, 98px));
 }
 
 /* Avatar Section */
@@ -671,8 +722,8 @@ textarea::placeholder {
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(98px + env(safe-area-inset-bottom));
-  padding: 12px 20px calc(34px + env(safe-area-inset-bottom));
+  height: var(--app-fixed-footer-height, 98px);
+  padding: 12px 20px var(--app-content-safe-bottom, 34px);
   box-sizing: border-box;
   background: #1a1a1a;
   z-index: 20;

@@ -34,6 +34,11 @@ export function useMomoRTM() {
     const loginRTM = async (uid: string, token: string) => {
         if (rtmClient && isRtmLoggedIn.value) return;
 
+        AgoraRTM.setArea({
+            areaCodes: [AgoraRTM.constantsType.AreaCode.GLOBAL],
+        });
+
+
         try {
             if (!rtmClient) {
                 console.log("[RTM] Creating client instance...");

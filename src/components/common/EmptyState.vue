@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import emptyIcon from '@/assets/comm-no-more-data.svg';
+import emptyIcon from '@/assets/message-list-empty.svg';
 
 type EmptyStateType = 'empty' | 'network';
 

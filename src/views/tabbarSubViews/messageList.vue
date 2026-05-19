@@ -5,9 +5,51 @@ import { useRouter } from 'vue-router'
 import type { LHMsgChat } from '@/utils/msg/ChatModel'
 import { formatTimestamp } from '@/utils/tools'
 import { NET_CONFIG } from '@/utils/net/config'
+import { useUserStore } from '@/stores/userStore'
+import * as DB from '@/utils/msg/DBService'
+import maleAvatar from '@/assets/maleAvatar.png'
+import femaleAvatar from '@/assets/femaleAvatar.png'
+import sessionEmptyIcon from '@/assets/message-list-empty.svg'
 
 const router = useRouter()
 const chatManager = getChatRecordManager()
+const userStore = useUserStore()
+
+const getChatAvatarSrc = (chat: LHMsgChat) => chat.user?.HeadImage?.trim() || ''
+
+const handleAvatarError = (event: Event, chat: LHMsgChat) => {
+    const img = event.target as HTMLImageElement | null
+    if (!img) return
+
+    const fallbackSrc = chat.user?.Gender === '1' ? maleAvatar : femaleAvatar
+    if (!fallbackSrc || img.src === fallbackSrc) return
+
+    img.src = fallbackSrc
+}
+
+const hydrateMissingChatUsers = async () => {
+    const chats = [...chatManager.chatList.value]
+    let hasUpdates = false
+
+    for (const chat of chats) {
+        const alreadyHasAvatar = Boolean(chat.user?.HeadImage?.trim())
+        if (alreadyHasAvatar || !chat.userId || chat.userId === NET_CONFIG.ID) {
+            continue
+        }
+
+        const user = await userStore.getUserInfoById(chat.userId)
+        if (!user) continue
+
+        chat.user = user as any
+        await DB.insertUser(user as any)
+        await DB.upsertChatRecord(chat)
+        hasUpdates = true
+    }
+
+    if (hasUpdates) {
+        await chatManager.chatRecordChange()
+    }
+}
 
 const onClearAll = async () => {
     // 这里的 Clear All 通常建议是“全部标记为已读”
@@ -43,6 +85,7 @@ const chatList = computed(() => {
 
 onMounted(async () => {
     await chatManager.initialize();
+    await hydrateMissingChatUsers();
 })
 
 </script>
@@ -60,41 +103,47 @@ onMounted(async () => {
 
         <!-- 列表区 -->
         <main class="list-wrapper">
-            <van-swipe-cell v-for="chat in chatList" :key="chat.chatId" class="message-item-wrapper">
-                <div class="message-item" @click="onClickChat(chat)">
-                    <!-- 头像区 -->
-                    <div class="avatar-area">
-                        <img class="avatar" :src="chat.user?.HeadImage" />
-                        <!-- <div v-if="chat.user?.OnlineState" class="status-dot online"></div> -->
-                    </div>
+            <template v-if="chatList.length">
+                <div class="chat-list">
+                    <van-swipe-cell v-for="chat in chatList" :key="chat.chatId" class="message-item-wrapper">
+                        <div class="message-item" @click="onClickChat(chat)">
+                            <!-- 头像区 -->
+                            <div class="avatar-area">
+                                <img class="avatar" :src="getChatAvatarSrc(chat)" @error="handleAvatarError($event, chat)" />
+                                <!-- <div v-if="chat.user?.OnlineState" class="status-dot online"></div> -->
+                            </div>
 
-                    <!-- 内容区 -->
-                    <div class="content-area">
-                        <div class="content-top">
-                            <span class="user-name">{{ chat.user?.Nickname || 'User' }}</span>
-                            <span class="time-text">{{ formatTimestamp(chat.lastTime * 1000, 'MM.DD HH:mm') }}</span>
-                        </div>
-                        <div class="content-bottom">
-                            <p class="msg-preview">{{ chat.lastText }}</p>
-                            <div v-if="chat.unreadCount > 0" class="unread-badge"
-                                :class="{ 'badge-more': chat.unreadCount >= 99 }">
-                                {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
+                            <!-- 内容区 -->
+                            <div class="content-area">
+                                <div class="content-top">
+                                    <span class="user-name">{{ chat.user?.Nickname || 'User' }}</span>
+                                    <span class="time-text">{{ formatTimestamp(chat.lastTime * 1000, 'MM.DD HH:mm') }}</span>
+                                </div>
+                                <div class="content-bottom">
+                                    <p class="msg-preview">{{ chat.lastText }}</p>
+                                    <div v-if="chat.unreadCount > 0" class="unread-badge"
+                                        :class="{ 'badge-more': chat.unreadCount >= 99 }">
+                                        {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- 右滑显示的删除按钮选项 -->
-                <template #right>
-                    <div class="delete-btn-wrapper">
-                        <button class="delete-btn" @click="onDelete(chat)">
-                            <van-icon name="delete-o" size="24" color="#fff" />
-                        </button>
-                    </div>
-                </template>
-            </van-swipe-cell>
-            <!-- 底部预留 Tabbar 空间 -->
-            <div class="bottom-placeholder"></div>
+                        <!-- 右滑显示的删除按钮选项 -->
+                        <template #right>
+                            <div class="delete-btn-wrapper">
+                                <button class="delete-btn" @click="onDelete(chat)">
+                                    <van-icon name="delete-o" size="24" color="#fff" />
+                                </button>
+                            </div>
+                        </template>
+                    </van-swipe-cell>
+                </div>
+            </template>
+
+            <div v-else class="empty-view">
+                <img :src="sessionEmptyIcon" alt="" class="empty-illustration" />
+            </div>
         </main>
     </div>
 </template>
@@ -102,7 +151,8 @@ onMounted(async () => {
 <style scoped>
 .message-page {
     background-color: #1a1a1a;
-    height: 100vh;
+    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -116,7 +166,9 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: calc(56px + env(safe-area-inset-top)) 20px 18px;
+    min-height: 56px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px;
+    flex-shrink: 0;
 }
 
 .title {
@@ -160,7 +212,15 @@ onMounted(async () => {
     background-color: #1a1a1a;
     border-radius: 0;
     overflow-y: auto;
-    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chat-list {
+    width: 100%;
+    padding-bottom: var(--app-tabbar-content-offset, 88px);
 }
 
 .message-item-wrapper {
@@ -187,7 +247,7 @@ onMounted(async () => {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    background: linear-gradient(135deg, #c8f24e, #78eb3f);
+    background: #303030;
 }
 
 .status-dot {
@@ -298,8 +358,20 @@ onMounted(async () => {
     box-shadow: none;
 }
 
-.bottom-placeholder {
-    height: 100px;
+.empty-view {
+    flex: 1;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 24px var(--app-tabbar-content-offset, 88px);
+    box-sizing: border-box;
+}
+
+.empty-illustration {
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+    display: block;
 }
 </style>

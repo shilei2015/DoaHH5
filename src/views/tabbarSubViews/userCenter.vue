@@ -144,8 +144,8 @@ const goMyLikes = () => {
 .content {
     position: relative;
     padding: 20px;
-    padding-top: calc(56px + env(safe-area-inset-top));
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: var(--app-tabbar-content-offset, 88px);
 }
 
 /* Header */

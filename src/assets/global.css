@@ -16,8 +16,15 @@
   --app-accent-strong: #8ffb36;
   --app-accent-gradient: linear-gradient(135deg, #c7ff30 0%, #65d941 100%);
   --app-danger: #ff4d4f;
-  --app-tabbar-safe-bottom: max(env(safe-area-inset-bottom, 0px), 34px);
-  --app-tabbar-height: calc(52px + var(--app-tabbar-safe-bottom));
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-edge-gap: 12px;
+  --app-header-offset: calc(var(--app-edge-gap) + var(--app-safe-top));
+  --app-content-safe-bottom: calc(var(--app-edge-gap) + var(--app-safe-bottom));
+  --app-fixed-footer-height: calc(64px + var(--app-content-safe-bottom));
+  --app-tabbar-safe-bottom: calc(var(--app-edge-gap) + var(--app-safe-bottom));
+  --app-tabbar-height: calc(32px + var(--app-edge-gap) + var(--app-tabbar-safe-bottom));
+  --app-tabbar-content-offset: calc(24px + var(--app-tabbar-height));
 
   --van-primary-color: var(--app-accent);
   --van-success-color: var(--app-accent);
@@ -62,6 +69,9 @@ body,
   min-height: 100%;
   background: var(--app-bg);
   color: var(--app-text-primary);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
@@ -80,11 +90,22 @@ select {
   color: inherit;
 }
 
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 button {
   border: 0;
 }
 
 img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   -webkit-user-drag: none;
 }
 
@@ -93,6 +114,53 @@ img.is-solid-image-fallback {
   border: 0 !important;
   outline: 0 !important;
   box-shadow: none !important;
+}
+
+.user-center-page::after,
+.shop-content::after,
+.profile-page::after,
+.profile-scroll-content::after,
+.native-test-page::after,
+.list-wrapper::after,
+.msgList::after,
+.messages-list::after,
+.chat-area::after,
+.account-page > .content::after,
+.blacklist-page .scroll-list-container .pull-container::after,
+.feedback-page > .content::after,
+.setting-page > .content::after,
+.edit-profile-page > .content::after,
+.user-list-page > .content::after {
+  content: "";
+  display: block;
+  height: 1px;
+  flex: 0 0 1px;
+}
+
+.user-center-page,
+.shop-content,
+.profile-page,
+.native-test-page,
+.list-wrapper,
+.msgList,
+.messages-list,
+.chat-area,
+.account-page > .content,
+.feedback-page > .content,
+.setting-page > .content,
+.edit-profile-page > .content,
+.user-list-page > .content,
+.scroll-list-container {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.user-center-page > .content,
+.list-wrapper > .chat-list,
+.list-wrapper > .empty-view,
+.account-page > .content > .account-list,
+.setting-page > .content > .settings-list {
+  min-height: calc(100% + 1px);
 }
 
 .app-page {
@@ -105,7 +173,7 @@ img.is-solid-image-fallback {
   display: flex;
   align-items: center;
   min-height: 56px;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px;
+  padding: var(--app-header-offset) 20px 12px;
 }
 
 .app-page-title {
@@ -118,7 +186,7 @@ img.is-solid-image-fallback {
 }
 
 .app-safe-bottom {
-  padding-bottom: var(--app-tabbar-safe-bottom);
+  padding-bottom: var(--app-safe-bottom);
 }
 
 body .van-overlay {

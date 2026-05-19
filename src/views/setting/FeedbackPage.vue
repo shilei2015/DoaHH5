@@ -316,7 +316,7 @@ const onSubmit = async () => {
 
 .footer {
   padding: 12px 20px;
-  padding-bottom: calc(34px + env(safe-area-inset-bottom));
+  padding-bottom: var(--app-content-safe-bottom, 34px);
   flex-shrink: 0;
   background: #1A1A1A;
 }

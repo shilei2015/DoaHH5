@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import AnchorCard from '../../components/AnchorCard.vue';
-import coinIcon from '@/assets/coin_icon.png';
+import CoinBalanceBadge from '@/components/common/CoinBalanceBadge.vue';
 import ScrollList from '../../components/ScrollList.vue';
 import { API } from '@/utils/net/api';
 import { post } from '@/utils/net/request';
-import { onMounted, onActivated } from 'vue';
+import { onMounted, onActivated, onDeactivated } from 'vue';
 import HUD from '@/components/HUD';
 import { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showCoinShop } from '@/utils/tools/shopService';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 import { useUserStore } from '@/stores/userStore';
+import { onBeforeRouteLeave, useRoute } from 'vue-router';
+
+const anchorListScrollState = {
+    top: 0,
+    anchorId: '',
+    anchorOffset: 0,
+};
 
 class AnchorCate {
     NavId: string = ""
@@ -32,14 +39,19 @@ const isSwitchingCate = ref(false);
 /** 列表接口进行中：避免在结果返回前把「未加载」当成「真的空」 */
 const isAnchorListPending = ref(true);
 const userStore = useUserStore();
+const route = useRoute();
 const currentCoins = computed(() => userStore.userInfo?.Coins || '0');
 
-const selectCategory = (NavId: string) => {
+const selectCategory = (NavId: string, shouldResetScroll = true) => {
     categories.value.forEach(c => c.active = false);
     const cat = categories.value.find(c => c.NavId === NavId);
     if (cat) cat.active = true;
     currentPage.value = 1;
     anchors.value = [];
+    isFinished.value = false;
+    if (shouldResetScroll) {
+        resetScrollTop();
+    }
 
     isSwitchingCate.value = true;
     getAnchorListByNaviId(NavId).finally(() => {
@@ -59,6 +71,7 @@ const getCategoryImage = (cat: AnchorCate): string => {
     return image || ''
 }
 
+const PAGE_LIMIT = 18
 var currentPage = ref(1)
 
 let cateRefreshInFlight = false
@@ -103,7 +116,7 @@ const refreshCateList = async () => {
             categories.value = newList
             const firstNavId = newList[0]?.NavId || ''
             if (firstNavId) {
-                selectCategory(firstNavId)
+                selectCategory(firstNavId, false)
             } else {
                 anchors.value = []
                 isAnchorListPending.value = false
@@ -121,7 +134,7 @@ const refreshCateList = async () => {
             return
         }
         if (newFirstNavId) {
-            selectCategory(newFirstNavId)
+            selectCategory(newFirstNavId, false)
         } else {
             anchors.value = []
             isAnchorListPending.value = false
@@ -135,21 +148,24 @@ const refreshCateList = async () => {
     }
 }
 
-const getAnchorListByNaviId = async (naviId: string) => {
+const getAnchorListByNaviId = async (naviId: string, shouldRestoreScroll = true) => {
     if (!naviId.trim()) {
         isAnchorListPending.value = false
-        return
+        return 0
     }
+    let addedCount = 0
     isAnchorListPending.value = true
     try {
         const params = {
             "Page": currentPage.value.toString(),
-            "Limit": "30",
+            "Limit": String(PAGE_LIMIT),
             "NavId": naviId
         }
         const response = await post(API.list_user_byId, params)
         if (response.code == "0") {
-            anchors.value.push(...response.data?.List || [])
+            const nextList: AnchorInfoModel[] = response.data?.List || []
+            addedCount = nextList.length
+            anchors.value.push(...nextList)
         } else {
             HUD.showToast(response.data?.toast)
         }
@@ -158,7 +174,11 @@ const getAnchorListByNaviId = async (naviId: string) => {
         HUD.showToast("Unable to load content. Please try again.")
     } finally {
         isAnchorListPending.value = false
+        if (shouldRestoreScroll && anchorListScrollState.top > 0 && route.name === 'anchorList') {
+            restoreScrollTop()
+        }
     }
+    return addedCount
 }
 
 
@@ -166,11 +186,103 @@ const getAnchorListByNaviId = async (naviId: string) => {
 const isRefreshing = ref(false);
 const isLoadingMore = ref(false);
 const isFinished = ref(false);
+const scrollListRef = ref<InstanceType<typeof ScrollList> | null>(null);
+const anchorListPageRef = ref<HTMLElement | null>(null);
+const savedScrollTop = ref(anchorListScrollState.top);
+const shouldTrackScroll = ref(true);
+
+const syncScrollTop = (top: number, force = false) => {
+    if (!force && !shouldTrackScroll.value) return;
+    const nextTop = Math.max(0, top);
+    savedScrollTop.value = nextTop;
+    anchorListScrollState.top = nextTop;
+}
+
+const getScrollContainer = () =>
+    anchorListPageRef.value?.querySelector<HTMLElement>('.scroll-list-container') ?? null
+
+const captureVisibleAnchorId = () => {
+    const container = getScrollContainer()
+    if (!container || !anchorListPageRef.value) return
+    const containerRect = container.getBoundingClientRect()
+    const visibleCards = Array.from(
+        anchorListPageRef.value.querySelectorAll<HTMLElement>('[data-anchor-id]')
+    )
+        .map((el) => ({ el, rect: el.getBoundingClientRect() }))
+        .filter(({ rect }) => rect.bottom > containerRect.top + 8 && rect.top < containerRect.bottom - 8)
+        .sort((a, b) => Math.abs(a.rect.top - containerRect.top) - Math.abs(b.rect.top - containerRect.top))
+
+    const firstVisible = visibleCards[0]
+    const anchorId = firstVisible?.el.dataset.anchorId
+    if (anchorId && firstVisible) {
+        anchorListScrollState.anchorId = anchorId
+        anchorListScrollState.anchorOffset = firstVisible.rect.top - containerRect.top
+    }
+}
+
+const resetScrollTop = () => {
+    anchorListScrollState.anchorId = '';
+    syncScrollTop(0, true);
+    nextTick(() => {
+        scrollListRef.value?.setScrollTop(0);
+    });
+}
+
+const saveScrollTop = (captureAnchor = true) => {
+    if (captureAnchor) {
+        captureVisibleAnchorId()
+    }
+    syncScrollTop(scrollListRef.value?.getScrollTop() ?? savedScrollTop.value, true)
+}
+
+const saveProfileEntryPosition = (userId: string) => {
+    anchorListScrollState.anchorId = userId;
+    const container = getScrollContainer()
+    const target = anchorListPageRef.value?.querySelector<HTMLElement>(`[data-anchor-id="${userId}"]`)
+    if (container && target) {
+        anchorListScrollState.anchorOffset = target.getBoundingClientRect().top - container.getBoundingClientRect().top
+    }
+    saveScrollTop(false);
+}
+
+const restoreAnchorElement = () => {
+    const anchorId = anchorListScrollState.anchorId;
+    if (!anchorId || !anchorListPageRef.value) return false;
+    const target = Array.from(
+        anchorListPageRef.value.querySelectorAll<HTMLElement>('[data-anchor-id]')
+    ).find((el) => el.dataset.anchorId === anchorId);
+    if (!target) return false;
+    scrollListRef.value?.scrollElementIntoView(target, anchorListScrollState.anchorOffset);
+    return true;
+}
+
+const restoreScrollTop = () => {
+    const top = anchorListScrollState.top
+    shouldTrackScroll.value = false
+    const restore = () => {
+        if (!restoreAnchorElement()) {
+            scrollListRef.value?.setScrollTop(top)
+        }
+    }
+    nextTick(() => {
+        restore()
+        requestAnimationFrame(() => {
+            restore()
+        })
+        window.setTimeout(restore, 80)
+        window.setTimeout(restore, 180)
+        window.setTimeout(() => {
+            restore()
+            shouldTrackScroll.value = true
+        }, 360)
+    })
+}
 
 const handleRefresh = async () => {
     try {
         currentPage.value = 1
         anchors.value = []
+        isFinished.value = false
         await getAnchorListByNaviId(currentActiveCateId.value)
         isRefreshing.value = false;
     } finally {
@@ -178,12 +290,15 @@ const handleRefresh = async () => {
 }
 
 const handleLoadMore = async () => {
+    const previousPage = currentPage.value
     try {
-        currentPage.value += 1
-        await getAnchorListByNaviId(currentActiveCateId.value)
-        isLoadingMore.value = false;
+        currentPage.value = previousPage + 1
+        const addedCount = await getAnchorListByNaviId(currentActiveCateId.value, false)
+        if (addedCount === 0) {
+            currentPage.value = previousPage
+        }
     } finally {
-
+        isLoadingMore.value = false;
     }
 }
 
@@ -198,6 +313,7 @@ const reloadCurrentAnchorList = async () => {
     if (!navId.trim()) return
     currentPage.value = 1
     anchors.value = []
+    isFinished.value = false
     isSwitchingCate.value = true
     await getAnchorListByNaviId(navId).finally(() => {
         isSwitchingCate.value = false
@@ -209,6 +325,16 @@ watch(
         if (tick < 1) return
         void reloadCurrentAnchorList()
     }
+)
+
+watch(
+    () => route.name,
+    (name) => {
+        if (name === 'anchorList') {
+            restoreScrollTop()
+        }
+    },
+    { flush: 'post' }
 )
 
 /** 仅在确认「加载结束且仍无数据」时显示空状态（含分类切换中的保护已由 isSwitchingCate 覆盖） */
@@ -228,29 +354,38 @@ onActivated(() => {
     if (categories.value.length === 0 && anchors.value.length === 0) {
         refreshCateList()
     }
+    restoreScrollTop()
+})
+
+onDeactivated(() => {
+    saveScrollTop(true)
+    shouldTrackScroll.value = false
+})
+
+onBeforeRouteLeave(() => {
+    saveScrollTop(true)
+    shouldTrackScroll.value = false
 })
 
 
 </script>
 
 <template>
-    <div class="anchor-list-page">
+    <div ref="anchorListPageRef" class="anchor-list-page">
         <!-- 顶部标题栏 -->
         <div class="header">
             <h1 class="title">Discover</h1>
-            <button type="button" class="balance-container" aria-label="Open coin shop" @click="showCoinShop()">
-                <span class="coin-icon-wrap">
-                    <img :src="coinIcon" class="coin-icon" alt="" />
-                </span>
-                <span class="coins-total">{{ currentCoins }}</span>
-                <span class="coin-add-icon" aria-hidden="true"></span>
-            </button>
+            <CoinBalanceBadge
+                :coins="currentCoins"
+                :config="{ showAdd: true, interactive: true, ariaLabel: 'Open coin shop' }"
+                @click="showCoinShop()"
+            />
         </div>
 
         <!-- 水平滑动的标签栏：UP=="1" 时展示 -->
         <div v-show="showCategoryTabs" class="category-tabs">
             <button v-for="cat in categories" :key="cat.NavId" :id="'category-tab-' + cat.NavId" class="tab-btn"
-                :class="{ active: cat.active }" @click="selectCategory(cat.NavId); scrollToCate(cat.NavId, $event)">
+                :class="{ active: cat.active }" @click="selectCategory(cat.NavId, true); scrollToCate(cat.NavId, $event)">
                 <img v-if="getCategoryImage(cat)" :src="getCategoryImage(cat)" class="tab-icon" alt="" />
                 <span>{{ cat.NavName }}</span>
             </button>
@@ -258,11 +393,13 @@ onActivated(() => {
 
         <!-- 通用的下达拉刷新组件 -->
         <div class="list-scroll-region">
-            <ScrollList v-model:refreshing="isRefreshing" v-model:loading="isLoadingMore" :finished="isFinished"
-                :isEmpty="showListEmptyState" @refresh="handleRefresh" @load-more="handleLoadMore">
+            <ScrollList ref="scrollListRef" v-model:refreshing="isRefreshing" v-model:loading="isLoadingMore" :finished="isFinished"
+                :isEmpty="showListEmptyState" @refresh="handleRefresh" @load-more="handleLoadMore"
+                @scroll-top-change="syncScrollTop">
                 <!-- 主播卡片网格 -->
                 <div class="anchor-grid" v-show="anchors.length > 0">
-                    <AnchorCard v-for="anchor in anchors" :key="anchor.UserId" :anchor="anchor" />
+                    <AnchorCard v-for="anchor in anchors" :key="anchor.UserId" :anchor="anchor"
+                        @open-profile="saveProfileEntryPosition" />
                 </div>
 
                 <!-- 分类切换时的中间加载过渡动画 -->
@@ -270,8 +407,10 @@ onActivated(() => {
                     <div class="cate-spinner"></div>
                 </div>
 
-                <!-- 底部预留 Tabbar 空间，作为内容的一部分以优化滚动感受 -->
-                <div class="bottom-placeholder"></div>
+                <template #footer>
+                    <!-- 底部预留 Tabbar 空间放在加载指示器之后，避免 loading 被占位挤到回弹区外 -->
+                    <div class="bottom-placeholder"></div>
+                </template>
 
             </ScrollList>
         </div>
@@ -301,9 +440,8 @@ onActivated(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: calc(56px + env(safe-area-inset-top));
-    padding-left: 20px;
-    padding-right: 20px;
+    min-height: 56px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px;
     margin-bottom: 16px;
     flex-shrink: 0;
 }
@@ -315,83 +453,6 @@ onActivated(() => {
     color: #fff;
     margin: 0;
     line-height: 32px;
-}
-
-.balance-container {
-    width: auto;
-    max-width: min(58vw, 180px);
-    height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid #ffde09;
-    padding: 4px 4px 4px 5px;
-    border-radius: 16px;
-    flex-shrink: 0;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    box-sizing: border-box;
-}
-
-.coin-icon-wrap {
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    overflow: hidden;
-    flex: 0 0 22px;
-}
-
-.balance-container .coin-icon {
-    width: 24px;
-    height: 24px;
-    object-fit: cover;
-}
-
-.coins-total {
-    min-width: 0;
-    max-width: 110px;
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Display", "Segoe UI", sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 20px;
-    color: #ffde09;
-    white-space: nowrap;
-}
-
-.coin-add-icon {
-    position: relative;
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
-    border: 1.5px solid #ffde09;
-    border-radius: 50%;
-    box-sizing: border-box;
-}
-
-.coin-add-icon::before,
-.coin-add-icon::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 8.8px;
-    height: 1.8px;
-    border-radius: 999px;
-    background: #ffde09;
-    transform: translate(-50%, -50%);
-}
-
-.coin-add-icon::after {
-    transform: translate(-50%, -50%) rotate(90deg);
 }
 
 /* 分类标签栏 */
@@ -472,7 +533,7 @@ onActivated(() => {
 
 /* 底部防遮挡占位 */
 .bottom-placeholder {
-    height: 100px;
+    height: var(--app-tabbar-content-offset, 88px);
     width: 100%;
     flex-shrink: 0;
 }

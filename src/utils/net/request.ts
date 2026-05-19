@@ -21,6 +21,49 @@ const service: AxiosInstance = axios.create({
   timeout: 15000 // 15s timeout
 })
 
+function safeStringify(value: unknown): string {
+  const seen = new WeakSet<object>()
+
+  try {
+    return JSON.stringify(
+      value,
+      (_key, currentValue) => {
+        if (typeof currentValue === 'object' && currentValue !== null) {
+          if (seen.has(currentValue)) return '[Circular]'
+          seen.add(currentValue)
+        }
+
+        if (typeof currentValue === 'function') return `[Function ${currentValue.name || 'anonymous'}]`
+        return currentValue
+      },
+      2
+    )
+  } catch (error) {
+    return String(value)
+  }
+}
+
+function getPlainHeaders(headers: any): Record<string, any> {
+  if (!headers) return {}
+  const plainHeaders = typeof headers.toJSON === 'function' ? headers.toJSON() : { ...headers }
+
+  for (const key of Object.keys(plainHeaders)) {
+    if (/^(authorization|cookie|token)$/i.test(key)) {
+      plainHeaders[key] = plainHeaders[key] ? '[redacted]' : plainHeaders[key]
+    }
+  }
+
+  return plainHeaders
+}
+
+function cloneForLog<T>(value: T): T {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T
+  } catch {
+    return value
+  }
+}
+
 // 请求拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -67,21 +110,11 @@ service.interceptors.request.use(
     // 3. 构建 Headers
     const udid = getUdid()
     const signature = createSiginString(transParams, nonce, isEncrypt)
-    const systemLanguage = navigator.language || 'en'
-    const fromDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'WebMobile' : 'WebPC'
-    const deviceVersion = navigator.appVersion || "Unknown"
-
-    // 辅助获取国家代码
-    const getCCode = () => {
-      try {
-        const lang = navigator.language;
-        if (lang && lang.includes('-')) {
-          const parts = lang.split('-');
-          if (parts.length > 1) return (parts[1] as string).toUpperCase();
-        }
-        return 'US';
-      } catch { return 'CN'; }
-    }
+    const systemLanguage = NET_CONFIG.DeviceLanguage || navigator.language || 'en'
+    const fromDevice =
+      NET_CONFIG.FromDevice ||
+      (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'WebMobile' : 'WebPC')
+    const deviceVersion = NET_CONFIG.DeviceVersion || navigator.appVersion || "Unknown"
 
     try {
       if (config.headers) {
@@ -95,8 +128,8 @@ service.interceptors.request.use(
         config.headers.set('VPN', '0')
         config.headers.set('FromDevice', fromDevice)
         config.headers.set('DeviceVersion', deviceVersion)
-        config.headers.set('OS', '101')
-        config.headers.set('LocalCCode', NET_CONFIG.LocalCCode)
+        // config.headers.set('LocalCCode', NET_CONFIG.LocalCCode)
+        config.headers.set('LocalCCode', 'US')
         config.headers.set('UIV', NET_CONFIG.UIV)
 
         if (isEncrypt) {
@@ -133,20 +166,6 @@ service.interceptors.response.use(
     const isEncrypt = (response.config as any).meta?.isEncrypt ?? DEFAULT_ENCRYPT
 
     let resData = response.data
-
-    // 尝试进行 AES 解密 （Swift代码中是把整个data用UTF8转String之后AES解密成JSON字符串）
-    if (isEncrypt && typeof resData === 'string') {
-      try {
-        const decryptedStr = decryptAES(resData)
-        if (decryptedStr) {
-          resData = JSON.parse(decryptedStr)
-        }
-      } catch (err) {
-        console.error('Response decryption failed.', err)
-      }
-    }
-
-    // 格式化打印日志 (仅相对路径、参数、响应结果)
     const config = response.config
 
     // 优先读取我们在发起请求时存入的未加密原始真实路径
@@ -156,6 +175,31 @@ service.interceptors.response.use(
       const baseURL = config.baseURL || ''
       path = fullUrl.startsWith(baseURL) ? fullUrl.substring(baseURL.length) : fullUrl
     }
+
+    // 尝试进行 AES 解密 （Swift代码中是把整个data用UTF8转String之后AES解密成JSON字符串）
+    if (isEncrypt && typeof resData === 'string') {
+      try {
+        const decryptedStr = decryptAES(resData)
+        if (!decryptedStr) {
+          throw new Error('empty decrypted response')
+        }
+
+        try {
+          resData = JSON.parse(decryptedStr)
+        } catch {
+          resData = decryptedStr
+        }
+      } catch (err) {
+        console.error(`[API] Response decryption failed for ${path}.`, {
+          error: err,
+          hasKey: Boolean(NET_CONFIG.KEY),
+          appId: NET_CONFIG.ID,
+        })
+        throw new Error(`Unable to decrypt response for ${path}`)
+      }
+    }
+
+    // 格式化打印日志 (仅相对路径、参数、响应结果)
 
     // 提取参数 (优先真实传递下去的未加密参数 _originParams)
     let reqData = (config as any)._originParams
@@ -167,7 +211,23 @@ service.interceptors.response.use(
       if (!reqData) reqData = config.params
     }
 
-    console.log(`🚀 [API Success] ${path}\n ├── Headers:`, config.headers, `\n ├── Params:`, reqData, `\n └── Result:`, resData)
+    const responseBusinessData =
+      resData && typeof resData === 'object' && 'data' in resData
+        ? cloneForLog((resData as Record<string, any>).data)
+        : cloneForLog(resData)
+
+    const debugPayload = {
+      url: path,
+      method: config.method?.toUpperCase() || 'GET',
+      status: response.status,
+      headers: getPlainHeaders(config.headers),
+      requestParams: reqData,
+      responseParsed: resData,
+      responseBusinessData,
+    }
+
+    console.log(`🚀 [API Success] ${path}`, debugPayload)
+    console.log(`🧾 [API Parsed JSON] ${path}\n${safeStringify(debugPayload)}`)
 
     // 从待处理集合中移除
     if ((config as any)._abortController) {
@@ -201,6 +261,8 @@ service.interceptors.response.use(
       // 请求成功
       return resData
     }
+
+    return resData
   },
   (error: any) => {
     // 处理请求取消的情况

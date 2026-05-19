@@ -166,7 +166,7 @@ onMounted(() => {
 }
 
 .list-container {
-  padding: 8px 20px calc(34px + env(safe-area-inset-bottom));
+  padding: 8px 20px var(--app-content-safe-bottom, 34px);
   display: flex;
   flex-direction: column;
   gap: 24px;

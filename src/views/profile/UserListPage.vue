@@ -127,12 +127,12 @@ onMounted(() => {
 
 /* Header */
 .header {
-  height: 96px;
+  min-height: 56px;
   background-color: #1a1a1a;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(52px + env(safe-area-inset-top)) 20px 12px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px;
   flex-shrink: 0;
   margin-top: 0;
   border-bottom: none;
@@ -178,6 +178,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--app-safe-bottom, 0px);
 }
 </style>

@@ -14,6 +14,7 @@ import { showCoinShop } from '@/utils/tools/shopService';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
 import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
 import { useKeyboardInset } from '@/composables/useKeyboardInset';
+import CoinBalanceBadge from '@/components/common/CoinBalanceBadge.vue';
 
 interface ChatMessage {
     id: string;
@@ -32,7 +33,7 @@ const chatAreaStyle = computed(() => ({
     bottom: `${98 + insetPx.value}px`,
 }));
 const bottomBarStyle = computed(() => ({
-    bottom: `calc(${34 + insetPx.value}px + env(safe-area-inset-bottom, 0px))`,
+    bottom: `calc(${34 + insetPx.value}px + var(--app-safe-bottom, 0px))`,
 }));
 
 // 监听远端视频轨道变化 (rtc.remoteVideoTrack 是响应式的)
@@ -394,13 +395,12 @@ onUnmounted(async () => {
                 <button class="circle-btn action-btn compact-action" @click="openGiftPicker">
                     <img src="@/assets/video-gift.png" style="width: 24px; height: 24px;" alt="">
                 </button>
-                <div class="coin-badge connected-coin compact-action" @click="showCoinShop">
-                    <img src="@/assets/coin_icon.png" alt="" class="coin-icon" />
-                    <span class="coin-text">{{ coins }}</span>
-                    <div class="add-btn">
-                        <img src="@/assets/add_icon.svg" alt="Add" class="add-icon" />
-                    </div>
-                </div>
+                <CoinBalanceBadge
+                    class="connected-coin compact-action"
+                    :coins="coins"
+                    :config="{ showAdd: true, interactive: true, ariaLabel: 'Open coin shop' }"
+                    @click="showCoinShop"
+                />
             </div>
         </div>
     </div>
@@ -500,7 +500,7 @@ onUnmounted(async () => {
 
 .connected-top-bar {
     position: absolute;
-    top: calc(56px + env(safe-area-inset-top, 0px));
+    top: calc(12px + env(safe-area-inset-top, 0px));
     left: 20px;
     right: 20px;
     display: flex;
@@ -749,48 +749,6 @@ onUnmounted(async () => {
 .send-message-btn svg {
     width: 28px;
     height: 28px;
-}
-
-.coin-badge.connected-coin {
-    height: 40px;
-    border-radius: 70px;
-    padding: 0 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border: none;
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.coin-icon {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-}
-
-.coin-text {
-    font-size: 16px;
-    font-weight: 600;
-    color: #ffde09;
-}
-
-.add-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: transparent;
-    color: #ffde09;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 2px;
-}
-
-.add-icon {
-    width: 100%;
-    height: 100%;
-    filter: brightness(0) saturate(100%) invert(86%) sepia(68%) saturate(1983%) hue-rotate(358deg) brightness(106%) contrast(102%);
 }
 
 .toggleCamare-button {

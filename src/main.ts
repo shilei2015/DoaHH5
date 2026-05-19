@@ -15,6 +15,7 @@ import '@/utils/native/A0019Bridge'
 import './assets/global.css'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import { paymentService } from '@/utils/tools/paymentService'
 // 引入 Vant
 import Vant from 'vant'
 import 'vant/lib/index.css'
@@ -27,6 +28,15 @@ app.use(router)
 app.use(pinia)
 app.use(Vant)
 app.mount('#app')
+
+const warmApplePaySdk = () => paymentService.preloadApplePaySdk();
+const requestIdleCallback = window.requestIdleCallback;
+if (requestIdleCallback) {
+    requestIdleCallback(warmApplePaySdk, { timeout: 1500 });
+} else {
+    globalThis.setTimeout(warmApplePaySdk, 800);
+}
+
 // 禁用双指缩放手势
 document.addEventListener('gesturestart', function (event) {
     event.preventDefault();
@@ -40,3 +50,28 @@ document.addEventListener('touchend', function (event) {
     }
     lastTouchEnd = now;
 }, false);
+
+const isImageTarget = (target: EventTarget | null) =>
+    target instanceof Element && Boolean(target.closest('img'));
+
+const isEditableTarget = (target: EventTarget | null) =>
+    target instanceof Element &&
+    Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+
+document.addEventListener('contextmenu', function (event) {
+    if (isImageTarget(event.target) || !isEditableTarget(event.target)) {
+        event.preventDefault();
+    }
+}, true);
+
+document.addEventListener('dragstart', function (event) {
+    if (isImageTarget(event.target)) {
+        event.preventDefault();
+    }
+}, true);
+
+document.addEventListener('selectstart', function (event) {
+    if (!isEditableTarget(event.target)) {
+        event.preventDefault();
+    }
+}, true);

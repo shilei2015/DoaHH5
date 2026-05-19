@@ -14,6 +14,7 @@ const emit = defineEmits<{
     (e: 'update:loading', value: boolean): void;
     (e: 'refresh'): void;
     (e: 'load-more'): void;
+    (e: 'scroll-top-change', value: number): void;
 }>();
 
 // ======== 下拉刷新与上拉加载逻辑 ========
@@ -21,6 +22,9 @@ const containerRef = ref<HTMLElement | null>(null);
 const pullDistance = ref(0);
 const startY = ref(0);
 const REFRESH_THRESHOLD = 72; // 触发刷新的下拉高度 (px)
+const LOAD_MORE_THRESHOLD = 150;
+const LOAD_MORE_REARM_DISTANCE = 48;
+const canTriggerLoadMore = ref(true);
 
 // 触摸事件 (用于计算下拉)
 const handleTouchStart = (e: TouchEvent) => {
@@ -64,6 +68,7 @@ const handleTouchEnd = () => {
 watch(() => props.refreshing, (newVal) => {
     if (!newVal) {
         pullDistance.value = 0;
+        canTriggerLoadMore.value = true;
     }
 });
 
@@ -71,16 +76,46 @@ watch(() => props.refreshing, (newVal) => {
 // 监听容器自身滚动，因为父级使用了 height:100vh + overflow-y:auto，
 // 滚动不在 window 上发生。
 const handleScroll = () => {
-    if (props.loading || props.refreshing || props.finished || props.isEmpty) return;
     const el = containerRef.value;
     if (!el) return;
     const { scrollTop, scrollHeight, clientHeight } = el;
+    const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+    emit('scroll-top-change', scrollTop);
+    if (props.loading || props.refreshing || props.finished || props.isEmpty) return;
+
+    if (distanceToBottom > LOAD_MORE_THRESHOLD + LOAD_MORE_REARM_DISTANCE) {
+        canTriggerLoadMore.value = true;
+    }
+
     // 距离底部少于 150px 时触发加载更多
-    if (scrollTop + clientHeight >= scrollHeight - 150) {
+    if (distanceToBottom <= LOAD_MORE_THRESHOLD && canTriggerLoadMore.value) {
+        canTriggerLoadMore.value = false;
         emit('update:loading', true);
         emit('load-more');
     }
 };
+
+const getScrollTop = () => containerRef.value?.scrollTop ?? 0;
+
+const setScrollTop = (top: number) => {
+    if (!containerRef.value) return;
+    containerRef.value.scrollTop = Math.max(0, top);
+};
+
+const scrollElementIntoView = (element: HTMLElement, offset = 96) => {
+    const container = containerRef.value;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const nextTop = container.scrollTop + elementRect.top - containerRect.top - offset;
+    setScrollTop(nextTop);
+};
+
+defineExpose({
+    getScrollTop,
+    setScrollTop,
+    scrollElementIntoView,
+});
 
 onMounted(() => {
     containerRef.value?.addEventListener('scroll', handleScroll, { passive: true });
@@ -119,6 +154,8 @@ onUnmounted(() => {
                 <div class="sl-spinner small-spinner"></div>
             </div>
 
+            <slot name="footer"></slot>
+
             <!-- 已完成全部加载提示 -->
             <!-- <div class="finished-indicator" v-else-if="props.finished">
                 <span>No more data</span>
@@ -142,7 +179,7 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     width: 100%;
-    min-height: 100%;
+    min-height: calc(100% + 1px);
     position: relative;
     will-change: transform;
 }
@@ -173,11 +210,11 @@ onUnmounted(() => {
 /* 加载更多指示器 */
 .load-more-indicator {
     width: 100%;
-    height: 60px;
+    min-height: 22px;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-bottom: 20px;
+    padding: 15px 0;
     pointer-events: none; /* 防止拦截点击 */
 }
 

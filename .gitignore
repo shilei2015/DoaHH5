@@ -51,6 +51,7 @@ bin/
 __screenshots__/
 
 # Vite
+.vite/
 *.timestamp-*-*.mjs
 
 # Others

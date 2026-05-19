@@ -1,0 +1,29 @@
+<svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="70" cy="104" rx="45" ry="11" fill="#1F2A12" opacity="0.78" />
+  <ellipse cx="70" cy="104" rx="32" ry="7" fill="#11170A" opacity="0.38" />
+
+  <path d="M46 72C46 66.4772 50.4772 62 56 62H84C89.5228 62 94 66.4772 94 72V97C94 100.314 91.3137 103 88 103H52C48.6863 103 46 100.314 46 97V72Z" fill="url(#paint0_linear_113_12)" />
+  <path d="M51 57C51 53.6863 53.6863 51 57 51H83C86.3137 51 89 53.6863 89 57V73H51V57Z" fill="#E0E0E0" />
+  <path d="M52 56.5C52 54.0147 54.0147 52 56.5 52H82.5C84.9853 52 87 54.0147 87 56.5V61H52V56.5Z" fill="#F4F4F4" />
+  <path d="M57 52H81.5C84.5386 52 87 54.4614 87 57.5V60H52V57.5C52 54.4614 54.4614 52 57.5 52H57Z" fill="#F7F7F7" />
+
+  <path d="M58 67H71" stroke="#9EDB3A" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M58 73H66" stroke="#9EDB3A" stroke-width="3.5" stroke-linecap="round" />
+
+  <circle cx="61" cy="85" r="2.4" fill="#E8F6DC" />
+  <circle cx="79" cy="85" r="2.4" fill="#E8F6DC" />
+  <path d="M60 95C63.6 91.8 76.4 91.8 80 95" stroke="#E8F6DC" stroke-width="2.8" stroke-linecap="round" />
+
+  <path d="M52 73H88V84C88 89.5228 83.5228 94 78 94H62C56.4772 94 52 89.5228 52 84V73Z" fill="url(#paint1_linear_113_12)" opacity="0.18" />
+
+  <defs>
+    <linearGradient id="paint0_linear_113_12" x1="70" y1="62" x2="70" y2="103" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A8EC47" />
+      <stop offset="1" stop-color="#7ACB35" />
+    </linearGradient>
+    <linearGradient id="paint1_linear_113_12" x1="70" y1="73" x2="70" y2="94" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+</svg>

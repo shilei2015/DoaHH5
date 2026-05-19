@@ -32,12 +32,12 @@ export const useUserStore = defineStore('useUserStore', () => {
         }
     }
 
-    /** 无登录页时：匿名注册（性别固定男 Gender=1），成功后写入 token / rtmToken 并拉取用户信息 */
+    /** 无登录页时：匿名注册（与原生游客登录一致传 Gender=0），成功后写入 token / rtmToken 并拉取用户信息 */
     const registerGuest = async (): Promise<boolean> => {
         try {
             const res = await post(API.register, {
                 UdId: getUdid(),
-                Gender: '1',
+                Gender: '0',
             })
             const ok =
                 String(res.code) === '0' &&

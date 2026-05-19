@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { AnchorInfoModel } from './appModels/AnchorInfoModel';
 import { getFlagEmoji, getAge } from '@/utils/tools';
 import MOMORTC from '@/utils/MOMORTC';
@@ -7,6 +8,10 @@ import MOMORTC from '@/utils/MOMORTC';
 const props = defineProps<{
     anchor: AnchorInfoModel;
 }>();
+const emit = defineEmits<{
+    (e: 'open-profile', userId: string): void;
+}>();
+const router = useRouter();
 
 const statusText = computed(() => {
     switch (props.anchor.OnlineState) {
@@ -29,10 +34,15 @@ const statusColors = computed(() => {
 const clickCall = () => {
     MOMORTC.startAnchorCall(props.anchor.UserId)
 }
+
+const openProfile = () => {
+    emit('open-profile', props.anchor.UserId);
+    router.push({ path: '/anchorProfile', query: { id: props.anchor.UserId } });
+}
 </script>
 
 <template>
-    <div class="anchor-card" @click="$router.push({ path: '/anchorProfile', query: { id: anchor.UserId } })">
+    <div class="anchor-card" :data-anchor-id="anchor.UserId" @click="openProfile">
         <div class="avatar-wrapper">
             <img :src="anchor.HeadImage" alt="avatar" class="anchor-avatar" />
             <div class="image-gradient"></div>

@@ -21,13 +21,26 @@ import { useUserStore } from '@/stores/userStore';
 import { showCoinShop } from './tools/shopService';
 import { ensureVideoCallMediaPermissions } from '@/utils/native/videoCallPermissions';
 
-const AGORA_APP_ID = NET_CONFIG.SWID;
 AgoraRTC.setLogLevel(2);
 
 enum ChargeResult {
     Success = 0,
     Faild = 1,
     NeedCoins = 2,
+}
+
+function getResponseToast(res: any, fallback: string): string {
+    return (
+        res?.data?.toast ||
+        res?.data?.Toast ||
+        res?.data?.msg ||
+        res?.data?.Msg ||
+        res?.toast ||
+        res?.Toast ||
+        res?.msg ||
+        res?.Msg ||
+        fallback
+    );
 }
 
 export enum EndLiveEndState {
@@ -148,9 +161,14 @@ class RTCService {
      */
     public async join(channel: string, token: string | null, uid: string | number | null): Promise<void> {
         try {
+            const agoraAppId = NET_CONFIG.SWID;
+            if (!agoraAppId) {
+                throw new Error('Agora AppId is missing. Please check H5 launch config.');
+            }
+
             const client = this._ensureClient();
             const uidNum = uid ? Number(uid) : null;
-            await client.join(AGORA_APP_ID, channel, token, uidNum);
+            await client.join(agoraAppId, channel, token, uidNum);
             console.log('[RTC] join success', channel);
         } catch (e) {
             console.error('[RTC] join failed', e);
@@ -301,6 +319,10 @@ class RTCService {
             const res = await post(API.video_to_user, { ToUserId: anchorId });
             HUD.hideLoading();
 
+            if (!res || typeof res !== 'object') {
+                throw new Error('Invalid callUser response');
+            }
+
             if (res.code == "0") {
                 const callInfo = res.data;
                 if (callInfo) {
@@ -324,12 +346,13 @@ class RTCService {
                 }
             } else {
                 console.warn("[RTC] startAnchorCall rejected", res.code, res.data);
-                HUD.showToast(res.data.Toast);
+                HUD.showToast(getResponseToast(res, "Unable to connect. Please try again."));
                 if (res.code == "10103") {
                     showCoinShop()
                 }
             }
         } catch (error: unknown) {
+            HUD.hideLoading();
             console.error("[RTC] startAnchorCall error:", error);
             HUD.showToast("Unable to connect. Please try again.");
         }

@@ -7,8 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_NATIVE_BRIDGE_NAME?: string
   /** 可选：Android 与 iOS 使用不同桥名时设置；未设则与 VITE_NATIVE_BRIDGE_NAME 相同 */
   readonly VITE_NATIVE_BRIDGE_ANDROID?: string
-  /** 本地调试时是否启用 Vite HTTPS；设为 `false` 可避免自签证书拦截 */
-  readonly VITE_DEV_USE_HTTPS?: string
   /**
    * 仅本地 dev 使用：在没有通过 URL `?t=...` 或 localStorage 注入配置时，
    * 用这些值填充 NET_CONFIG，使本地浏览器也能联通测试服。

@@ -5,6 +5,7 @@ import type { ChatGiftModel } from '@/utils/msg/ChatGiftModel';
 import { post } from '@/utils/net/request';
 import { API } from '@/utils/net/api';
 import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
+import CoinBalanceBadge from '@/components/common/CoinBalanceBadge.vue';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
 import { showCoinShop } from '@/utils/tools/shopService';
 import { useUserStore } from '@/stores/userStore';
@@ -62,11 +63,11 @@ onMounted(() => {
     <div class="gift-picker-container">
         <!-- Header -->
         <div class="gift-header">
-            <div class="balance-container" @click="showCoinShop()">
-                <img src="@/assets/coin_icon.png" class="coin-icon" alt="" />
-                <span class="coins-total">{{ props.coins }}</span>
-                <div class="add-btn">+</div>
-            </div>
+            <CoinBalanceBadge
+                :coins="props.coins"
+                :config="{ showAdd: true, interactive: true, ariaLabel: 'Open coin shop' }"
+                @click="showCoinShop()"
+            />
             <div class="close-btn" @click="emit('close')">
                 <VanIcon name="cross" size="24" />
             </div>
@@ -119,47 +120,6 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     color: rgba(255, 255, 255, 0.4);
-}
-
-.balance-container {
-    display: flex;
-    align-items: center;
-    height: 32px;
-    min-width: 102px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border: 1px solid #FFDE09;
-    padding: 0 4px;
-    border-radius: 16px;
-    gap: 4px;
-}
-
-.coin-icon {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-}
-
-.coins-total {
-    font-size: 16px;
-    line-height: 19px;
-    font-weight: 600;
-    color: #FFDE09;
-    margin-right: 4px;
-}
-
-.add-btn {
-    width: 20px;
-    height: 20px;
-    border: 1px solid #FFDE09;
-    background: transparent;
-    color: #FFDE09;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1;
 }
 
 .gift-list-scroll {

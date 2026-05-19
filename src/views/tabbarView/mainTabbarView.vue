@@ -76,8 +76,8 @@ const isShowLimitOfferView = ref(false)
 .limitOffer {
     height: 86px;
     position: fixed;
-    bottom: calc(var(--app-tabbar-height, 86px) + 21px);
+    bottom: calc(var(--app-tabbar-height, 76px) + 21px);
     left: 17px;
-    right: 17px;
+    width: calc(100% - 34px);
 }
 </style>

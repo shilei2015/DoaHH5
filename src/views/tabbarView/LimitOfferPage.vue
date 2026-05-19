@@ -107,6 +107,7 @@ const payLimitOff = () => {
 }
 
 onMounted(() => {
+    paymentService.preloadApplePaySdk()
     getLimitOfferInfo()
     timer = new LHTimer(1000, () => timerHandler());
     timer.start();
@@ -146,6 +147,7 @@ onUnmounted(() => {
     height: 100%;
     display: flex;
     align-items: center;
+    box-sizing: border-box;
 }
 
 .limit-page {
@@ -160,6 +162,7 @@ onUnmounted(() => {
     height: 72px;
     cursor: pointer;
     color: #111;
+    box-sizing: border-box;
 }
 
 .limit-page::after {

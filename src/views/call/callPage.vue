@@ -9,6 +9,7 @@ import rtc, { EndLiveEndState } from '@/utils/MOMORTC';
 import { showExitCallConfirmModal } from '@/utils/tools/modalService';
 import callingSound from '@/assets/call.mp3';
 import { showCoinShop } from '@/utils/tools/shopService';
+import CoinBalanceBadge from '@/components/common/CoinBalanceBadge.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -166,11 +167,11 @@ onUnmounted(() => {
         </div>
 
         <div class="call-bottom-status" :class="{ incoming: callState === 'incoming' }">
-            <div class="coin-badge" @click="showCoinShop">
-                <img src="@/assets/coin_icon.png" alt="" class="coin-icon" />
-                <span class="coin-text">{{ currentCoins }}</span>
-                <div class="add-btn">+</div>
-            </div>
+            <CoinBalanceBadge
+                :coins="currentCoins"
+                :config="{ showAdd: true, interactive: true, ariaLabel: 'Open coin shop' }"
+                @click="showCoinShop"
+            />
 
             <button v-if="callState === 'incoming'" class="accept-button" @click="answerCall">
                 <span v-if="isFreeCall" class="free-ribbon">FREE</span>
@@ -251,7 +252,7 @@ onUnmounted(() => {
 
 .top-bar {
     position: absolute;
-    top: calc(47px + env(safe-area-inset-top, 0px));
+    top: calc(12px + env(safe-area-inset-top, 0px));
     left: 20px;
     right: 20px;
     display: flex;
@@ -343,53 +344,11 @@ onUnmounted(() => {
     position: absolute;
     left: 20px;
     right: 20px;
-    bottom: calc(46px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(46px + var(--app-safe-bottom, 0px));
     z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.coin-badge {
-    background-color: rgba(0, 0, 0, 0.2);
-    height: 32px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4px;
-    gap: 4px;
-    min-width: 102px;
-    border: 1px solid #ffde09;
-    box-sizing: border-box;
-    cursor: pointer;
-}
-
-.coin-icon {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-}
-
-.coin-text {
-    color: #ffde09;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.add-btn {
-    width: 20px;
-    height: 20px;
-    background: transparent;
-    border: 1px solid #ffde09;
-    color: #ffde09;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 18px;
 }
 
 .accept-button {

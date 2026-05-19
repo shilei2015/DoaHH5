@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import PaymentOverlay from '@/components/common/PaymentOverlay.vue';
 import {
   A0019PermissionGetType,
   checkPermission,
@@ -32,6 +33,7 @@ const hapticCount = ref(1);
 const newWebUrl = ref('');
 const productId = ref('');
 const orderNum = ref(`test_${Date.now()}`);
+const showMockApplePayPanel = ref(false);
 const currentPath = window.location.pathname;
 
 const bridgeName = computed(() => getNativeBridgeName());
@@ -201,8 +203,18 @@ const permissionItems = [
       <h2>内购</h2>
       <input v-model="productId" type="text" placeholder="Apple 商品 ID" />
       <input v-model="orderNum" type="text" placeholder="业务订单号" />
-      <button type="button" @click="testPurchase">发起内购</button>
+      <div class="grid single-row">
+        <button type="button" @click="testPurchase">发起内购</button>
+        <button type="button" class="dark-preview" @click="showMockApplePayPanel = true">模拟支付面板</button>
+      </div>
     </section>
+
+    <PaymentOverlay
+      v-if="showMockApplePayPanel"
+      apple-pay-mock
+      apple-pay-mock-price="$49.99"
+      :on-close="() => { showMockApplePayPanel = false }"
+    />
 
     <section class="panel logs">
       <div class="log-header">
@@ -305,6 +317,10 @@ h2 {
   gap: 10px;
 }
 
+.single-row {
+  margin-top: 10px;
+}
+
 button,
 input,
 select {
@@ -327,6 +343,10 @@ button:active {
 
 button.danger {
   background: #c64646;
+}
+
+button.dark-preview {
+  background: linear-gradient(180deg, #4a414f, #2f2b34);
 }
 
 button.ghost {

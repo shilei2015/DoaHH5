@@ -127,7 +127,7 @@ const confirmLogout = () => {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 20px calc(34px + env(safe-area-inset-bottom));
+  padding: 8px 20px var(--app-content-safe-bottom, 34px);
 }
 
 .account-list {

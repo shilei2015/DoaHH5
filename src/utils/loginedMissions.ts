@@ -117,16 +117,25 @@ class LoginedMissions {
         }
     }
 
+    private userFlyerParam(value: unknown): string {
+        if (value === undefined || value === null) return '';
+        return String(value).trim();
+    }
+
     private async sendAdId() {
         const nativeDeviceInfo = await this.getUserFlyerDeviceInfo();
-        const adId = nativeDeviceInfo?.adId || NET_CONFIG.AdId || '';
-
-        await post(API.userFlyer, {
-            Idfa: nativeDeviceInfo?.idfa || '',
-            Idfv: nativeDeviceInfo?.idfv || '',
+        const adId = this.userFlyerParam(nativeDeviceInfo?.adId) || this.userFlyerParam(NET_CONFIG.AdId);
+        const params: Record<'Idfa' | 'Idfv' | 'AppsflyerId' | 'AdjustId', string> = {
+            Idfa: this.userFlyerParam(nativeDeviceInfo?.idfa),
+            Idfv: this.userFlyerParam(nativeDeviceInfo?.idfv),
             AppsflyerId: adId,
             AdjustId: adId
-        })
+        };
+
+        console.log('[UserFlyer] native device info:', nativeDeviceInfo);
+        console.log('[UserFlyer] request params:', params);
+
+        await post(API.userFlyer, params)
     }
 
     private async getUserFlyerDeviceInfo() {
@@ -135,11 +144,7 @@ class LoginedMissions {
         if (!isA0019Native()) return null;
 
         try {
-            const info = await Promise.race([
-                getDeviceIdentifiers(),
-                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
-            ]);
-            return info;
+            return await getDeviceIdentifiers();
         } catch (error) {
             console.warn('[LoginedMissions] getDeviceIdentifiers failed:', error);
             return null;

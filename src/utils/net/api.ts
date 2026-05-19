@@ -62,6 +62,7 @@ export const API = {
   coin_products: 'pCVListV1',
   coin_recommend: 'userRecommendCoinsV1',
   pay: 'unifiedOrder',
+  bj_cashier_pre_order: 'bjCashierPreOrder',
   /**
    * 苹果内购 v2 验单（开发中：路由名与入参以后端为准，就绪后把 paymentService 里开关打开）
    */
