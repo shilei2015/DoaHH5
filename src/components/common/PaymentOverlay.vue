@@ -273,7 +273,9 @@ defineExpose({
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
     #2F2B34;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.36);
+  box-shadow:
+    0 -18px 44px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   max-height: 70vh;
   overflow-y: auto;
   color: #fff;
@@ -292,7 +294,7 @@ defineExpose({
 .apple-pay-title {
   font-size: 14px;
   font-weight: 500;
-  color: #F8F5FA;
+  color: rgba(255, 255, 255, 0.56);
 }
 
 .apple-pay-close {

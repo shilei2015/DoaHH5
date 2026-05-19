@@ -30,7 +30,7 @@ const featuredCoins = computed(() => {
 });
 const featuredPrice = computed(() => currentFeaturedProduct.value?.ShowPrice || currentFeaturedProduct.value?.ApplePrice || '');
 const productCoins = (product: ProductModel) => product.PurposeObj?.NumberBase || product.Coins || product.ProductName;
-const productBonus = (product: ProductModel) => product.PurposeObj?.NumberEx || product.ExtraCoins || '';
+const productBonus = (product: ProductModel) => String(product.PurposeObj?.NumberEx || product.ExtraCoins || '').replace(/^\+/, '');
 const productImage = (product?: ProductModel | null) => product?.ProductCover || coinIcon;
 
 /**
