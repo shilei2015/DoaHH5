@@ -39,14 +39,16 @@ defineExpose({
 <template>
   <div class="hud-wrapper">
     <!-- Loading Mask (Blocking) -->
-    <div v-show="isShowLoading" class="hud-mask">
-      <div class="loading-box">
-        <svg class="spinner" viewBox="0 0 50 50">
-          <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
-        </svg>
-        <p class="loading-text">Loading...</p>
+    <Transition name="hud-fade">
+      <div v-show="isShowLoading" class="hud-mask">
+        <div class="loading-box">
+          <svg class="spinner" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+          </svg>
+          <p class="loading-text">Loading...</p>
+        </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- Toast Container (Non-blocking) -->
     <div class="toast-container">
@@ -82,13 +84,22 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  background:
-    linear-gradient(180deg, rgba(26, 26, 26, 0.98) 0%, rgba(26, 26, 26, 0.9) 100%);
+  background: transparent;
   pointer-events: auto;
   /* 阻止交互 */
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.hud-fade-enter-active,
+.hud-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.hud-fade-enter-from,
+.hud-fade-leave-to {
+  opacity: 0;
 }
 
 .loading-box {

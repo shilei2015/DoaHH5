@@ -22,6 +22,12 @@ const APPLE_PAY_CONTAINER_ID = 'pacypay_checkout';
 
 type OnerwayEnvironment = 'sandbox' | 'production';
 
+function getOnerwayEnvironmentOverride(): OnerwayEnvironment | null {
+  const raw = String(import.meta.env.VITE_ONERWAY_ENV || '').trim().toLowerCase();
+  if (raw === 'sandbox' || raw === 'production') return raw;
+  return null;
+}
+
 interface BjCashierPreOrderData {
   TradeNo?: string;
   PayUrl?: string;
@@ -156,6 +162,8 @@ function getOnerwayLocale(): string {
 }
 
 function getOnerwayEnvironment(redirectUrl: string): OnerwayEnvironment {
+  const ONERWAY_ENVIRONMENT_OVERRIDE = getOnerwayEnvironmentOverride();
+  if (ONERWAY_ENVIRONMENT_OVERRIDE) return ONERWAY_ENVIRONMENT_OVERRIDE;
   if (/sandbox|test/i.test(redirectUrl) || !NET_CONFIG.releaseVersion) return 'sandbox';
   return 'production';
 }

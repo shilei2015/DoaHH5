@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { post } from '@/utils/net/request'
 import { API } from '@/utils/net/api'
 import type { UserInfoModel } from '@/components/appModels/UserInfoModel'
-import { syncMessageUnreadToNative } from '@/utils/native/A0019Bridge'
+import { syncMessageUnreadToNative, trackAdjustEvent } from '@/utils/native/A0019Bridge'
 import { getUdid } from '@/utils/net/encryption'
 
 export const useUserStore = defineStore('useUserStore', () => {
@@ -46,6 +46,7 @@ export const useUserStore = defineStore('useUserStore', () => {
             if (ok) {
                 token.value = res.data.Token
                 rtmToken.value = res.data.RtmToken
+                trackAdjustEvent('registration')
                 await updateLoginUserInfo()
                 return true
             }

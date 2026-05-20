@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Popup as VanPopup,
@@ -20,12 +20,6 @@ import backIcon from '@/assets/comm-back.png';
 import { getAge } from '@/utils/tools';
 import { getFlagEmoji } from '@/utils/tools';
 import HUD from '@/components/HUD';
-import {
-  A0019PermissionGetType,
-  checkPermission,
-  isA0019Native,
-  openSystemSettings,
-} from '@/utils/native/A0019Bridge';
 
 interface ProfileFormData {
   nickname?: string;
@@ -42,7 +36,6 @@ interface CountryModel {
   Key: string
   Value: string
 }
-type AvatarSource = 'camera' | 'album';
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
@@ -61,65 +54,16 @@ const formData = ref<ProfileFormData>({
 
 // Photo album state (using Vant Uploader structure)
 const albumList = ref<any[]>([]);
+const MAX_ALBUM_COUNT = 6;
+const remainingAlbumCount = computed(() => Math.max(MAX_ALBUM_COUNT - albumList.value.length, 0));
 // 存储初始数据快照，用于对比差异
 let initialDataSnapshot = "";
 // 记录本地选中的头像文件
 let avatarFile: File | null = null;
-// Uploader 引用，用于手动点击触发
-const avatarUploaderRef = ref();
 const showAvatarAction = ref(false);
-const avatarCapture = ref<string | undefined>(undefined);
 
 const triggerChooseAvatar = () => {
   showAvatarAction.value = true;
-};
-
-const ensureAvatarNativePermission = async (source: AvatarSource) => {
-  if (!isA0019Native()) {
-    return true;
-  }
-
-  const permissionType = source === 'camera'
-    ? A0019PermissionGetType.Camera
-    : A0019PermissionGetType.PhotoLibrary;
-  const permissionName = source === 'camera' ? 'camera' : 'photo library';
-
-  try {
-    const result = await checkPermission(permissionType);
-    if (result.isOpen) {
-      return true;
-    }
-    HUD.showToast(`Please allow ${permissionName} access in Settings to continue.`);
-    openSystemSettings();
-    return false;
-  } catch (error) {
-    console.error('[EditProfilePage] avatar native permission check failed', error);
-    HUD.showToast('Unable to verify permissions. Please try again.');
-    return false;
-  }
-};
-
-const openAvatarFileInput = async (source: AvatarSource) => {
-  showAvatarAction.value = false;
-
-  const allowed = await ensureAvatarNativePermission(source);
-  if (!allowed) {
-    return;
-  }
-
-  avatarCapture.value = source === 'camera' ? 'environment' : undefined;
-  await nextTick();
-
-  const input = avatarUploaderRef.value?.$el?.querySelector('input') as HTMLInputElement | null;
-  if (input) {
-    input.accept = 'image/*';
-    if (source === 'camera') {
-      input.setAttribute('capture', 'environment');
-    } else {
-      input.removeAttribute('capture');
-    }
-  }
-  input?.click();
 };
 
 const emit = defineEmits<{
@@ -247,12 +191,21 @@ const clickGender = () => {
     getCountryList()
   }
 }
-const onAvatarRead = async (file: any) => {
-  // 设置本地预览路径，不立即上传
-  formData.value.avatar = URL.createObjectURL(file.file);
-  // 暂存文件对象，点击保存时再统一上传
-  avatarFile = file.file;
+const onAvatarFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0];
+  if (!file) return;
+  formData.value.avatar = URL.createObjectURL(file);
+  avatarFile = file;
+  showAvatarAction.value = false;
+  input.value = '';
 };
+
+watch(albumList, (list) => {
+  if (list.length <= MAX_ALBUM_COUNT) return;
+  albumList.value = list.slice(0, MAX_ALBUM_COUNT);
+  HUD.showToast(`Maximum ${MAX_ALBUM_COUNT} photos`);
+}, { deep: true });
 
 onMounted(() => {
   // 初始化预览：将字符串数组转为对象数组
@@ -280,10 +233,6 @@ onMounted(() => {
     <div class="content">
       <!-- Avatar Section -->
       <section class="avatar-section">
-        <!-- 隐身 Uploader，仅作为功能组件引用 -->
-        <van-uploader ref="avatarUploaderRef" :after-read="onAvatarRead" accept="image/*" :capture="avatarCapture"
-          style="display: none" />
-
         <div class="avatar-wrapper" @click="triggerChooseAvatar">
           <div class="avatar-image">
             <img :src="formData.avatar" />
@@ -317,8 +266,9 @@ onMounted(() => {
       <!-- Album Section (Feedback Style) -->
       <section class="album-section">
         <h2 class="section-title">Album</h2>
-        <van-uploader v-model="albumList" multiple :max-count="6" :preview-size="['106px', '141px']"
-          class="media-uploader">
+        <van-uploader v-model="albumList" accept="image/*" multiple :max-count="MAX_ALBUM_COUNT"
+          :data-max-count="remainingAlbumCount" :data-selection-limit="remainingAlbumCount"
+          :data-total-max-count="MAX_ALBUM_COUNT" class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">
               <img src="@/assets/setting-feedback-add.svg" alt="Add" />
@@ -358,8 +308,15 @@ onMounted(() => {
     </van-popup>
 
     <van-popup v-model:show="showAvatarAction" position="bottom" round class="avatar-action-popup">
-      <button class="avatar-action" @click="openAvatarFileInput('camera')">Take Pictures</button>
-      <button class="avatar-action" @click="openAvatarFileInput('album')">Select From the Album</button>
+      <label class="avatar-action">
+        <span>Take Pictures</span>
+        <input class="avatar-file-input" type="file" accept="image/*" capture="environment"
+          @change="onAvatarFileChange" />
+      </label>
+      <label class="avatar-action">
+        <span>Select From the Album</span>
+        <input class="avatar-file-input" type="file" accept="image/*" @change="onAvatarFileChange" />
+      </label>
       <button class="avatar-action" @click="showAvatarAction = false">Cancel</button>
     </van-popup>
 
@@ -618,11 +575,14 @@ onMounted(() => {
 /* ====================================================== */
 
 .album-section {
+  --album-grid-gap: 10px;
+  --album-item-ratio: 1.33;
+  --album-grid-columns: 3;
   background-color: #1a1a1a;
   margin: 28px 20px 0;
   padding: 0 0 30px;
   border-bottom: 1px solid #242424;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .section-title {
@@ -659,13 +619,13 @@ onMounted(() => {
 }
 
 .upload-placeholder {
-  width: 106px;
-  height: 141px;
+  width: 100%;
+  aspect-ratio: 1 / var(--album-item-ratio);
 }
 
 .add-box {
-  width: 106px;
-  height: 141px;
+  width: 100%;
+  height: 100%;
   border: 2px dashed #555;
   border-radius: 16px;
   display: flex;
@@ -681,8 +641,59 @@ onMounted(() => {
 }
 
 :deep(.van-uploader__preview-image) {
+  width: 100% !important;
+  height: 100% !important;
   border-radius: 16px;
   overflow: hidden;
+}
+
+.media-uploader {
+  width: 100%;
+  display: block;
+}
+
+.media-uploader :deep(.van-uploader__wrapper) {
+  display: grid;
+  grid-template-columns: repeat(var(--album-grid-columns), minmax(0, 1fr));
+  gap: var(--album-grid-gap);
+  align-items: start;
+}
+
+.media-uploader :deep(.van-uploader__preview),
+.media-uploader :deep(.van-uploader__input-wrapper) {
+  width: 100%;
+  aspect-ratio: 1 / var(--album-item-ratio);
+  margin: 0;
+}
+
+@media (max-width: 329px) {
+  .album-section {
+    --album-grid-columns: 2;
+  }
+}
+
+@media (min-width: 700px) {
+  .album-section {
+    --album-grid-columns: 4;
+  }
+}
+
+@media (min-width: 900px) {
+  .album-section {
+    --album-grid-columns: 5;
+  }
+}
+
+@media (min-width: 1120px) {
+  .album-section {
+    --album-grid-columns: 6;
+  }
+}
+
+@media (min-width: 1340px) {
+  .album-section {
+    --album-grid-columns: 7;
+  }
 }
 
 /* ====================================================== */
@@ -747,6 +758,7 @@ textarea::placeholder {
 }
 
 .avatar-action {
+  position: relative;
   width: 100%;
   height: 59px;
   border: none;
@@ -756,10 +768,24 @@ textarea::placeholder {
   font-size: 17px;
   font-weight: 700;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .avatar-action:last-child {
   margin-bottom: 0;
+}
+
+.avatar-file-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 :deep(.van-popup--bottom.van-popup--round) {
@@ -780,6 +806,12 @@ textarea::placeholder {
   color: #fff;
 }
 
+:deep(.van-picker-column__item--selected) {
+  background: #212121;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
 :deep(.van-picker-column__item--disabled),
 :deep(.van-picker__cancel) {
   color: rgba(255, 255, 255, 0.35);
@@ -797,6 +829,6 @@ textarea::placeholder {
   left: 20px;
   right: 20px;
   border-radius: 16px;
-  background: #212121;
+  background: transparent;
 }
 </style>

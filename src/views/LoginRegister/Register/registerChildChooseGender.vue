@@ -16,6 +16,7 @@ import { getUdid } from '@/utils/net/encryption';
 import MMHUD from '@/components/HUD'
 import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
+import { trackAdjustEvent } from '@/utils/native/A0019Bridge';
 
 function selectGender(gender: 'male' | 'female') {
     selectedGender.value = gender;
@@ -50,6 +51,7 @@ const register = async () => {
         if (response.code == "0" && token && token.length > 0 && rtmToken && rtmToken.length > 0) {
             userStore.token = token
             userStore.rtmToken = rtmToken
+            trackAdjustEvent('registration')
             
             // 关键：只 await 核心的用户信息拉取，确保首页有数据
             await userStore.updateLoginUserInfo()

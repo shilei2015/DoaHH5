@@ -35,6 +35,9 @@ const isApplePayLoading = ref(false);
 const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayLoadingTimer: number | null = null;
+const transparentOverlayStyle = { backgroundColor: 'transparent' };
+const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
+const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
 
 const stopApplePayLoading = () => {
   isApplePayLoading.value = false;
@@ -116,7 +119,7 @@ defineExpose({
   <div class="payment-overlay">
     <VanPopup v-if="isApplePayMode" :show="true" position="bottom" round :z-index="9999"
       :close-on-click-overlay="false"
-      :overlay-style="{ backgroundColor: 'transparent' }" @update:show="(val) => !val && props.onClose()">
+      :overlay-style="transparentOverlayStyle" @update:show="(val) => !val && props.onClose()">
       <div class="apple-pay-sheet">
         <div class="apple-pay-header">
           <span class="apple-pay-title">Apple Pay</span>
@@ -138,7 +141,7 @@ defineExpose({
     </VanPopup>
 
     <!-- 支付方式列表弹窗 (底部门板) -->
-    <VanPopup v-if="!isApplePayMode" :show="!showPayWebview" position="bottom" round :overlay-style="{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }"
+    <VanPopup v-if="!isApplePayMode" :show="!showPayWebview" position="bottom" round :overlay-style="overlayStyle"
       @update:show="(val) => !val && props.onClose()">
       <div class="pay-picker">
         <div class="pay-picker-header">
@@ -158,7 +161,7 @@ defineExpose({
 
     <!-- 支付 Webview (全屏门板) -->
     <VanPopup v-if="!isApplePayMode" v-model:show="showPayWebview" position="bottom" round :style="{ height: '90vh' }" :z-index="9999"
-      :overlay-style="{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }" @closed="handleCloseWebview">
+      :overlay-style="strongOverlayStyle" @closed="handleCloseWebview">
       <div class="pay-webview-container">
         <div class="pay-webview-header">
           <span class="pay-webview-title">Payment</span>

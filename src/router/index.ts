@@ -50,19 +50,19 @@ const routes: RouteRecordRaw[] = [
         path: "/anchorProfile",
         name: "AnchorProfile",
         component: () => import("@/views/AnchorProfile/AnchorProfile.vue"),
-        meta: { depth: 30 }
+        meta: { depth: 40 }
     },
     {
         path: "/call",
         name: "callPage",
         component: () => import("@/views/call/callPage.vue"),
-        meta: { depth: 40 }
+        meta: { depth: 40, disableSwipeBack: true }
     },
     {
         path: "/video",
         name: "videoPage",
         component: () => import("@/views/call/videoPage.vue"),
-        meta: { depth: 40 }
+        meta: { depth: 40, disableSwipeBack: true }
     },
     { path: "/login", redirect: "/" },
     { path: "/register", redirect: "/" },

@@ -7,7 +7,7 @@ import { showToast } from 'vant';
 import backIcon from '@/assets/comm-back.png';
 
 import { useUserStore } from '@/stores/userStore';
-import { closeWebView, logoutApp } from '@/utils/native/A0019Bridge';
+import { logoutApp } from '@/utils/native/A0019Bridge';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -26,10 +26,9 @@ const cancelLogout = () => {
 
 const confirmLogout = () => {
   showLogoutConfirm.value = false;
+  logoutApp();
   userStore.logout();
   showToast('Logged out successfully');
-  logoutApp();
-  closeWebView();
 };
 
 </script>
@@ -56,17 +55,19 @@ const confirmLogout = () => {
     </div>
 
     <Teleport to="body">
-      <div v-if="showLogoutConfirm" class="logout-overlay" @click.self="cancelLogout">
-        <div class="logout-dialog">
-          <button class="dialog-close" type="button" aria-label="Close" @click="cancelLogout">×</button>
-          <h2 class="dialog-title">Logout</h2>
-          <p class="dialog-message">Are you sure you want to logout?</p>
-          <div class="dialog-actions">
-            <button class="dialog-btn dialog-btn-cancel" type="button" @click="cancelLogout">Cancel</button>
-            <button class="dialog-btn dialog-btn-confirm" type="button" @click="confirmLogout">Yes</button>
+      <Transition name="logout-modal">
+        <div v-if="showLogoutConfirm" class="logout-overlay" @click.self="cancelLogout">
+          <div class="logout-dialog">
+            <button class="dialog-close" type="button" aria-label="Close" @click="cancelLogout">×</button>
+            <h2 class="dialog-title">Logout</h2>
+            <p class="dialog-message">Are you sure you want to logout?</p>
+            <div class="dialog-actions">
+              <button class="dialog-btn dialog-btn-cancel" type="button" @click="cancelLogout">Cancel</button>
+              <button class="dialog-btn dialog-btn-confirm" type="button" @click="confirmLogout">Yes</button>
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -168,8 +169,9 @@ const confirmLogout = () => {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.68);
-  backdrop-filter: blur(12px);
+  background: var(--app-overlay-background);
+  backdrop-filter: var(--app-overlay-blur);
+  -webkit-backdrop-filter: var(--app-overlay-blur);
 }
 
 .logout-dialog {
@@ -180,6 +182,29 @@ const confirmLogout = () => {
   padding: 36px 20px 20px;
   color: #FFFFFF;
   text-align: center;
+}
+
+.logout-modal-enter-active,
+.logout-modal-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.logout-modal-enter-active .logout-dialog,
+.logout-modal-leave-active .logout-dialog {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.logout-modal-enter-from,
+.logout-modal-leave-to {
+  opacity: 0;
+}
+
+.logout-modal-enter-from .logout-dialog,
+.logout-modal-leave-to .logout-dialog {
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
 }
 
 .dialog-close {

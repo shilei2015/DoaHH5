@@ -64,6 +64,11 @@ export interface A0019DeviceIdentifiers {
   appId: string
 }
 
+/** 原生远程推送 token 信息 */
+export interface A0019PushTokenResult {
+  Token: string
+}
+
 /**
  * Web->App type 8 请求体中的 `getType`（与 App->Web type 8 回调中的 `getType` 对应）
  * @see `.agents/doc/北京-App-H5 Bridge交互规范.md` §「Web->App type: 8 — 权限检查」
@@ -88,6 +93,8 @@ let locationResolver: Resolver<A0019LocationResult> | null = null
 const permissionResolvers = new Map<number, Resolver<A0019PermissionResult>>()
 let deviceIdentifiersResolver: Resolver<A0019DeviceIdentifiers> | null = null
 let latestDeviceIdentifiers: A0019DeviceIdentifiers | null = null
+const pushTokenListeners = new Set<(token: string) => void>()
+const PUSH_TOKEN_STORAGE_KEY = 'A0019_NATIVE_PUSH_TOKEN'
 
 function normalizeDeviceIdentifiers(raw: unknown): A0019DeviceIdentifiers {
   let payload = raw
@@ -117,16 +124,58 @@ function normalizeDeviceIdentifiers(raw: unknown): A0019DeviceIdentifiers {
   }
 }
 
+function normalizePushToken(raw: unknown): string {
+  let payload = raw
+  if (typeof payload === 'string') {
+    const rawString = payload
+    try {
+      payload = JSON.parse(rawString)
+    } catch {
+      return rawString.trim()
+    }
+  }
+
+  if (payload && typeof payload === 'object') {
+    const obj = payload as Record<string, unknown>
+    const value = obj.Token ?? obj.token ?? obj.apnsToken ?? obj.deviceToken
+    return typeof value === 'string' ? value.trim() : ''
+  }
+
+  return ''
+}
+
+function persistNativePushToken(token: string): void {
+  latestNativePushToken = token
+  try {
+    localStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token)
+  } catch {
+    /* ignore */
+  }
+}
+
+let latestNativePushToken: string | null = (() => {
+  try {
+    const token = localStorage.getItem(PUSH_TOKEN_STORAGE_KEY)
+    return token?.trim() || null
+  } catch {
+    return null
+  }
+})()
+
 // ===================== 核心通信机制 =====================
 
-function getNativeMessageHandler(): { postMessage(message: unknown): void } | undefined {
+function getNativeMessageHandler(): { name: string; handler: { postMessage(message: unknown): void } } | undefined {
   try {
     const name = getNativeBridgeName()
     const handlers = (window as unknown as { webkit?: { messageHandlers?: Record<string, { postMessage?: unknown }> } })
       .webkit?.messageHandlers
-    const handler = handlers?.[name]
-    if (handler && typeof handler.postMessage === 'function') {
-      return handler as { postMessage(message: unknown): void }
+    const candidateNames = Array.from(new Set([name, 'A0019', 'B0008', 'A0008']))
+
+    for (const candidateName of candidateNames) {
+      const handler = handlers?.[candidateName]
+      if (handler && typeof handler.postMessage === 'function') {
+        return { name: candidateName, handler: handler as { postMessage(message: unknown): void } }
+      }
     }
     return undefined
   } catch {
@@ -147,13 +196,13 @@ export function isA0019Native(): boolean {
  * @param data 附带的数据对象或字面量
  */
 function sendToApp<T = any>(type: number, data?: T): void {
-  const message: BridgeMessage<T> = { type, data }
+  const message: BridgeMessage<T> = data === undefined ? { type } : { type, data }
   const name = getNativeBridgeName()
   // 必须在 handler 上调用 postMessage，不能拆成裸函数（否则 Safari 报 UserMessageHandler 绑定错误）
-  const handler = getNativeMessageHandler()
-  if (handler) {
-    handler.postMessage(message)
-    console.log(`[NativeBridge ${name}] -> 发送 type: ${type}`, data)
+  const native = getNativeMessageHandler()
+  if (native) {
+    native.handler.postMessage(message)
+    console.log(`[NativeBridge ${native.name}] -> 发送 type: ${type}`, data)
   } else {
     console.warn(`[NativeBridge ${name}] 未注入 messageHandlers.${name}，已忽略 type: ${type}`, data)
   }
@@ -171,12 +220,12 @@ function generateUUID(): string {
  */
 ;(function mountNativeBridgeCallback() {
   const name = getNativeBridgeName()
-  ;(window as unknown as Record<string, unknown>)[name] = function (jsonString: string) {
-  try {
-    const msg: BridgeMessage = JSON.parse(jsonString)
-    console.log(`[NativeBridge ${name}] <- 收到 App 回调 type: ${msg.type}`, msg.data)
+  const callback = function (jsonString: string) {
+    try {
+      const msg: BridgeMessage = JSON.parse(jsonString)
+      console.log(`[NativeBridge ${name}] <- 收到 App 回调 type: ${msg.type}`, msg.data)
 
-    switch (msg.type) {
+      switch (msg.type) {
       case 2: // 支付回调
         {
           const data = msg.data as A0019PaymentResult
@@ -245,6 +294,17 @@ function generateUUID(): string {
         }
         break
 
+      case 14: // 原生远程推送 token 回调
+        {
+          const token = normalizePushToken(msg.data)
+          if (token) {
+            persistNativePushToken(token)
+            console.log(`[NativeBridge ${name}] <- push token`, token)
+            pushTokenListeners.forEach((listener) => listener(token))
+          }
+        }
+        break
+
       case A0019_APP_DEBUG_ALERT_TYPE: {
         // App 调试：仅展示文本；用原生 alert，避免 WKWebView 内 Vant 函数式弹层不触发
         const raw = msg.data
@@ -263,10 +323,14 @@ function generateUUID(): string {
         }
         break
       }
+      }
+    } catch (e) {
+      console.error(`[NativeBridge ${name}] 解析 App 回调消息出错:`, e, '原字符串:', jsonString)
     }
-  } catch (e) {
-    console.error(`[NativeBridge ${name}] 解析 App 回调消息出错:`, e, '原字符串:', jsonString)
   }
+
+  for (const callbackName of Array.from(new Set([name, 'A0019', 'B0008', 'A0008']))) {
+    ;(window as unknown as Record<string, unknown>)[callbackName] = callback
   }
 })()
 
@@ -304,7 +368,7 @@ export function requestA0019Purchase(code: string, orderNum?: string) {
  * type 3 - 登出
  */
 export function logoutApp(): void {
-  sendToApp(3, {})
+  sendToApp(3)
 }
 
 /**
@@ -332,6 +396,15 @@ export function syncMessageUnreadToNative(totalUnread: number): void {
  */
 export function triggerHaptic(level: 0 | 1 | 2 | 3 = 1, number: number = 1): void {
   sendToApp(5, { level, number })
+}
+
+/**
+ * type 13 - Adjust 事件上报
+ */
+export function trackAdjustEvent(eventName: 'launch_app' | 'registration' | string): void {
+  const name = eventName.trim()
+  if (!name || !isA0019Native()) return
+  sendToApp(13, { eventName: name })
 }
 
 /**
@@ -375,6 +448,20 @@ export function checkPermission(
     permissionResolvers.set(getType, { resolve, reject })
     sendToApp(8, { getType })
   })
+}
+
+export function getCachedNativePushToken(): string | null {
+  return latestNativePushToken
+}
+
+export function subscribeNativePushToken(listener: (token: string) => void): () => void {
+  pushTokenListeners.add(listener)
+  if (latestNativePushToken) {
+    listener(latestNativePushToken)
+  }
+  return () => {
+    pushTokenListeners.delete(listener)
+  }
 }
 
 /**

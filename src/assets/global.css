@@ -16,6 +16,9 @@
   --app-accent-strong: #8ffb36;
   --app-accent-gradient: linear-gradient(135deg, #c7ff30 0%, #65d941 100%);
   --app-danger: #ff4d4f;
+  --app-overlay-background: rgba(0, 0, 0, 0.45);
+  --app-overlay-background-strong: rgba(0, 0, 0, 0.72);
+  --app-overlay-blur: blur(5px);
   --app-safe-top: env(safe-area-inset-top, 0px);
   --app-safe-bottom: env(safe-area-inset-bottom, 0px);
   --app-edge-gap: 12px;
@@ -190,7 +193,9 @@ img.is-solid-image-fallback {
 }
 
 body .van-overlay {
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--app-overlay-background);
+  backdrop-filter: var(--app-overlay-blur);
+  -webkit-backdrop-filter: var(--app-overlay-blur);
 }
 
 body .van-popup {

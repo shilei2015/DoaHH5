@@ -6,7 +6,15 @@ import { LHTimer } from "./Timer"
 import { reactive } from 'vue';
 import { initDB } from './msg/DBService';
 import { NET_CONFIG } from './net/config';
-import { getCachedA0019DeviceIdentifiers, getDeviceIdentifiers, isA0019Native } from './native/A0019Bridge';
+import {
+    A0019PermissionGetType,
+    checkPermission,
+    getCachedA0019DeviceIdentifiers,
+    getCachedNativePushToken,
+    getDeviceIdentifiers,
+    isA0019Native,
+    subscribeNativePushToken,
+} from './native/A0019Bridge';
 
 interface MatchOutModel {
     //     "IsNew": "1", //是否是新用户，1-是，0-不是
@@ -23,6 +31,9 @@ class LoginedMissions {
     private isStarted = false
     private isEnvInitialized = false
     private initPromise: Promise<void> | null = null;
+    private nativePushTokenUnsubscribe: (() => void) | null = null;
+    private lastBoundNativePushToken = '';
+    private isBindingNativePushToken = false;
 
     private nextMatchOutTime = 5
 
@@ -63,6 +74,7 @@ class LoginedMissions {
             // 后台执行 RTM 登录
             this.loginRTMBackground();
             this.sendAdId();
+            this.startNativePushBinding();
         })();
 
         return this.initPromise;
@@ -73,6 +85,10 @@ class LoginedMissions {
         this.initPromise = null
         this.isStarted = false
         this.isEnvInitialized = false
+        this.lastBoundNativePushToken = ''
+        this.isBindingNativePushToken = false
+        this.nativePushTokenUnsubscribe?.()
+        this.nativePushTokenUnsubscribe = null
         const rtm = useMomoRTM()
         rtm.logoutRTM()
     }
@@ -148,6 +164,60 @@ class LoginedMissions {
         } catch (error) {
             console.warn('[LoginedMissions] getDeviceIdentifiers failed:', error);
             return null;
+        }
+    }
+
+    private startNativePushBinding() {
+        if (!isA0019Native()) return;
+
+        if (!this.nativePushTokenUnsubscribe) {
+            this.nativePushTokenUnsubscribe = subscribeNativePushToken((token) => {
+                void this.bindNativePushToken(token);
+            });
+        }
+
+        const cached = getCachedNativePushToken();
+        if (cached) {
+            void this.bindNativePushToken(cached);
+        }
+
+        void this.requestNativeNotificationPermission();
+    }
+
+    private async requestNativeNotificationPermission() {
+        try {
+            const result = await checkPermission(A0019PermissionGetType.Notification);
+            if (!result.isOpen) {
+                console.warn('[NativePush] notification permission is not open');
+            }
+        } catch (error) {
+            console.warn('[NativePush] notification permission request failed:', error);
+        }
+    }
+
+    private async bindNativePushToken(token: string) {
+        const value = token.trim();
+        if (!value || this.isBindingNativePushToken || this.lastBoundNativePushToken == value) return;
+
+        const userStore = useUserStore();
+        if (!userStore.token || !userStore.userInfo?.UserId) {
+            console.log('[NativePush] skip bindToken before user is ready');
+            return;
+        }
+
+        this.isBindingNativePushToken = true;
+        try {
+            const res = await post(API.apns_bind, { Token: value });
+            if (String(res?.code) == '0') {
+                this.lastBoundNativePushToken = value;
+                console.log('[NativePush] bindToken success');
+            } else {
+                console.warn('[NativePush] bindToken failed:', res);
+            }
+        } catch (error) {
+            console.warn('[NativePush] bindToken error:', error);
+        } finally {
+            this.isBindingNativePushToken = false;
         }
     }
 }

@@ -76,7 +76,7 @@ const openTermsOfService = () => {
           <span class="row-title">Terms of Service</span>
           <span class="chevron">›</span>
         </button>
-        <button class="settings-row" type="button" @click="showLanguagePicker = true">
+        <button v-if="false" class="settings-row" type="button" @click="showLanguagePicker = true">
           <span class="row-title">Language</span>
           <span class="row-meta">
             <span>{{ currentLanguage }}</span>

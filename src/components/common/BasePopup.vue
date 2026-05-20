@@ -25,6 +25,7 @@ const popupStyle = computed(() => ({
 }));
 
 const isRound = computed(() => props.round !== false);
+const shouldCloseOnClickOverlay = computed(() => props.closeOnClickOverlay !== false);
 </script>
 
 <template>
@@ -34,11 +35,10 @@ const isRound = computed(() => props.round !== false);
     @closed="emit('closed')"
     :position="props.position || 'bottom'"
     :round="isRound"
-    :close-on-click-overlay="props.closeOnClickOverlay"
+    :close-on-click-overlay="shouldCloseOnClickOverlay"
     class="base-popup-container"
     :class="{ 'no-round': !isRound }"
     :style="popupStyle"
-    :overlay-style="{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }"
   >
     <div class="popup-wrapper">
         <slot></slot>

@@ -105,8 +105,9 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.58);
-    backdrop-filter: blur(8px);
+    background: var(--app-overlay-background);
+    backdrop-filter: var(--app-overlay-blur);
+    -webkit-backdrop-filter: var(--app-overlay-blur);
     z-index: 9999;
     display: flex;
     align-items: center;

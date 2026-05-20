@@ -121,7 +121,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // 对齐 iOS 本地调试环境，允许局域网访问
-    port: 5173,
+    port: 5174,
     strictPort: true,
     // 注意：不要再配 server.proxy['/api']，
     // 动态路由已经在上面的 dynamicApiProxyPlugin 里处理。

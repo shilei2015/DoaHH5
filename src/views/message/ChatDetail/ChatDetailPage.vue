@@ -48,7 +48,7 @@ const userCoins = computed(() => userStore.userInfo?.Coins ?? 0);
 const msgList = ref<LHMessage[]>([]);
 const inputText = ref('');
 const msgListContainer = ref<HTMLElement | null>(null);
-const partnerName = ref('Chat');
+const partnerName = ref('');
 const partnerAvatar = ref('');
 const partnerCountryCode = ref('');
 const partnerCountryFlag = computed(() => getFlagEmoji(partnerCountryCode.value));

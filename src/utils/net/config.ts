@@ -35,8 +35,8 @@ export const NET_CONFIG = {
 
   APIHOST: "",
 
-  ppUrl: "https://www.momofu.store/a1/pp.html?bg=2",
-  tsUrl: "https://www.momofu.store/a1/tos.html?bg=2",
+  ppUrl: "https://www.momofu.store/a1/pp.html?bg=1",
+  tsUrl: "https://www.momofu.store/a1/tos.html?bg=1",
 
   KEY: '',
 

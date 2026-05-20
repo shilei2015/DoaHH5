@@ -57,7 +57,9 @@ onMounted(() => {
     right: 0;
     bottom: 0;
     z-index: 99999;
-    background-color: rgba(0, 0, 0, 0.95);
+    background: var(--app-overlay-background-strong);
+    backdrop-filter: var(--app-overlay-blur);
+    -webkit-backdrop-filter: var(--app-overlay-blur);
     display: flex;
     flex-direction: column;
     animation: fadeIn 0.2s ease-out;

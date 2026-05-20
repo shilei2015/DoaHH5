@@ -17,7 +17,7 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <div class="user-action-sheet">
+    <div class="user-action-sheet" @click.self="handleCancel">
         <div class="action-group">
             <div class="action-item" @click="handleBlacklist">Blacklist</div>
             <div class="action-item" @click="handleReport">Report</div>

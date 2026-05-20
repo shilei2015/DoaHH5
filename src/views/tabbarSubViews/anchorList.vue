@@ -148,7 +148,11 @@ const refreshCateList = async () => {
     }
 }
 
-const getAnchorListByNaviId = async (naviId: string, shouldRestoreScroll = true) => {
+const getAnchorListByNaviId = async (
+    naviId: string,
+    options: { shouldRestoreScroll?: boolean; replaceList?: boolean } = {}
+) => {
+    const { shouldRestoreScroll = true, replaceList = false } = options
     if (!naviId.trim()) {
         isAnchorListPending.value = false
         return 0
@@ -165,7 +169,11 @@ const getAnchorListByNaviId = async (naviId: string, shouldRestoreScroll = true)
         if (response.code == "0") {
             const nextList: AnchorInfoModel[] = response.data?.List || []
             addedCount = nextList.length
-            anchors.value.push(...nextList)
+            if (replaceList) {
+                anchors.value = nextList
+            } else {
+                anchors.value.push(...nextList)
+            }
         } else {
             HUD.showToast(response.data?.toast)
         }
@@ -281,11 +289,10 @@ const restoreScrollTop = () => {
 const handleRefresh = async () => {
     try {
         currentPage.value = 1
-        anchors.value = []
         isFinished.value = false
-        await getAnchorListByNaviId(currentActiveCateId.value)
-        isRefreshing.value = false;
+        await getAnchorListByNaviId(currentActiveCateId.value, { replaceList: true })
     } finally {
+        isRefreshing.value = false;
     }
 }
 
@@ -293,7 +300,7 @@ const handleLoadMore = async () => {
     const previousPage = currentPage.value
     try {
         currentPage.value = previousPage + 1
-        const addedCount = await getAnchorListByNaviId(currentActiveCateId.value, false)
+        const addedCount = await getAnchorListByNaviId(currentActiveCateId.value, { shouldRestoreScroll: false })
         if (addedCount === 0) {
             currentPage.value = previousPage
         }
@@ -312,10 +319,9 @@ const reloadCurrentAnchorList = async () => {
     const navId = currentActiveCateId.value
     if (!navId.trim()) return
     currentPage.value = 1
-    anchors.value = []
     isFinished.value = false
     isSwitchingCate.value = true
-    await getAnchorListByNaviId(navId).finally(() => {
+    await getAnchorListByNaviId(navId, { replaceList: true }).finally(() => {
         isSwitchingCate.value = false
     })
 }

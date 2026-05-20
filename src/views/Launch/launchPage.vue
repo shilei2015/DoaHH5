@@ -5,6 +5,7 @@ import launchLogo from '@/assets/dark-launch-logo.png'
 import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
 import HUD from '@/components/HUD';
+import { trackAdjustEvent } from '@/utils/native/A0019Bridge';
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -53,6 +54,7 @@ const checkLogin = async () => {
 }
 
 onMounted(() => {
+    trackAdjustEvent('launch_app')
     // 确保页面挂载后再执行初始化
     setTimeout(() => {
         getSysInfo()

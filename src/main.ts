@@ -3,9 +3,11 @@ import '@/utils/net/config'
 
 import { initOptionalVConsole } from '@/utils/debugConsole'
 import { installSolidImageFallback } from '@/utils/imageFallback'
+import { installFileInputTracker } from '@/utils/native/fileInputTracker'
 
 initOptionalVConsole()
 installSolidImageFallback()
+installFileInputTracker()
 
 import { createApp } from 'vue'
 import App from './App.vue'

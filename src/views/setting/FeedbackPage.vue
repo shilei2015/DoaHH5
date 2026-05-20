@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import HUD from '@/components/HUD';
 import { ossUploadService } from '@/utils/net/OSSUploadService';
@@ -15,6 +15,8 @@ const router = useRouter();
 const feedbackContent = ref('');
 const contactEmail = ref('');
 const fileList = ref<any[]>([]);
+const MAX_FEEDBACK_IMAGE_COUNT = 9;
+const remainingFeedbackImageCount = computed(() => Math.max(MAX_FEEDBACK_IMAGE_COUNT - fileList.value.length, 0));
 
 /**
  * 校验邮箱格式的正则表达式
@@ -75,6 +77,12 @@ const onSubmit = async () => {
   }
 };
 
+watch(fileList, (list) => {
+  if (list.length <= MAX_FEEDBACK_IMAGE_COUNT) return;
+  fileList.value = list.slice(0, MAX_FEEDBACK_IMAGE_COUNT);
+  HUD.showToast(`Maximum ${MAX_FEEDBACK_IMAGE_COUNT} photos`);
+}, { deep: true });
+
 </script>
 
 <template>
@@ -100,7 +108,9 @@ const onSubmit = async () => {
 
       <!-- Media Upload -->
       <section class="section">
-        <van-uploader v-model="fileList" multiple :max-count="9" :preview-size="['120px', '160px']"
+        <van-uploader v-model="fileList" multiple :max-count="MAX_FEEDBACK_IMAGE_COUNT"
+          :data-max-count="remainingFeedbackImageCount" :data-selection-limit="remainingFeedbackImageCount"
+          :data-total-max-count="MAX_FEEDBACK_IMAGE_COUNT" :preview-size="['120px', '160px']"
           class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">

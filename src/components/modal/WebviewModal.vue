@@ -28,7 +28,12 @@ const handleClose = () => {
       <div v-if="isLoading" class="webview-loading">
         <div class="loading-spinner"></div>
       </div>
-      <iframe :src="url" class="webview-iframe" frameborder="0" @load="handleLoad"></iframe>
+      <iframe
+        :src="url"
+        class="webview-iframe"
+        frameborder="0"
+        @load="handleLoad"
+      ></iframe>
     </div>
   </div>
 </template>
@@ -38,9 +43,10 @@ const handleClose = () => {
   display: flex;
   flex-direction: column;
   height: 90vh; /* 支付同款高度 */
-  background: #fff;
+  background: var(--app-bg, #1a1a1a);
   border-radius: 20px 20px 0 0;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .webview-header {
@@ -48,21 +54,22 @@ const handleClose = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #F2F1F4;
+  background: var(--app-bg, #1a1a1a);
+  border-bottom: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
   flex-shrink: 0;
 }
 
 .webview-title {
   font-size: 16px;
   font-weight: 700;
-  color: #1A1A1A;
+  color: var(--app-text-primary, #ffffff);
 }
 
 .webview-close {
   width: 28px;
   height: 28px;
   font-size: 24px;
-  color: #999;
+  color: var(--app-text-secondary, rgba(255, 255, 255, 0.72));
   background: none;
   border: none;
   display: flex;
@@ -76,18 +83,25 @@ const handleClose = () => {
   position: relative;
   width: 100%;
   overflow: hidden;
+  background: var(--app-bg, #1a1a1a);
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 .webview-iframe {
+  display: block;
   width: 100%;
   height: 100%;
   border: none;
+  background: var(--app-bg, #1a1a1a) !important;
+  color-scheme: dark;
+  overscroll-behavior: none;
 }
 
 .webview-loading {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: var(--app-bg, #1a1a1a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,8 +111,8 @@ const handleClose = () => {
 .loading-spinner {
   width: 30px;
   height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #FF1AD0;
+  border: 3px solid rgba(255, 255, 255, 0.16);
+  border-top: 3px solid var(--app-accent, #65d941);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

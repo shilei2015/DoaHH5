@@ -23,6 +23,11 @@ const startX = ref(0);
 const startY = ref(0);
 
 const handleTouchStart = (e: TouchEvent) => {
+    if (route.meta.disableSwipeBack) {
+        startX.value = 0;
+        return;
+    }
+
     const depth = Number(route.meta.depth || 0);
     const touch = e.touches[0];
     if (touch && depth > 20 && touch.clientX < EDGE_PX) {
@@ -34,6 +39,11 @@ const handleTouchStart = (e: TouchEvent) => {
 };
 
 const handleTouchEnd = (e: TouchEvent) => {
+    if (route.meta.disableSwipeBack) {
+        startX.value = 0;
+        return;
+    }
+
     if (startX.value <= 0) return;
 
     const touch = e.changedTouches[0];
