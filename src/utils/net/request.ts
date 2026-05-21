@@ -127,8 +127,9 @@ service.interceptors.request.use(
         config.headers.set('VPN', '0')
         config.headers.set('FromDevice', fromDevice)
         config.headers.set('DeviceVersion', deviceVersion)
-        // config.headers.set('LocalCCode', NET_CONFIG.LocalCCode)
-        config.headers.set('LocalCCode', 'US')
+        config.headers.set('OS', '101')
+        config.headers.set('LocalCCode', NET_CONFIG.LocalCCode)
+        // config.headers.set('LocalCCode', 'US')
         config.headers.set('UIV', NET_CONFIG.UIV)
 
         if (isEncrypt) {
