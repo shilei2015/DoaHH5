@@ -274,7 +274,7 @@ export const paymentService = {
     try {
       const res = await post(API.bj_cashier_pre_order, { ProductId: productId });
 
-      if (res.code !== '0' || !res.data) {
+      if (String(res.code) !== '0' || !res.data) {
         hidePaymentLoading();
         this.close(false);
         console.warn('[Payment] bjCashierPreOrder rejected', res.code, res.data);
@@ -336,7 +336,7 @@ export const paymentService = {
         });
         hidePaymentLoading();
 
-        if (verifyRes.code === '0') {
+        if (String(verifyRes.code) === '0') {
           const userStore = useUserStore();
           await userStore.updateLoginUserInfo();
           HUD.showToast('Payment successful');
