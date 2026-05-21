@@ -67,7 +67,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div v-if="visible" class="modal-overlay" @click.self="closeModal">
+    <div v-if="visible" class="modal-overlay">
         <div class="modal-content">
             <button class="close-btn" type="button" aria-label="Close" @click="closeModal">×</button>
             <div class="modal-title">Limited Time Offer</div>

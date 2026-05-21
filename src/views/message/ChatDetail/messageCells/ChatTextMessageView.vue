@@ -14,6 +14,7 @@ const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
 const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void
+    (e: 'clickAvatar', msg: LHMessage): void
 }>()
 
 const translateMessage = async () => {
@@ -52,7 +53,7 @@ watch(() => props.msg.sendStatus, (val) => {
 
 <template>
     <div :class="['contentView', isMe ? 'me' : 'other']">
-        <div v-if="!isMe" class="userAvatar">
+        <div v-if="!isMe" class="userAvatar" role="button" tabindex="0" @click="emit('clickAvatar', props.msg)">
             <img :src="msg.fromUser?.HeadImage ?? ''" alt="" class="avatarImg">
         </div>
 
@@ -105,6 +106,7 @@ watch(() => props.msg.sendStatus, (val) => {
     flex-shrink: 0;
     position: relative;
     /* bottom: 4px; */
+    cursor: pointer;
 }
 
 .avatarImg {

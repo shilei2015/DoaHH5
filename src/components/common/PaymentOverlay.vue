@@ -22,6 +22,7 @@ const props = defineProps<{
   applePayMock?: boolean;
   applePayMockPrice?: string;
   onSelect?: (method: PMItem) => void;
+  onApplePayUnavailable?: () => void;
   onClose: () => void;
 }>();
 
@@ -35,6 +36,7 @@ const isApplePayLoading = ref(false);
 const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayLoadingTimer: number | null = null;
+let applePayFailureTimer: number | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
 const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
@@ -47,14 +49,57 @@ const stopApplePayLoading = () => {
   }
 };
 
+const clearApplePayFailureTimer = () => {
+  if (applePayFailureTimer !== null) {
+    window.clearTimeout(applePayFailureTimer);
+    applePayFailureTimer = null;
+  }
+};
+
+const isApplePayRuntimeAvailable = () => {
+  const ApplePaySessionCtor = (window as unknown as {
+    ApplePaySession?: {
+      canMakePayments?: () => boolean;
+      supportsVersion?: (version: number) => boolean;
+    };
+  }).ApplePaySession;
+
+  return Boolean(
+    ApplePaySessionCtor &&
+    ApplePaySessionCtor.supportsVersion?.(3) &&
+    ApplePaySessionCtor.canMakePayments?.()
+  );
+};
+
+const failApplePay = () => {
+  stopApplePayLoading();
+  clearApplePayFailureTimer();
+  if (props.onApplePayUnavailable) {
+    props.onApplePayUnavailable();
+  } else {
+    props.onClose();
+  }
+};
+
 const watchApplePayIframe = () => {
   const container = applePayContainerRef.value;
   if (!container) return;
 
   const iframe = container.querySelector('iframe');
   if (iframe) {
-    iframe.addEventListener('load', stopApplePayLoading, { once: true });
+    iframe.setAttribute('allowtransparency', 'true');
+    iframe.style.backgroundColor = 'transparent';
+    iframe.addEventListener('load', () => {
+      if (!isApplePayRuntimeAvailable()) {
+        failApplePay();
+        return;
+      }
+      stopApplePayLoading();
+      clearApplePayFailureTimer();
+    }, { once: true });
     applePayLoadingTimer = window.setTimeout(stopApplePayLoading, 6000);
+    clearApplePayFailureTimer();
+    applePayFailureTimer = window.setTimeout(failApplePay, 8000);
   }
 };
 
@@ -62,6 +107,11 @@ onMounted(() => {
   if (!isApplePayMode.value) return;
   if (props.applePayMock) {
     stopApplePayLoading();
+    return;
+  }
+
+  if (!isApplePayRuntimeAvailable()) {
+    failApplePay();
     return;
   }
 
@@ -83,6 +133,7 @@ onBeforeUnmount(() => {
     window.clearTimeout(applePayLoadingTimer);
     applePayLoadingTimer = null;
   }
+  clearApplePayFailureTimer();
 });
 
 /**
@@ -349,12 +400,15 @@ defineExpose({
   line-height: 0;
   overflow: hidden;
   border-radius: 8px;
+  background: #2F2B34;
 }
 
 .apple-pay-sdk-container :deep(iframe) {
   display: block;
   width: 100% !important;
   height: 44px !important;
+  background: transparent !important;
+  color-scheme: dark;
 }
 
 .apple-pay-mock {

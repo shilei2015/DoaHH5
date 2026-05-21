@@ -36,6 +36,7 @@ const showCategoryTabs = ref(true);
 
 const anchors = ref<AnchorInfoModel[]>([]);
 const isSwitchingCate = ref(false);
+const isCategoryListPending = ref(true);
 /** 列表接口进行中：避免在结果返回前把「未加载」当成「真的空」 */
 const isAnchorListPending = ref(true);
 const userStore = useUserStore();
@@ -84,6 +85,7 @@ let cateRefreshInFlight = false
 const refreshCateList = async () => {
     if (cateRefreshInFlight) return
     cateRefreshInFlight = true
+    isCategoryListPending.value = true
 
     const previousNavId = categories.value.find((c) => c.active)?.NavId ?? ''
     const hadActiveSelection = Boolean(previousNavId.trim())
@@ -107,6 +109,9 @@ const refreshCateList = async () => {
                     ...c,
                     active: c.NavId === previousNavId,
                 }))
+                if (anchors.value.length === 0) {
+                    selectCategory(previousNavId, false)
+                }
                 return
             }
             const newList = rawList.map((c, i) => ({
@@ -130,7 +135,7 @@ const refreshCateList = async () => {
         }))
         categories.value = newList
         const newFirstNavId = newList[0]?.NavId || ''
-        if (newFirstNavId && newFirstNavId === prevFirstNavId) {
+        if (newFirstNavId && newFirstNavId === prevFirstNavId && anchors.value.length > 0) {
             return
         }
         if (newFirstNavId) {
@@ -145,6 +150,7 @@ const refreshCateList = async () => {
         isAnchorListPending.value = false
     } finally {
         cateRefreshInFlight = false
+        isCategoryListPending.value = false
     }
 }
 
@@ -349,7 +355,16 @@ const showListEmptyState = computed(
         anchors.value.length === 0 &&
         !isRefreshing.value &&
         !isSwitchingCate.value &&
+        !isCategoryListPending.value &&
         !isAnchorListPending.value
+)
+
+const showInitialAnchorLoading = computed(
+    () =>
+        anchors.value.length === 0 &&
+        !showListEmptyState.value &&
+        !isRefreshing.value &&
+        (isCategoryListPending.value || isAnchorListPending.value || isSwitchingCate.value)
 )
 
 onMounted(() => {
@@ -408,8 +423,12 @@ onBeforeRouteLeave(() => {
                         @open-profile="saveProfileEntryPosition" />
                 </div>
 
+                <div class="initial-loading" v-if="showInitialAnchorLoading">
+                    <div class="cate-spinner"></div>
+                </div>
+
                 <!-- 分类切换时的中间加载过渡动画 -->
-                <div class="cate-loading" v-if="isSwitchingCate">
+                <div class="cate-loading" v-if="isSwitchingCate && anchors.length > 0">
                     <div class="cate-spinner"></div>
                 </div>
 
@@ -544,7 +563,8 @@ onBeforeRouteLeave(() => {
     flex-shrink: 0;
 }
 
-/* 分类切换过渡 Spinner */
+/* 初始加载与分类切换过渡 Spinner */
+.initial-loading,
 .cate-loading {
     width: 100%;
     min-height: 300px;

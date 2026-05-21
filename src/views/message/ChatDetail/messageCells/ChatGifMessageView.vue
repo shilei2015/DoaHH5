@@ -21,6 +21,7 @@ const isImageLoading = ref(true);
 
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void
+    (e: 'clickAvatar', msg: LHMessage): void
 }>()
 
 const gifUrl = computed(() => props.msg.imageObj?.urlString ?? '');
@@ -32,7 +33,7 @@ const onGifLoad = () => {
 
 <template>
     <div :class="['contentView', isMe ? 'me' : 'other']">
-        <div v-if="!isMe" class="userAvatar">
+        <div v-if="!isMe" class="userAvatar" role="button" tabindex="0" @click="emit('clickAvatar', props.msg)">
             <img :src="msg.fromUser?.HeadImage ?? ''" alt="" class="avatarImg">
         </div>
         <div class="messageContainer">
@@ -70,6 +71,7 @@ const onGifLoad = () => {
     flex-shrink: 0;
     position: relative;
     bottom: 4px;
+    cursor: pointer;
 }
 
 .avatarImg {

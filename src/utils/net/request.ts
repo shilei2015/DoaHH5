@@ -8,7 +8,6 @@ import { NET_CONFIG, STORAGE_KEYS } from './config'
 import { getApiUrl } from './api'
 import { encryptAES, decryptAES, getUdid, createSiginString } from './encryption'
 import { useUserStore } from '@/stores/userStore'
-import loginedMissions from '../loginedMissions'
 
 // 用于取消所有请求的控制器集合
 const pendingRequests = new Set<AbortController>()
@@ -248,8 +247,10 @@ service.interceptors.response.use(
 
         // 2. 清除状态
         const userStore = useUserStore()
-        userStore.logout()
-        loginedMissions.stop()
+        void userStore.logout()
+        void import('../loginedMissions').then(({ default: missions }) => {
+          missions.stop()
+        })
 
         // 3. 关闭 Web 容器，不跳转 H5 路由（避免循环依赖，动态导入桥接）
         void import('@/utils/native/A0019Bridge').then(({ closeWebView }) => closeWebView())

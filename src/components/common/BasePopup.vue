@@ -26,12 +26,19 @@ const popupStyle = computed(() => ({
 
 const isRound = computed(() => props.round !== false);
 const shouldCloseOnClickOverlay = computed(() => props.closeOnClickOverlay !== false);
+
+const handleClickOverlay = () => {
+  if (shouldCloseOnClickOverlay.value) {
+    emit('update:show', false);
+  }
+};
 </script>
 
 <template>
   <VanPopup
     :show="props.show"
     @update:show="emit('update:show', $event)"
+    @click-overlay="handleClickOverlay"
     @closed="emit('closed')"
     :position="props.position || 'bottom'"
     :round="isRound"

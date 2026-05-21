@@ -10,21 +10,72 @@ import * as DB from '@/utils/msg/DBService'
 import maleAvatar from '@/assets/maleAvatar.png'
 import femaleAvatar from '@/assets/femaleAvatar.png'
 import sessionEmptyIcon from '@/assets/message-list-empty.svg'
+import { normalizeImageCdnUrl } from '@/utils/imageFallback'
 
 const router = useRouter()
 const chatManager = getChatRecordManager()
 const userStore = useUserStore()
+const refreshingUserIds = new Set<string>()
 
-const getChatAvatarSrc = (chat: LHMsgChat) => chat.user?.HeadImage?.trim() || ''
+const getFallbackAvatarSrc = (chat: LHMsgChat) => chat.user?.Gender === '1' ? maleAvatar : femaleAvatar
+
+const getChatAvatarSrc = (chat: LHMsgChat) => {
+    const avatar = chat.user?.HeadImage?.trim()
+    return avatar ? normalizeImageCdnUrl(avatar) : getFallbackAvatarSrc(chat)
+}
+
+const isSameImageSrc = (left: string, right: string) => {
+    try {
+        return new URL(left, window.location.href).href === new URL(right, window.location.href).href
+    } catch {
+        return left === right
+    }
+}
+
+const hasOnlineState = (chat: LHMsgChat) => {
+    const state = String(chat.user?.OnlineState ?? '')
+    return state.length > 0
+}
+
+const getOnlineStateClass = (chat: LHMsgChat) => {
+    switch (String(chat.user?.OnlineState ?? '')) {
+        case '1':
+            return 'is-online'
+        case '2':
+            return 'is-busy'
+        case '0':
+            return 'is-offline'
+        default:
+            return ''
+    }
+}
+
+const refreshChatUser = async (chat: LHMsgChat) => {
+    if (!chat.userId || chat.userId === NET_CONFIG.ID || refreshingUserIds.has(chat.userId)) return
+
+    refreshingUserIds.add(chat.userId)
+    try {
+        const user = await userStore.getUserInfoById(chat.userId)
+        if (!user) return
+
+        const nextChat = { ...chat, user: user as any }
+        await DB.insertUser(user as any)
+        await DB.upsertChatRecord(nextChat)
+        await chatManager.chatRecordChange()
+    } finally {
+        refreshingUserIds.delete(chat.userId)
+    }
+}
 
 const handleAvatarError = (event: Event, chat: LHMsgChat) => {
     const img = event.target as HTMLImageElement | null
     if (!img) return
 
-    const fallbackSrc = chat.user?.Gender === '1' ? maleAvatar : femaleAvatar
-    if (!fallbackSrc || img.src === fallbackSrc) return
+    const fallbackSrc = getFallbackAvatarSrc(chat)
+    if (!fallbackSrc || isSameImageSrc(img.src, fallbackSrc)) return
 
     img.src = fallbackSrc
+    void refreshChatUser(chat)
 }
 
 const hydrateMissingChatUsers = async () => {
@@ -33,7 +84,8 @@ const hydrateMissingChatUsers = async () => {
 
     for (const chat of chats) {
         const alreadyHasAvatar = Boolean(chat.user?.HeadImage?.trim())
-        if (alreadyHasAvatar || !chat.userId || chat.userId === NET_CONFIG.ID) {
+        const alreadyHasOnlineState = hasOnlineState(chat)
+        if ((alreadyHasAvatar && alreadyHasOnlineState) || !chat.userId || chat.userId === NET_CONFIG.ID) {
             continue
         }
 
@@ -110,7 +162,7 @@ onMounted(async () => {
                             <!-- 头像区 -->
                             <div class="avatar-area">
                                 <img class="avatar" :src="getChatAvatarSrc(chat)" @error="handleAvatarError($event, chat)" />
-                                <!-- <div v-if="chat.user?.OnlineState" class="status-dot online"></div> -->
+                                <div v-if="hasOnlineState(chat)" class="status-dot" :class="getOnlineStateClass(chat)"></div>
                             </div>
 
                             <!-- 内容区 -->
@@ -252,16 +304,25 @@ onMounted(async () => {
 
 .status-dot {
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: 2px;
+    right: 2px;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid #ffffff;
+    border: 2px solid #1a1a1a;
+    box-sizing: border-box;
 }
 
-.online {
+.status-dot.is-online {
     background-color: #34d728;
+}
+
+.status-dot.is-busy {
+    background-color: #ff8000;
+}
+
+.status-dot.is-offline {
+    background-color: #8c8c8c;
 }
 
 .content-area {

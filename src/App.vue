@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
 const transitionName = ref('push');
+const routeStack: string[] = [];
 
 import { notificationService } from '@/utils/tools/notificationService';
 import FlashNotification from '@/components/Notification/FlashNotification.vue';
@@ -13,9 +14,6 @@ const ns = notificationService.state;
 const onNotificationClose = () => {
     notificationService.hide();
 };
-
-onMounted(() => {
-})
 
 // --- 侧滑返回（从左缘向右滑）：用捕获阶段优先于内部 scroll，避免聊天页等全宽列表吞掉手势 ---
 const EDGE_PX = 40;
@@ -59,20 +57,44 @@ const handleTouchEnd = (e: TouchEvent) => {
 };
 
 
-// 路由记录：处理前进后退的方向判断
-watch(() => route.meta.depth, (toDepth, fromDepth) => {
-    // 首次进入没有 fromDepth
-    const to = Number(toDepth || 0);
-    const from = Number(fromDepth || 0);
+const getRouteKey = (target: typeof route) => target.fullPath || target.path || String(target.name || '');
+const getRouteDepth = (target: typeof route) => Number(target.meta.depth || 0);
 
-    if (to > from) {
+onMounted(() => {
+    routeStack.splice(0, routeStack.length, getRouteKey(route));
+});
+
+// 路由记录：优先用访问栈判断真实前进/返回，同级页面再也不会一律被当成 push。
+router.beforeEach((to, from) => {
+    const toKey = getRouteKey(to);
+    const fromKey = getRouteKey(from);
+
+    if (!from.name) {
+        routeStack.splice(0, routeStack.length, toKey);
         transitionName.value = 'push';
-    } else if (to < from) {
-        transitionName.value = 'pop';
-    } else {
-        // 同级或未知，默认 push
-        transitionName.value = 'push';
+        return;
     }
+
+    const toIndex = routeStack.lastIndexOf(toKey);
+    const fromIndex = routeStack.lastIndexOf(fromKey);
+    const isKnownBack = toIndex !== -1 && (fromIndex === -1 || toIndex < fromIndex);
+    const isDepthBack = toIndex === -1 && getRouteDepth(to) < getRouteDepth(from);
+
+    if (isKnownBack || isDepthBack) {
+        transitionName.value = 'pop';
+        if (toIndex !== -1) {
+            routeStack.splice(toIndex + 1);
+        } else {
+            routeStack.splice(0, routeStack.length, toKey);
+        }
+        return;
+    }
+
+    transitionName.value = 'push';
+    if (fromIndex !== -1) {
+        routeStack.splice(fromIndex + 1);
+    }
+    routeStack.push(toKey);
 });
 
 </script>
@@ -83,15 +105,14 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
         <FlashNotification v-if="ns.visible && ns.data" :data="ns.data" @close="onNotificationClose" />
 
         <router-view v-slot="{ Component, route }">
-            <!-- 使用 transition 包裹，并配合 keep-alive 固化旧页面状态 -->
-            <!-- 限制 keep-alive 仅包含 mainTabbarView，确保三级以上的页面 (如详情页) 每次进入都是新的 -->
-            <!-- 使用稳定的 key 让所有 Tab 子页面共享同一个 mainTabbarView 实例 -->
-            <transition :name="transitionName">
-                <keep-alive include="mainTabbarView">
+            <!-- KeepAlive 必须放在稳定层级，不能被路由 key 一起销毁，否则返回会重新加载 Tab 内容 -->
+            <!-- Tab 子页面共享 tab-root key，避免底部 Tab 内部切换触发整页 push 动画 -->
+            <Transition :name="transitionName" :duration="360">
+                <KeepAlive include="mainTabbarView,UserListPage">
                     <component :is="Component" :key="Number(route.meta.depth || 0) <= 20 ? 'tab-root' : route.fullPath"
                         class="page-view" />
-                </keep-alive>
-            </transition>
+                </KeepAlive>
+            </Transition>
         </router-view>
     </div>
 </template>
@@ -115,11 +136,13 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
     left: 0;
     width: 100%;
     height: 100%;
-    transition: transform 0.4s cubic-bezier(0.3, 0.8, 0.3, 1), opacity 0.4s ease;
+    transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
     overflow: hidden;
     z-index: 1;
     background-color: var(--app-bg, #1a1a1a);
     color: var(--app-text-primary, #ffffff);
+    backface-visibility: hidden;
+    will-change: transform;
 }
 
 /* --- Push (前进) 动画 --- */
@@ -127,7 +150,6 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 /* 新页面进来 */
 .push-enter-from {
     transform: translateX(100%);
-    z-index: 2;
 }
 
 .push-enter-to {
@@ -140,14 +162,27 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 }
 
 .push-leave-to {
-    transform: translateX(-25%);
+    transform: translateX(-30%);
+}
+
+.push-enter-active {
+    z-index: 2;
+    box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
+    transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.push-leave-active {
+    z-index: 1;
+    transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* --- Pop (后退) 动画 --- */
 
 /* 回到旧页面 */
 .pop-enter-from {
-    transform: translateX(-25%);
+    transform: translateX(-30%);
 }
 
 .pop-enter-to {
@@ -157,11 +192,23 @@ watch(() => route.meta.depth, (toDepth, fromDepth) => {
 /* 当前页面滑出 */
 .pop-leave-from {
     transform: translateX(0);
-    z-index: 2;
 }
 
 .pop-leave-to {
     transform: translateX(100%);
+}
+
+.pop-enter-active {
+    z-index: 1;
+    transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.pop-leave-active {
+    z-index: 2;
+    box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
+    transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 html {

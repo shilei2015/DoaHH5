@@ -232,6 +232,11 @@ function getApplePayRuntimeStatus() {
   };
 }
 
+function canUseApplePayRuntime() {
+  const status = getApplePayRuntimeStatus();
+  return status.hasApplePaySession && status.supportsVersion3 && status.canMakePayments;
+}
+
 export const paymentService = {
   /**
    * 提前加载 Onerway SDK，减少用户点购买后等待 Apple Pay 按钮的时间。
@@ -250,6 +255,15 @@ export const paymentService = {
   async startPayment(product: ProductModel, onFinished?: () => void) {
     onFinishedCallback = onFinished || null;
     const productId = product.ProductId;
+
+    if (!canUseApplePayRuntime()) {
+      hidePaymentLoading();
+      console.warn('[Payment] Apple Pay runtime unavailable', getApplePayRuntimeStatus());
+      HUD.showToast('Apple Pay is unavailable. Please try again later.');
+      this.clearCallback();
+      return;
+    }
+
     const sdkPromise = loadOnerwaySdk().catch((error) => {
       console.warn('[Payment] Onerway Apple Pay SDK warmup failed', normalizeErrorForLog(error));
       return null;
@@ -390,6 +404,11 @@ export const paymentService = {
     const vnode = h(markRaw(PaymentOverlay), {
       applePayContainerId: APPLE_PAY_CONTAINER_ID,
       applePayPrice: price,
+      onApplePayUnavailable: () => {
+        this.close(false);
+        HUD.showToast('Apple Pay is unavailable. Please try again later.');
+        this.clearCallback();
+      },
       onClose: () => this.close(),
     });
 
@@ -482,7 +501,9 @@ export const paymentService = {
             transactionId: order.transactionId,
             applePayRuntime: getApplePayRuntimeStatus(),
           });
+          this.close(false);
           HUD.showToast('Payment could not be completed. Please try again.');
+          this.clearCallback();
         },
       });
     } catch (error) {

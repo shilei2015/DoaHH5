@@ -1,11 +1,21 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
-import mainTabView from "@/views/tabbarView/mainTabbarView.vue";
-import anchorList from "@/views/tabbarSubViews/anchorList.vue";
-import messageList from "@/views/tabbarSubViews/messageList.vue";
-import userCenter from "@/views/tabbarSubViews/userCenter.vue";
-import messageDetail from "@/views/message/ChatDetail/ChatDetailPage.vue"
 import { useUserStore } from "@/stores/userStore";
 import { hideGlobalLoading } from "@/utils/native/A0019Bridge";
+
+const loadMainTabView = () => import("@/views/tabbarView/mainTabbarView.vue");
+const loadAnchorList = () => import("@/views/tabbarSubViews/anchorList.vue");
+const loadMessageList = () => import("@/views/tabbarSubViews/messageList.vue");
+const loadUserCenter = () => import("@/views/tabbarSubViews/userCenter.vue");
+const loadMessageDetail = () => import("@/views/message/ChatDetail/ChatDetailPage.vue");
+const loadAnchorProfile = () => import("@/views/AnchorProfile/AnchorProfile.vue");
+const loadCallPage = () => import("@/views/call/callPage.vue");
+const loadVideoPage = () => import("@/views/call/videoPage.vue");
+const loadEditProfile = () => import("@/views/profile/EditProfilePage.vue");
+const loadUserListPage = () => import("@/views/profile/UserListPage.vue");
+const loadSettingPage = () => import("@/views/setting/SettingPage.vue");
+const loadAccountPage = () => import("@/views/setting/AccountPage.vue");
+const loadBlacklistPage = () => import("@/views/setting/BlacklistPage.vue");
+const loadFeedbackPage = () => import("@/views/setting/FeedbackPage.vue");
 
 const routes: RouteRecordRaw[] = [
     {
@@ -17,24 +27,24 @@ const routes: RouteRecordRaw[] = [
     {
         path: "/tab",
         name: "mainTabView",
-        component: mainTabView,
+        component: loadMainTabView,
         meta: { depth: 20 },
         children: [
             {
                 path: "",
-                component: anchorList,
+                component: loadAnchorList,
                 name: "anchorList",
                 meta: { depth: 20 }
             },
             {
                 path: "message",
-                component: messageList,
+                component: loadMessageList,
                 name: "messageList",
                 meta: { depth: 20 }
             },
             {
                 path: "user",
-                component: userCenter,
+                component: loadUserCenter,
                 name: "userCenter",
                 meta: { depth: 20 }
             }
@@ -42,26 +52,26 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: "/message/detail",
-        component: messageDetail,
+        component: loadMessageDetail,
         name: "messageDetail",
-        meta: { depth: 31 }
+        meta: { depth: 50 }
     },
     {
         path: "/anchorProfile",
         name: "AnchorProfile",
-        component: () => import("@/views/AnchorProfile/AnchorProfile.vue"),
+        component: loadAnchorProfile,
         meta: { depth: 40 }
     },
     {
         path: "/call",
         name: "callPage",
-        component: () => import("@/views/call/callPage.vue"),
+        component: loadCallPage,
         meta: { depth: 40, disableSwipeBack: true }
     },
     {
         path: "/video",
         name: "videoPage",
-        component: () => import("@/views/call/videoPage.vue"),
+        component: loadVideoPage,
         meta: { depth: 40, disableSwipeBack: true }
     },
     { path: "/login", redirect: "/" },
@@ -70,52 +80,52 @@ const routes: RouteRecordRaw[] = [
     {
         path: "/profile/edit",
         name: "EditProfile",
-        component: () => import("@/views/profile/EditProfilePage.vue"),
+        component: loadEditProfile,
         meta: { depth: 30 }
     },
     {
         path: "/profile/like-me",
         name: "LikeMe",
-        component: () => import("@/views/profile/UserListPage.vue"),
+        component: loadUserListPage,
         props: { title: 'See who liked me', apiType: 'list_like_me' },
         meta: { depth: 30 }
     },
     {
         path: "/profile/visitor",
         name: "Visitor",
-        component: () => import("@/views/profile/UserListPage.vue"),
+        component: loadUserListPage,
         props: { title: 'Visitors', apiType: 'list_visitor_me' },
         meta: { depth: 30 }
     },
     {
         path: "/profile/my-likes",
         name: "MyLikes",
-        component: () => import("@/views/profile/UserListPage.vue"),
+        component: loadUserListPage,
         props: { title: 'Girls I like', apiType: 'list_my_like' },
         meta: { depth: 30 }
     },
     {
         path: "/setting",
         name: "Setting",
-        component: () => import("@/views/setting/SettingPage.vue"),
+        component: loadSettingPage,
         meta: { depth: 30 }
     },
     {
         path: "/setting/account",
         name: "Account",
-        component: () => import("@/views/setting/AccountPage.vue"),
+        component: loadAccountPage,
         meta: { depth: 40 }
     },
     {
         path: "/setting/blacklist",
         name: "Blacklist",
-        component: () => import("@/views/setting/BlacklistPage.vue"),
+        component: loadBlacklistPage,
         meta: { depth: 40 }
     },
     {
         path: "/setting/feedback",
         name: "Feedback",
-        component: () => import("@/views/setting/FeedbackPage.vue"),
+        component: loadFeedbackPage,
         meta: { depth: 30 }
     }
 ]
@@ -159,7 +169,11 @@ router.beforeEach(async (to, from, next) => {
     // 3. 需登录页：无 token 回启动页完成匿名注册
     if (authRequired && !userStore.token) {
         console.warn("[Router] No token, redirecting to launch");
-        return next({ path: '/', replace: true });
+        return next({ path: '/', query: { redirect: to.fullPath }, replace: true });
+    }
+
+    if (from.name === 'messageDetail' && to.name === 'AnchorProfile') {
+        to.meta.depth = 60;
     }
 
     next();
@@ -169,5 +183,29 @@ router.afterEach(() => {
     // 通知 App 隐藏全局加载动画
     hideGlobalLoading();
 });
+
+let interactiveRoutesPreloaded = false;
+
+export function preloadInteractiveRoutes(): void {
+    if (interactiveRoutesPreloaded) return;
+    interactiveRoutesPreloaded = true;
+
+    const preloaders = [
+        loadMainTabView,
+        loadAnchorList,
+        loadMessageList,
+        loadUserCenter,
+        loadMessageDetail,
+        loadAnchorProfile,
+        loadCallPage,
+        loadVideoPage,
+    ];
+
+    preloaders.forEach((load) => {
+        load().catch((error) => {
+            console.warn('[Router] route preload failed:', error);
+        });
+    });
+}
 
 export default router

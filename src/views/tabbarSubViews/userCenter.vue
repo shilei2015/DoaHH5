@@ -21,7 +21,9 @@ const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
 
 onActivated(() => {
-    userStore.updateLoginUserInfo();
+    if (!userInfo.value) {
+        userStore.updateLoginUserInfo();
+    }
 });
 
 // 菜单项配置

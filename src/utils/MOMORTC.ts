@@ -14,8 +14,6 @@ import { API } from './net/api';
 import HUD from '@/components/HUD';
 import { useCallStore } from '@/stores/callStore';
 import router from '@/router';
-import { isCallChain } from 'typescript';
-import { } from 'agora-rtc-sdk-ng';
 import { LHTimer } from './Timer';
 import { useUserStore } from '@/stores/userStore';
 import { showCoinShop } from './tools/shopService';

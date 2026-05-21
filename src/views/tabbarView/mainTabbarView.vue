@@ -6,8 +6,8 @@ export default {
 
 <script setup lang="ts">
 
-import { ref, watch, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, shallowRef, watch } from 'vue';
+import { useRouter, useRoute, type RouteLocationNormalizedLoaded } from 'vue-router';
 import type { mainTabbarConfig } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import { mainTabbarConfigList } from '@/components/tabbarModels/mainTabbarConfig.ts';
 import TabbarItemContainerView from '@/views/tabbarView/tabbarItemContainerView.vue';
@@ -17,6 +17,7 @@ const router = useRouter()
 const route = useRoute()
 
 const tabbarItemList = ref<mainTabbarConfig[]>(mainTabbarConfigList)
+const tabPageNames = new Set(mainTabbarConfigList.map(item => item.name))
 
 const syncTabState = (pageName: string | null | undefined) => {
     if (!pageName) return;
@@ -25,25 +26,34 @@ const syncTabState = (pageName: string | null | undefined) => {
     })
 }
 
+const isTabPageName = (pageName: unknown): pageName is string => typeof pageName === 'string' && tabPageNames.has(pageName)
+const cloneRoute = (target: typeof route): RouteLocationNormalizedLoaded => ({
+    ...target,
+    matched: [...target.matched],
+    meta: { ...target.meta },
+    params: { ...target.params },
+    query: { ...target.query },
+})
+const stableTabRoute = shallowRef<RouteLocationNormalizedLoaded>(cloneRoute(route))
+
 const switchTo = (pageName: string) => {
     syncTabState(pageName)
     router.push({ name: pageName })
 }
 
-watch(() => route.name, (newPath) => {
-    syncTabState(newPath as string)
+watch(() => [route.name, route.fullPath] as const, ([pageName]) => {
+    if (!isTabPageName(pageName)) return
+    syncTabState(pageName)
+    stableTabRoute.value = cloneRoute(route)
 }, { immediate: true })
 
-onMounted(() => {
-    syncTabState(route.name as string)
-})
 const isShowLimitOfferView = ref(false)
 </script>
 
 <template>
     <div class="main-tabbar-root">
         <div class="mainTabView" :style="{ paddingBottom: isShowLimitOfferView ? '120px' : '0', boxSizing: 'border-box' }">
-            <RouterView v-slot="{ Component, route }">
+            <RouterView :route="stableTabRoute" v-slot="{ Component, route }">
                 <KeepAlive>
                     <component :is="Component" :key="route.fullPath" />
                 </KeepAlive>

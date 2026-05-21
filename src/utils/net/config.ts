@@ -103,6 +103,19 @@ const pickApiHost = (host: unknown) => {
   return normalized
 }
 
+const isDevMode = () =>
+  typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
+
+const isLocalHost = (hostname: string) =>
+  ['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(hostname)
+
+const getLocationApiHost = () => {
+  if (isDevMode()) return ''
+  if (!/^https?:$/.test(window.location.protocol)) return ''
+  if (isLocalHost(window.location.hostname)) return ''
+  return pickApiHost(window.location.origin)
+}
+
 const hasLaunchConfig = (source: Record<string, any>) =>
   Boolean(
     readString(source, [
@@ -170,7 +183,7 @@ try {
 
   if (decoded || hasLaunchConfig(queryConfig)) {
     const previousApiHost = NET_CONFIG.APIHOST
-    const nextApiHost = pickApiHost(
+    const explicitApiHost = pickApiHost(
       readString(launchConfig, [
         'ApiDomain',
         'APIHOST',
@@ -181,6 +194,8 @@ try {
         'domain',
       ])
     )
+    // 新落地页可能只把 API 域名放在页面 origin 上，不再塞进 VT/ApiDomain。
+    const nextApiHost = explicitApiHost || getLocationApiHost()
 
     if (
       previousApiHost &&

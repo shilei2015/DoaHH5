@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
 import launchLogo from '@/assets/dark-launch-logo.png'
 import { useUserStore } from '@/stores/userStore';
@@ -9,10 +9,25 @@ import { trackAdjustEvent } from '@/utils/native/A0019Bridge';
 
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 const isLoading = ref(true)
 
+const getRedirectTarget = () => {
+    const redirect = route.query.redirect
+    const target = Array.isArray(redirect) ? redirect[0] : redirect
+    if (target && target.startsWith('/') && !target.startsWith('//') && target !== '/') {
+        return target
+    }
+    return null
+}
+
 const toMainTab = () => {
-    router.push({ name: "anchorList" })
+    const redirect = getRedirectTarget()
+    if (redirect) {
+        router.replace(redirect)
+        return
+    }
+    router.replace({ name: "anchorList" })
 }
 const getSysInfo = async () => {
     try {

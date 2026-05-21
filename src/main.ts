@@ -11,16 +11,35 @@ installFileInputTracker()
 
 import { createApp } from 'vue'
 import App from './App.vue'
-import router from './router'
+import router, { preloadInteractiveRoutes } from './router'
 /** 尽早挂载 window[桥名]，见 nativeBridgeConfig / URL Bundle / VITE_* */
 import '@/utils/native/A0019Bridge'
 import './assets/global.css'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { paymentService } from '@/utils/tools/paymentService'
-// 引入 Vant
-import Vant from 'vant'
-import 'vant/lib/index.css'
+import {
+    Cell,
+    CellGroup,
+    Field,
+    Icon,
+    Loading,
+    Picker,
+    Popup,
+    SwipeCell,
+    Uploader,
+} from 'vant'
+import 'vant/es/cell/style'
+import 'vant/es/cell-group/style'
+import 'vant/es/field/style'
+import 'vant/es/icon/style'
+import 'vant/es/image-preview/style'
+import 'vant/es/loading/style'
+import 'vant/es/picker/style'
+import 'vant/es/popup/style'
+import 'vant/es/swipe-cell/style'
+import 'vant/es/toast/style'
+import 'vant/es/uploader/style'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -28,15 +47,26 @@ pinia.use(piniaPluginPersistedstate)
 
 app.use(router)
 app.use(pinia)
-app.use(Vant)
+app.use(Cell)
+app.use(CellGroup)
+app.use(Field)
+app.use(Icon)
+app.use(Loading)
+app.use(Picker)
+app.use(Popup)
+app.use(SwipeCell)
+app.use(Uploader)
 app.mount('#app')
 
 const warmApplePaySdk = () => paymentService.preloadApplePaySdk();
+const warmInteractiveRoutes = () => preloadInteractiveRoutes();
 const requestIdleCallback = window.requestIdleCallback;
 if (requestIdleCallback) {
     requestIdleCallback(warmApplePaySdk, { timeout: 1500 });
+    requestIdleCallback(warmInteractiveRoutes, { timeout: 2500 });
 } else {
     globalThis.setTimeout(warmApplePaySdk, 800);
+    globalThis.setTimeout(warmInteractiveRoutes, 1200);
 }
 
 // 禁用双指缩放手势

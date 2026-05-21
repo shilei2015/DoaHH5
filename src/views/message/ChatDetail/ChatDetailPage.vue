@@ -242,6 +242,17 @@ const onClickImage = (message: LHMessage) => {
   showImagePreview({ loop: false, images: imageList, startPosition: index })
 }
 
+const onClickAvatar = (message: LHMessage) => {
+  if (isSystemNoti.value) return;
+  const userId = message.fromUid || targetUserId.value;
+  if (!userId || userId === userStore.userInfo?.UserId || userId === NET_CONFIG.ID) return;
+
+  router.push({
+    name: 'AnchorProfile',
+    query: { id: userId }
+  });
+}
+
 const onSendText = async () => {
   if (!inputText.value.trim()) return;
 
@@ -375,11 +386,12 @@ onUnmounted(() => {
           <ChatTimeMessageView v-if="shouldShowTimeTag(index)" :timestamp="msg.serverReceivedTs" />
 
           <!-- User Messages -->
-          <ChatTextMessageView v-if="msg.msgType === MessageType.Text" :msg="msg" @clickSendFaild="onResendMessage" />
+          <ChatTextMessageView v-if="msg.msgType === MessageType.Text" :msg="msg" @clickSendFaild="onResendMessage"
+            @clickAvatar="onClickAvatar" />
           <ChatImageMessageView v-else-if="msg.msgType === MessageType.Image" :msg="msg"
-            @clickSendFaild="onResendMessage" @clickImage="onClickImage" />
+            @clickSendFaild="onResendMessage" @clickImage="onClickImage" @clickAvatar="onClickAvatar" />
           <ChatGifMessageView v-else-if="msg.msgType === MessageType.Animation" :msg="msg"
-            @clickSendFaild="onResendMessage" />
+            @clickSendFaild="onResendMessage" @clickAvatar="onClickAvatar" />
         </div>
       </div>
     </div>

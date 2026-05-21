@@ -118,6 +118,7 @@ export function showUserActionModal(targetUserId: string, callbacks: {
     }, {
         position: 'bottom',
         round: true,
+        closeOnClickOverlay: true,
         customStyle: {
             background: 'transparent'
         }
