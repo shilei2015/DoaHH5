@@ -253,12 +253,6 @@ service.interceptors.response.use(
           missions.stop()
         })
 
-        // 3. 先通知原生登出，再关闭 Web 容器，保证原生登录态也一起清理
-        void import('@/utils/native/A0019Bridge').then(({ logoutApp, closeWebView }) => {
-          logoutApp()
-          closeWebView()
-        })
-
         // 返回一个永远 pending 的 promise，防止后续业务处理继续执行
         return new Promise(() => { })
       }

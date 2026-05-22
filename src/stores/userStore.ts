@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { post } from '@/utils/net/request'
 import { API } from '@/utils/net/api'
 import type { UserInfoModel } from '@/components/appModels/UserInfoModel'
-import { syncMessageUnreadToNative, trackAdjustEvent } from '@/utils/native/A0019Bridge'
+import { isA0019Native, logoutApp, syncMessageUnreadToNative, trackAdjustEvent } from '@/utils/native/A0019Bridge'
 import { getUdid } from '@/utils/net/encryption'
 
 export const useUserStore = defineStore('useUserStore', () => {
@@ -115,6 +115,9 @@ export const useUserStore = defineStore('useUserStore', () => {
 
     const logout = async () => {
         const { default: missions } = await import('@/utils/loginedMissions');
+        if (isA0019Native()) {
+            logoutApp()
+        }
         missions.stop()
 
         clearAuthState()
