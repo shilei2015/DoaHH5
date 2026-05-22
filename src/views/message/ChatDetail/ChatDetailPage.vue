@@ -30,6 +30,7 @@ import ChatGiftPicker from './messageOtherViews/ChatGiftPicker.vue';
 import { showModal, showUserActionModal } from '@/utils/tools/modalService';
 import { showFullScreenAnimation } from '@/utils/tools/animationService';
 import { NET_CONFIG } from '@/utils/net/config';
+import { normalizeImageCdnUrls } from '@/utils/imageFallback';
 
 const router = useRouter();
 const route = useRoute();
@@ -236,7 +237,7 @@ const onClickImage = (message: LHMessage) => {
   )
 
   let index = imageMessageList.findIndex(m => m.messageId === message.messageId);
-  let imageList = imageMessageList.map(m => m.imageObj?.urlString || '')
+  let imageList = normalizeImageCdnUrls(imageMessageList.map(m => m.imageObj?.urlString || ''))
   console.log(imageList);
 
   showImagePreview({ loop: false, images: imageList, startPosition: index })

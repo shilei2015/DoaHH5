@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed } from 'vue';
+import { normalizeImageCdnUrls } from '@/utils/imageFallback';
 
 const props = defineProps<{
     images: string[];
@@ -9,6 +10,7 @@ const props = defineProps<{
 
 const activeIndex = ref(props.startPosition || 0);
 const scrollRef = ref<HTMLElement | null>(null);
+const normalizedImages = computed(() => normalizeImageCdnUrls(props.images));
 
 const handleScroll = () => {
     if (scrollRef.value) {
@@ -38,13 +40,13 @@ onMounted(() => {
 <template>
     <div class="image-preview-overlay" @click="close">
         <div class="scroll-wrapper" ref="scrollRef" @scroll="handleScroll" @click.stop>
-            <div class="slide-item" v-for="(img, idx) in images" :key="idx" @click="close">
+            <div class="slide-item" v-for="(img, idx) in normalizedImages" :key="idx" @click="close">
                 <img :src="img" alt="Preview Image" />
             </div>
         </div>
         
-        <div class="indicator" v-if="images.length > 1">
-            {{ activeIndex + 1 }} / {{ images.length }}
+        <div class="indicator" v-if="normalizedImages.length > 1">
+            {{ activeIndex + 1 }} / {{ normalizedImages.length }}
         </div>
     </div>
 </template>

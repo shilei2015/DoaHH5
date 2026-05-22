@@ -8,6 +8,7 @@ import type { AnchorInfoModel } from '@/components/appModels/AnchorInfoModel';
 import { showImagePreview } from 'vant';
 import MOMORTC from '@/utils/MOMORTC';
 import { showUserActionModal } from '@/utils/tools/modalService';
+import { normalizeImageCdnUrls } from '@/utils/imageFallback';
 
 const route = useRoute();
 const router = useRouter();
@@ -40,10 +41,10 @@ const ageChipClass = computed(() => isMale.value ? 'male-chip' : 'age-chip');
 const activeIndex = ref(0);
 const displayAlbums = computed(() => {
     if (anchorInfo.value?.Albums && anchorInfo.value.Albums.length > 0) {
-        return anchorInfo.value.Albums;
+        return normalizeImageCdnUrls(anchorInfo.value.Albums);
     }
     if (anchorInfo.value?.HeadImage) {
-        return [anchorInfo.value.HeadImage];
+        return normalizeImageCdnUrls([anchorInfo.value.HeadImage]);
     }
     return [];
 });

@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import type { LHMessage } from '@/utils/msg/MessageModel';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 interface NotificationData {
   userId: string;
@@ -29,7 +30,7 @@ export const notificationService = {
     this.state.data = {
       userId: message.fromUid || '',
       nickname: message.fromUser?.Nickname || 'Someone',
-      avatar: message.fromUser?.HeadImage || '',
+      avatar: normalizeImageCdnUrl(message.fromUser?.HeadImage),
       message: message.textMessage || '[New Message]',
       time: 'Just Now',
     };

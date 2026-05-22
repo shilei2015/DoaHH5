@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { MessageSendStatus, TranslateState, type LHMessage } from '@/utils/msg/MessageModel';
 import { useUserStore } from '@/stores/userStore';
 import { translateText } from '@/utils/tools';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 const props = defineProps<{
     msg: LHMessage;
@@ -11,7 +12,7 @@ const props = defineProps<{
 const msg = computed(() => props.msg);
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
-const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
+const currentUserAvatar = computed(() => normalizeImageCdnUrl(userStore.userInfo?.HeadImage));
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void
     (e: 'clickAvatar', msg: LHMessage): void

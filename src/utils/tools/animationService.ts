@@ -1,5 +1,6 @@
 import { h, render, markRaw } from 'vue';
 import GlobalFullScreenAnimation from '@/components/common/GlobalFullScreenAnimation.vue';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 /**
  * Global Animation Service
@@ -14,6 +15,8 @@ let container: HTMLElement | null = null;
  * @param onAnimationEnd 动画播放结束后的可选回调
  */
 export function showFullScreenAnimation(url: string, onAnimationEnd?: () => void) {
+    const normalizedUrl = normalizeImageCdnUrl(url);
+
     // 1. 如果已有动画容器，先清理强制排队 (单例播放，防止多重开销)
     if (container) {
         render(null, container);
@@ -33,7 +36,7 @@ export function showFullScreenAnimation(url: string, onAnimationEnd?: () => void
 
     // 3. 构建并渲染
     const vnode = h(markRaw(GlobalFullScreenAnimation), {
-        url,
+        url: normalizedUrl,
         onClose: () => {
             // 收到组件内部的销毁通知
             if (container) {

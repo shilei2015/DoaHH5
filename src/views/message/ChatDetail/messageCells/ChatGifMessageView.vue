@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { MessageSendStatus, type LHMessage } from '@/utils/msg/MessageModel';
 import { useUserStore } from '@/stores/userStore';
 import AnimationPlayer from '@/components/common/AnimationPlayer.vue';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 /**
  * ChatGifMessageView.vue
@@ -16,7 +17,7 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
-const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
+const currentUserAvatar = computed(() => normalizeImageCdnUrl(userStore.userInfo?.HeadImage));
 const isImageLoading = ref(true);
 
 const emit = defineEmits<{
@@ -24,7 +25,7 @@ const emit = defineEmits<{
     (e: 'clickAvatar', msg: LHMessage): void
 }>()
 
-const gifUrl = computed(() => props.msg.imageObj?.urlString ?? '');
+const gifUrl = computed(() => normalizeImageCdnUrl(props.msg.imageObj?.urlString));
 
 const onGifLoad = () => {
     isImageLoading.value = false;

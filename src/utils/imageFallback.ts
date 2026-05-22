@@ -6,6 +6,7 @@ export const IMAGE_CDN_HOST = 'vclub-1v1.oss-us-west-1.aliyuncs.com'
 
 let installed = false
 let observer: MutationObserver | null = null
+let sourcePatchInstalled = false
 
 const isImageElement = (target: EventTarget | null): target is HTMLImageElement => {
   return target instanceof HTMLImageElement
@@ -42,7 +43,11 @@ export const normalizeImageCdnUrl = (source: string | null | undefined) => {
   }
 }
 
-const normalizeSrcset = (srcset: string | null | undefined) => {
+export const normalizeImageCdnUrls = (sources: Array<string | null | undefined>) => {
+  return sources.map((source) => normalizeImageCdnUrl(source))
+}
+
+export const normalizeImageCdnSrcset = (srcset: string | null | undefined) => {
   const value = srcset?.trim()
   if (!value) return srcset ?? ''
 
@@ -59,30 +64,104 @@ const normalizeSrcset = (srcset: string | null | undefined) => {
     .join(', ')
 }
 
-const applyCdnFallback = (img: HTMLImageElement) => {
-  if (isFallbackImage(img) || img.dataset.imageCdnFallbackTried === 'true') return false
+const normalizeImageAttributeValue = (name: string, value: unknown) => {
+  const attrName = name.toLowerCase()
+  if (attrName === 'src') return normalizeImageCdnUrl(String(value))
+  if (attrName === 'srcset') return normalizeImageCdnSrcset(String(value))
+  return String(value)
+}
 
-  const src = img.getAttribute('src')
+const isImageSourceElement = (element: unknown): element is HTMLImageElement | HTMLSourceElement => {
+  return (
+    element instanceof HTMLImageElement ||
+    (typeof HTMLSourceElement !== 'undefined' && element instanceof HTMLSourceElement)
+  )
+}
+
+const findPropertyDescriptor = (target: object, key: string): PropertyDescriptor | undefined => {
+  let proto: object | null = target
+  while (proto) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, key)
+    if (descriptor) return descriptor
+    proto = Object.getPrototypeOf(proto)
+  }
+}
+
+const patchSourceProperty = (prototype: object | undefined, key: 'src' | 'srcset') => {
+  if (!prototype) return
+
+  const descriptor = findPropertyDescriptor(prototype, key)
+  if (!descriptor?.set || !descriptor?.get) return
+
+  Object.defineProperty(prototype, key, {
+    configurable: true,
+    enumerable: descriptor.enumerable,
+    get() {
+      return descriptor.get?.call(this)
+    },
+    set(value) {
+      descriptor.set?.call(this, normalizeImageAttributeValue(key, value))
+    },
+  })
+}
+
+const installImageSourceNormalizer = () => {
+  if (sourcePatchInstalled || typeof window === 'undefined') return
+  sourcePatchInstalled = true
+
+  const originalSetAttribute = Element.prototype.setAttribute
+  Element.prototype.setAttribute = function setAttribute(this: Element, name: string, value: string) {
+    const attrName = name.toLowerCase()
+    const shouldNormalize =
+      (this instanceof HTMLImageElement && (attrName === 'src' || attrName === 'srcset')) ||
+      (typeof HTMLSourceElement !== 'undefined' && this instanceof HTMLSourceElement && attrName === 'srcset')
+
+    if (shouldNormalize) {
+      return originalSetAttribute.call(this, name, normalizeImageAttributeValue(name, value))
+    }
+    return originalSetAttribute.call(this, name, value)
+  }
+
+  patchSourceProperty(HTMLImageElement.prototype, 'src')
+  patchSourceProperty(HTMLImageElement.prototype, 'srcset')
+
+  if (typeof HTMLSourceElement !== 'undefined') {
+    patchSourceProperty(HTMLSourceElement.prototype, 'srcset')
+  }
+}
+
+const normalizeImageElementSources = (img: HTMLImageElement | HTMLSourceElement) => {
+  if (img instanceof HTMLImageElement && isFallbackImage(img)) return false
+
+  const src = img instanceof HTMLImageElement ? img.getAttribute('src') : ''
   const srcset = img.getAttribute('srcset')
   const normalizedSrc = normalizeImageCdnUrl(src)
-  const normalizedSrcset = normalizeSrcset(srcset)
+  const normalizedSrcset = normalizeImageCdnSrcset(srcset)
   const shouldReplaceSrc = Boolean(src && normalizedSrc !== src)
   const shouldReplaceSrcset = Boolean(srcset && normalizedSrcset !== srcset)
 
   if (!shouldReplaceSrc && !shouldReplaceSrcset) return false
 
-  img.dataset.imageCdnFallbackTried = 'true'
-
   if (shouldReplaceSrc) {
-    img.dataset.imageCdnFallbackSrc = normalizedSrc
     img.setAttribute('src', normalizedSrc)
   }
 
   if (shouldReplaceSrcset) {
-    img.dataset.imageCdnFallbackSrcset = normalizedSrcset
     img.setAttribute('srcset', normalizedSrcset)
   }
 
+  return true
+}
+
+const applyCdnFallback = (img: HTMLImageElement) => {
+  if (img.dataset.imageCdnFallbackTried === 'true') return false
+
+  const changed = normalizeImageElementSources(img)
+  if (!changed) return false
+
+  img.dataset.imageCdnFallbackTried = 'true'
+  img.dataset.imageCdnFallbackSrc = img.getAttribute('src') ?? ''
+  img.dataset.imageCdnFallbackSrcset = img.getAttribute('srcset') ?? ''
   return true
 }
 
@@ -115,46 +194,54 @@ const hasUsableSource = (img: HTMLImageElement) => {
 const applyFallbackIfSourceIsEmpty = (img: HTMLImageElement) => {
   queueMicrotask(() => {
     if (!img.isConnected || isFallbackImage(img)) return
+    normalizeImageElementSources(img)
     if (hasUsableSource(img)) return
     applySolidFallback(img)
   })
 }
 
 const inspectNode = (node: Node) => {
-  if (node instanceof HTMLImageElement) {
-    applyFallbackIfSourceIsEmpty(node)
+  if (isImageSourceElement(node)) {
+    normalizeImageElementSources(node)
+    if (node instanceof HTMLImageElement) applyFallbackIfSourceIsEmpty(node)
     return
   }
 
   if (!(node instanceof Element)) return
-  node.querySelectorAll('img').forEach((img) => {
-    applyFallbackIfSourceIsEmpty(img)
+  node.querySelectorAll('img, source').forEach((element) => {
+    if (!isImageSourceElement(element)) return
+    normalizeImageElementSources(element)
+    if (element instanceof HTMLImageElement) applyFallbackIfSourceIsEmpty(element)
   })
 }
 
 const startObservingImages = () => {
   if (!document.body || observer) return
 
-  document.querySelectorAll('img').forEach((img) => {
-    applyFallbackIfSourceIsEmpty(img)
+  document.querySelectorAll('img, source').forEach((element) => {
+    if (!isImageSourceElement(element)) return
+    normalizeImageElementSources(element)
+    if (element instanceof HTMLImageElement) applyFallbackIfSourceIsEmpty(element)
   })
 
   observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.target instanceof HTMLImageElement) {
-        const img = mutation.target
-        const src = img.getAttribute('src') ?? ''
-        const srcset = img.getAttribute('srcset') ?? ''
+      if (mutation.type === 'attributes' && isImageSourceElement(mutation.target)) {
+        const imageSource = mutation.target
+        const src = imageSource.getAttribute('src') ?? ''
+        const srcset = imageSource.getAttribute('srcset') ?? ''
         const isOwnCdnFallback =
-          (img.dataset.imageCdnFallbackSrc && src === img.dataset.imageCdnFallbackSrc) ||
-          (img.dataset.imageCdnFallbackSrcset && srcset === img.dataset.imageCdnFallbackSrcset)
+          imageSource instanceof HTMLImageElement &&
+          ((imageSource.dataset.imageCdnFallbackSrc && src === imageSource.dataset.imageCdnFallbackSrc) ||
+            (imageSource.dataset.imageCdnFallbackSrcset && srcset === imageSource.dataset.imageCdnFallbackSrcset))
 
-        if (!isOwnCdnFallback) {
-          clearCdnFallbackState(img)
+        if (!isOwnCdnFallback && imageSource instanceof HTMLImageElement) {
+          clearCdnFallbackState(imageSource)
         }
 
-        if (!isFallbackImage(img)) clearFallbackState(img)
-        applyFallbackIfSourceIsEmpty(img)
+        if (imageSource instanceof HTMLImageElement && !isFallbackImage(imageSource)) clearFallbackState(imageSource)
+        normalizeImageElementSources(imageSource)
+        if (imageSource instanceof HTMLImageElement) applyFallbackIfSourceIsEmpty(imageSource)
         return
       }
 
@@ -174,6 +261,7 @@ export const installSolidImageFallback = () => {
   if (installed || typeof window === 'undefined') return
   installed = true
 
+  installImageSourceNormalizer()
   window.addEventListener('error', handleImageError, true)
   window.addEventListener('load', handleImageLoad, true)
 

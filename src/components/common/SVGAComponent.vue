@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
 import { Downloader, Parser, Player } from 'svga.lite';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 /**
  * SVGA 单例管理 (单文件组件作用域外)
@@ -25,10 +26,12 @@ const emit = defineEmits<{
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const normalizedUrl = computed(() => normalizeImageCdnUrl(props.url));
 let svgaPlayer: Player | null = null;
 
 const initSVGA = async () => {
-  if (!canvasRef.value || !props.url) return;
+  const url = normalizedUrl.value;
+  if (!canvasRef.value || !url) return;
 
   try {
     // 实例化当前组件的播放器
@@ -41,16 +44,16 @@ const initSVGA = async () => {
     }
 
     // 尝试从内存缓存获取解析后的数据
-    let videoItem = videoItemCache.get(props.url);
+    let videoItem = videoItemCache.get(url);
 
     if (!videoItem) {
       // 缓存未命中，执行下载和解析
-      const fileData = await sharedDownloader.get(props.url);
+      const fileData = await sharedDownloader.get(url);
       videoItem = await sharedParser.do(fileData);
-      videoItemCache.set(props.url, videoItem); // 写入缓存
-      console.log('[SVGA Cache] Parsed & Cached:', props.url);
+      videoItemCache.set(url, videoItem); // 写入缓存
+      console.log('[SVGA Cache] Parsed & Cached:', url);
     } else {
-      console.log('[SVGA Cache] Hit:', props.url);
+      console.log('[SVGA Cache] Hit:', url);
     }
 
     // 停止并清理当前状态
@@ -70,9 +73,9 @@ const initSVGA = async () => {
     await svgaPlayer.mount(videoItem);
     svgaPlayer.start();
 
-    console.log('[SVGA Lite] Started:', props.url);
+    console.log('[SVGA Lite] Started:', url);
   } catch (err) {
-    console.error('[SVGA Lite] Shared Error:', err, 'URL:', props.url);
+    console.error('[SVGA Lite] Shared Error:', err, 'URL:', url);
   }
 };
 
@@ -90,7 +93,7 @@ onUnmounted(() => {
 });
 
 // 监听 URL 变化自动重播
-watch(() => props.url, (newUrl) => {
+watch(normalizedUrl, (newUrl) => {
   if (newUrl) {
     initSVGA();
   }

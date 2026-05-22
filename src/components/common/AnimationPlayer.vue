@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import SVGAComponent from './SVGAComponent.vue';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 /**
  * AnimationPlayer.vue
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 
 const processedSrc = computed(() => {
   if (!props.src) return '';
-  return props.src;
+  return normalizeImageCdnUrl(props.src);
 });
 
 // 识别是否为 SVGA 资源

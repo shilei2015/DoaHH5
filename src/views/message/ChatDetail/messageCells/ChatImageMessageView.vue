@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted, watch } from 'vue';
 import { MessageSendStatus, type LHMessage } from '@/utils/msg/MessageModel';
 import { useUserStore } from '@/stores/userStore';
+import { normalizeImageCdnUrl } from '@/utils/imageFallback';
 
 const props = defineProps<{
     msg: LHMessage;
@@ -9,7 +10,7 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const isMe = computed(() => props.msg.fromUid === userStore.userInfo?.UserId);
-const currentUserAvatar = computed(() => userStore.userInfo?.HeadImage ?? '');
+const currentUserAvatar = computed(() => normalizeImageCdnUrl(userStore.userInfo?.HeadImage));
 
 const emit = defineEmits<{
     (e: 'clickSendFaild', msg: LHMessage): void,
@@ -30,7 +31,7 @@ const displayUrl = computed(() => {
         }
         return objectUrl.value;
     }
-    return props.msg.imageObj?.urlString ?? '';
+    return normalizeImageCdnUrl(props.msg.imageObj?.urlString);
 });
 
 const onImageLoad = () => {
