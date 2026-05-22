@@ -12,7 +12,7 @@ import { logoutApp } from '@/utils/native/A0019Bridge';
 const userStore = useUserStore();
 const router = useRouter();
 const showLogoutConfirm = ref(false);
-const showLogoutItem = false;
+const showLogoutItem = true;
 
 /**
  * Handle logout action
