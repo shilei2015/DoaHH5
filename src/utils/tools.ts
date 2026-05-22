@@ -57,8 +57,8 @@ export function formatTimestamp(timestamp: string | number | undefined | null, f
     let ts = Number(timestamp);
     if (isNaN(ts)) return String(timestamp);
 
-    // 如果是 10 位数，认为是秒，转为毫秒
-    if (String(Math.floor(ts)).length === 10) {
+    // 小于 1e12 的 Unix 时间戳按秒处理，兼容 9 位/10 位秒级生日时间戳
+    if (Math.abs(ts) < 1e12) {
         ts *= 1000;
     }
 
@@ -85,8 +85,8 @@ export function getAge(timestamp: string | number | undefined | null): number {
     let ts = Number(timestamp);
     if (isNaN(ts) || ts <= 0) return 0;
 
-    // 如果是 10 位数，认为是秒，转为毫秒
-    if (String(Math.floor(ts)).length === 10) {
+    // 小于 1e12 的 Unix 时间戳按秒处理，兼容 9 位/10 位秒级生日时间戳
+    if (Math.abs(ts) < 1e12) {
         ts *= 1000;
     }
 

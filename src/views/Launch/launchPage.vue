@@ -29,26 +29,23 @@ const toMainTab = () => {
     }
     router.replace({ name: "anchorList" })
 }
-const getSysInfo = async () => {
-    try {
-        await userStore.initSystemInfo()
-        await checkLogin()
-    } catch (error) {
-        console.error("Launch setup failed:", error);
-        isLoading.value = false
-    }
-}
 
 const checkLogin = async () => {
     try {
-        if (userStore.token.length > 0) {
-            await userStore.updateLoginUserInfo()
+        const hasCompleteSession = Boolean(userStore.token.length > 0 && userStore.userInfo?.UserId)
+
+        if (hasCompleteSession) {
             loginedMissions.start()
             // 添加延迟，确保loading能够显示
             await new Promise(resolve => setTimeout(resolve, 1000))
             isLoading.value = false
             toMainTab()
         } else {
+            if (userStore.token.length > 0 || userStore.userInfo) {
+                userStore.token = ''
+                userStore.userInfo = null
+                userStore.rtmToken = ''
+            }
             const ok = await userStore.registerGuest()
             // 添加延迟，确保loading能够显示
             await new Promise(resolve => setTimeout(resolve, 1000))
@@ -72,7 +69,10 @@ onMounted(() => {
     trackAdjustEvent('launch_app')
     // 确保页面挂载后再执行初始化
     setTimeout(() => {
-        getSysInfo()
+        checkLogin().catch((error) => {
+            console.error("Launch setup failed:", error);
+            isLoading.value = false
+        })
     }, 100)
 })
 </script>

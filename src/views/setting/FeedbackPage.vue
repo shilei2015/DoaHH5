@@ -108,8 +108,8 @@ watch(fileList, (list) => {
 
       <!-- Media Upload -->
       <section class="section">
-        <van-uploader v-model="fileList" multiple :max-count="MAX_FEEDBACK_IMAGE_COUNT"
-          :data-max-count="remainingFeedbackImageCount" :data-selection-limit="remainingFeedbackImageCount"
+        <van-uploader v-model="fileList" accept="image/*" multiple :max-count="MAX_FEEDBACK_IMAGE_COUNT"
+          :data-max="remainingFeedbackImageCount" :data-max-count="remainingFeedbackImageCount" :data-selection-limit="remainingFeedbackImageCount"
           :data-total-max-count="MAX_FEEDBACK_IMAGE_COUNT" :preview-size="['120px', '160px']"
           class="media-uploader">
           <div class="upload-placeholder">

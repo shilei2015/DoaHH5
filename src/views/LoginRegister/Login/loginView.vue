@@ -56,8 +56,8 @@ const toPrivacyPolicyPage = () => {
     <div class="page-container">
         <!-- 品牌区域 -->
         <div class="brand-section">
-            <img class="logo" :src="logoLogo" alt="MOMOF Logo">
-            <span class="appName">MOMOF</span>
+            <img class="logo" :src="logoLogo" alt="DOA Logo">
+            <span class="appName">DOA</span>
         </div>
 
         <!-- 底部操作区域 -->

@@ -35,6 +35,16 @@ const clickCall = () => {
     MOMORTC.startAnchorCall(props.anchor.UserId)
 }
 
+const displayAge = computed(() => {
+    const birthdayAge = getAge(props.anchor.Birthday);
+    if (birthdayAge > 0) {
+        return String(birthdayAge);
+    }
+
+    const apiAge = Number(props.anchor.Age);
+    return Number.isFinite(apiAge) && apiAge > 0 ? String(Math.floor(apiAge)) : "";
+});
+
 const openProfile = () => {
     emit('open-profile', props.anchor.UserId);
     router.push({ path: '/anchorProfile', query: { id: props.anchor.UserId } });
@@ -59,7 +69,7 @@ const openProfile = () => {
                     alt="HOT" />
                 <img v-else-if="anchor.IsNewGirls === '1'" src="@/assets/new_badge.png" class="hot-badge-img"
                     alt="NEW" />
-                <div class="name-age">{{ anchor.Nickname }}, {{ getAge(anchor.Birthday) }}</div>
+                <div class="name-age">{{ anchor.Nickname }}<template v-if="displayAge">, {{ displayAge }}</template></div>
                 <div class="country-info">
                     <span class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
                     <span class="country-name">{{ anchor.Country }}</span>

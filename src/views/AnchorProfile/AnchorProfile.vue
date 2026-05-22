@@ -27,7 +27,9 @@ const displayAge = computed(() => {
     if (birthdayAge > 0) {
         return String(birthdayAge);
     }
-    return anchorInfo.value?.Age ? String(anchorInfo.value.Age) : "";
+
+    const apiAge = Number(anchorInfo.value?.Age);
+    return Number.isFinite(apiAge) && apiAge > 0 ? String(Math.floor(apiAge)) : "";
 });
 
 const isMale = computed(() => anchorInfo.value?.Gender === '1');

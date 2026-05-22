@@ -267,7 +267,7 @@ onMounted(() => {
       <section class="album-section">
         <h2 class="section-title">Album</h2>
         <van-uploader v-model="albumList" accept="image/*" multiple :max-count="MAX_ALBUM_COUNT"
-          :data-max-count="remainingAlbumCount" :data-selection-limit="remainingAlbumCount"
+          :data-max="remainingAlbumCount" :data-max-count="remainingAlbumCount" :data-selection-limit="remainingAlbumCount"
           :data-total-max-count="MAX_ALBUM_COUNT" class="media-uploader">
           <div class="upload-placeholder">
             <div class="add-box">

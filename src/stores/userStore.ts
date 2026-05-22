@@ -10,6 +10,11 @@ export const useUserStore = defineStore('useUserStore', () => {
     const token = ref("")
     const userInfo = ref<UserInfoModel | null>(null)
     const rtmToken = ref("")
+    const clearAuthState = () => {
+        token.value = ""
+        userInfo.value = null
+        rtmToken.value = ""
+    }
     const updateLoginUserInfo = async () => {
         const res = await post(API.main_user_info, {})
         if (res.code == "0") {
@@ -32,7 +37,7 @@ export const useUserStore = defineStore('useUserStore', () => {
         }
     }
 
-    /** 无登录页时：匿名注册（与原生游客登录一致传 Gender=0），成功后写入 token / rtmToken 并拉取用户信息 */
+    /** 无登录页时：匿名注册（与原生游客登录一致传 Gender=0），成功后写入 token / rtmToken / userInfo */
     const registerGuest = async (): Promise<boolean> => {
         try {
             const res = await post(API.register, {
@@ -46,8 +51,8 @@ export const useUserStore = defineStore('useUserStore', () => {
             if (ok) {
                 token.value = res.data.Token
                 rtmToken.value = res.data.RtmToken
+                userInfo.value = res.data.User
                 trackAdjustEvent('registration')
-                await updateLoginUserInfo()
                 return true
             }
             console.warn('[UserStore] registerGuest failed:', res.code, res.data)
@@ -58,13 +63,6 @@ export const useUserStore = defineStore('useUserStore', () => {
         }
     }
     const isBootstrapDone = ref(false)
-    const initSystemInfo = async () => {
-        try {
-            await post(API.sys_info, {})
-        } catch (error) {
-            console.error('[UserStore] initSystemInfo failed:', error)
-        }
-    }
 
     /**
      * App 引导启动流程 (冷启动/刷新恢复)
@@ -86,23 +84,25 @@ export const useUserStore = defineStore('useUserStore', () => {
         }, 5000);
 
         try {
-            // 1. 系统核心配置
-            await initSystemInfo();
+            const hasToken = Boolean(token.value)
+            const hasUserInfo = Boolean(userInfo.value?.UserId)
+            const hasCompleteSession = hasToken && hasUserInfo
 
-            if (token.value) {
-                // 2. 动态导入任务管理器，彻底断开循环引用
-                const { default: missions } = await import('@/utils/loginedMissions');
+            // 只要缺一个，就按未登录处理，避免半残状态继续往下跑
+            if (hasToken !== hasUserInfo) {
+                clearAuthState()
+            }
 
-                // 3. 阻塞执行关键初始化 (DB, UserInfo)
+            if (hasCompleteSession) {
+                const missionsImport = import('@/utils/loginedMissions');
+                // 动态导入任务管理器，彻底断开循环引用
+                const { default: missions } = await missionsImport;
+
+                // 阻塞执行关键初始化 (DB, UserInfo)
                 await missions.initEnvironment();
 
-                // 4. 异步开启后台长连接/定时器
+                // 异步开启后台长连接/定时器
                 missions.start();
-
-                // 5. 补全用户信息状态（如果 initEnvironment 没能完美赋值）
-                if (!userInfo.value) {
-                    await updateLoginUserInfo();
-                }
             }
         } catch (err) {
             console.error("[UserStore] Bootstrap phase error:", err);
@@ -117,17 +117,15 @@ export const useUserStore = defineStore('useUserStore', () => {
         const { default: missions } = await import('@/utils/loginedMissions');
         missions.stop()
 
-        token.value = ""
-        userInfo.value = null
-        rtmToken.value = ""
+        clearAuthState()
         isBootstrapDone.value = false;
         syncMessageUnreadToNative(0)
     }
-    return { token, rtmToken, userInfo, isBootstrapDone, updateLoginUserInfo, getUserInfoById, updateRTMToken, initSystemInfo, bootstrapApp, logout, registerGuest }
+    return { token, rtmToken, userInfo, isBootstrapDone, updateLoginUserInfo, getUserInfoById, updateRTMToken, bootstrapApp, logout, registerGuest }
 },
     {
         persist: {
-            pick: ['token'],
+            pick: ['token', 'userInfo'],
         }
     }
 )

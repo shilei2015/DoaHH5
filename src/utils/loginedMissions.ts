@@ -45,14 +45,13 @@ class LoginedMissions {
         if (this.isEnvInitialized) return;
 
         const userStore = useUserStore();
-        // 关键：确保拿到最新的用户信息 (获取 UserId)
-        await userStore.updateLoginUserInfo();
-        
         if (userStore.userInfo?.UserId) {
             // 正式初始化数据库：这一步必须在页面挂载前完成
             initDB(userStore.userInfo.UserId);
             this.isEnvInitialized = true;
             console.log("[LoginedMissions] Environment initialized (DB ready)");
+        } else {
+            console.warn("[LoginedMissions] initEnvironment skipped: missing userInfo");
         }
     }
 
@@ -63,6 +62,7 @@ class LoginedMissions {
     public async start() {
         // 先确保基础环境已就绪
         await this.initEnvironment();
+        if (!this.isEnvInitialized) return;
 
         if (this.initPromise) return this.initPromise;
 
@@ -114,11 +114,28 @@ class LoginedMissions {
     private async loginRTMBackground() {
         const userStore = useUserStore()
         const rtm = useMomoRTM()
+        const hasCachedToken = Boolean(userStore.rtmToken)
         
-        // 刷新 RTM Token 并登录 Agora 信令系统 (处理 Call 呼叫)
-        await userStore.updateRTMToken()
-        if (userStore.userInfo?.UserId && userStore.rtmToken) {
-            await rtm.loginRTM(userStore.userInfo.UserId, userStore.rtmToken)
+        // 优先使用注册/缓存里已有的 RTM Token，没有再刷新；如果登录失败，再回源刷新一次。
+        try {
+            if (!userStore.rtmToken) {
+                await userStore.updateRTMToken()
+            }
+            if (userStore.userInfo?.UserId && userStore.rtmToken) {
+                await rtm.loginRTM(userStore.userInfo.UserId, userStore.rtmToken)
+            }
+        } catch (error) {
+            console.warn('[LoginedMissions] RTM login with cached token failed, retrying with refreshed token:', error)
+            if (hasCachedToken) {
+                try {
+                    await userStore.updateRTMToken()
+                    if (userStore.userInfo?.UserId && userStore.rtmToken) {
+                        await rtm.loginRTM(userStore.userInfo.UserId, userStore.rtmToken)
+                    }
+                } catch (retryError) {
+                    console.warn('[LoginedMissions] RTM login retry failed:', retryError)
+                }
+            }
         }
     }
 
