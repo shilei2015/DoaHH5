@@ -12,6 +12,7 @@ import { logoutApp } from '@/utils/native/A0019Bridge';
 const userStore = useUserStore();
 const router = useRouter();
 const showLogoutConfirm = ref(false);
+const showLogoutItem = false;
 
 /**
  * Handle logout action
@@ -47,7 +48,7 @@ const confirmLogout = () => {
     <div class="content">
       <!-- Account Actions Group -->
       <section class="account-list">
-        <button class="account-row" type="button" @click="handleLogout">
+        <button v-if="showLogoutItem" class="account-row" type="button" @click="handleLogout">
           <span>Logout</span>
           <span class="chevron">›</span>
         </button>
