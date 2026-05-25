@@ -36,18 +36,14 @@ const isApplePayLoading = ref(false);
 const isApplePayReady = ref(false);
 const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
-let applePayLoadingTimer: number | null = null;
 let applePayFailureTimer: number | null = null;
+let applePayRevealTimer: number | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
 const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
 
 const stopApplePayLoading = () => {
   isApplePayLoading.value = false;
-  if (applePayLoadingTimer !== null) {
-    window.clearTimeout(applePayLoadingTimer);
-    applePayLoadingTimer = null;
-  }
 };
 
 const showApplePayButton = () => {
@@ -61,6 +57,13 @@ const clearApplePayFailureTimer = () => {
   if (applePayFailureTimer !== null) {
     window.clearTimeout(applePayFailureTimer);
     applePayFailureTimer = null;
+  }
+};
+
+const clearApplePayRevealTimer = () => {
+  if (applePayRevealTimer !== null) {
+    window.clearTimeout(applePayRevealTimer);
+    applePayRevealTimer = null;
   }
 };
 
@@ -82,6 +85,7 @@ const isApplePayRuntimeAvailable = () => {
 const failApplePay = () => {
   stopApplePayLoading();
   clearApplePayFailureTimer();
+  clearApplePayRevealTimer();
   if (props.onApplePayUnavailable) {
     props.onApplePayUnavailable();
   } else {
@@ -97,15 +101,17 @@ const watchApplePayIframe = () => {
   if (iframe) {
     iframe.setAttribute('allowtransparency', 'true');
     iframe.style.backgroundColor = 'transparent';
+    iframe.style.opacity = '0';
+    iframe.style.visibility = 'hidden';
     iframe.addEventListener('load', () => {
       if (!isApplePayRuntimeAvailable()) {
         failApplePay();
         return;
       }
-      showApplePayButton();
       clearApplePayFailureTimer();
+      clearApplePayRevealTimer();
+      applePayRevealTimer = window.setTimeout(showApplePayButton, 450);
     }, { once: true });
-    applePayLoadingTimer = window.setTimeout(showApplePayButton, 6000);
     clearApplePayFailureTimer();
     applePayFailureTimer = window.setTimeout(failApplePay, 8000);
   }
@@ -139,11 +145,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   applePayObserver?.disconnect();
   applePayObserver = null;
-  if (applePayLoadingTimer !== null) {
-    window.clearTimeout(applePayLoadingTimer);
-    applePayLoadingTimer = null;
-  }
   clearApplePayFailureTimer();
+  clearApplePayRevealTimer();
 });
 
 /**
@@ -414,12 +417,11 @@ defineExpose({
   overflow: hidden;
   border-radius: 8px;
   background: #000000;
-  opacity: 0;
-  transition: opacity 120ms ease;
+  visibility: hidden;
 }
 
 .apple-pay-sdk-container.is-ready {
-  opacity: 1;
+  visibility: visible;
 }
 
 .apple-pay-sdk-container :deep(iframe) {
@@ -428,6 +430,13 @@ defineExpose({
   height: 44px !important;
   background: transparent !important;
   color-scheme: dark;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.apple-pay-sdk-container.is-ready :deep(iframe) {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .apple-pay-mock {
