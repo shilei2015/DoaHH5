@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onActivated } from 'vue';
+import { onActivated, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
@@ -22,6 +22,14 @@ const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
 let titleTapCount = 0;
 let titleTapResetTimer: number | null = null;
+
+const resetTitleTapCount = () => {
+    titleTapCount = 0;
+    if (titleTapResetTimer !== null) {
+        window.clearTimeout(titleTapResetTimer);
+        titleTapResetTimer = null;
+    }
+};
 
 onActivated(() => {
     if (!userInfo.value) {
@@ -58,18 +66,17 @@ const handleTitleTap = () => {
     titleTapResetTimer = window.setTimeout(() => {
         titleTapCount = 0;
         titleTapResetTimer = null;
-    }, 1600);
+    }, 4000);
 
     if (titleTapCount < 5) return;
 
-    titleTapCount = 0;
-    if (titleTapResetTimer !== null) {
-        window.clearTimeout(titleTapResetTimer);
-        titleTapResetTimer = null;
-    }
-
+    resetTitleTapCount();
     HUD.showToast(`builtAt: ${__APP_BUILD_INFO__.builtAt}`, 3500);
 };
+
+onBeforeUnmount(() => {
+    resetTitleTapCount();
+});
 
 const goLikeMe = () => {
     router.push({ name: "LikeMe" })
@@ -89,7 +96,7 @@ const goMyLikes = () => {
         <div class="content">
             <!-- Header Section -->
             <header class="page-header">
-                <span class="title" @click="handleTitleTap">Personal</span>
+                <span class="title" role="button" @pointerup.stop="handleTitleTap">Personal</span>
             </header>
 
             <!-- User Info Section -->
