@@ -38,6 +38,7 @@ const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayFailureTimer: number | null = null;
 let applePayRevealTimer: number | null = null;
+let watchedApplePayIframe: HTMLIFrameElement | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
 const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
@@ -46,7 +47,20 @@ const stopApplePayLoading = () => {
   isApplePayLoading.value = false;
 };
 
-const showApplePayButton = () => {
+const hideApplePayIframe = (iframe: HTMLIFrameElement) => {
+  iframe.setAttribute('allowtransparency', 'true');
+  iframe.style.backgroundColor = 'transparent';
+  iframe.style.opacity = '0';
+  iframe.style.visibility = 'hidden';
+};
+
+const showApplePayIframe = () => {
+  const iframe = applePayContainerRef.value?.querySelector('iframe');
+  if (iframe instanceof HTMLIFrameElement) {
+    iframe.style.opacity = '1';
+    iframe.style.visibility = 'visible';
+  }
+
   requestAnimationFrame(() => {
     isApplePayReady.value = true;
     stopApplePayLoading();
@@ -86,6 +100,7 @@ const failApplePay = () => {
   stopApplePayLoading();
   clearApplePayFailureTimer();
   clearApplePayRevealTimer();
+  watchedApplePayIframe = null;
   if (props.onApplePayUnavailable) {
     props.onApplePayUnavailable();
   } else {
@@ -98,11 +113,9 @@ const watchApplePayIframe = () => {
   if (!container) return;
 
   const iframe = container.querySelector('iframe');
-  if (iframe) {
-    iframe.setAttribute('allowtransparency', 'true');
-    iframe.style.backgroundColor = 'transparent';
-    iframe.style.opacity = '0';
-    iframe.style.visibility = 'hidden';
+  if (iframe instanceof HTMLIFrameElement && iframe !== watchedApplePayIframe) {
+    watchedApplePayIframe = iframe;
+    hideApplePayIframe(iframe);
     iframe.addEventListener('load', () => {
       if (!isApplePayRuntimeAvailable()) {
         failApplePay();
@@ -110,7 +123,7 @@ const watchApplePayIframe = () => {
       }
       clearApplePayFailureTimer();
       clearApplePayRevealTimer();
-      applePayRevealTimer = window.setTimeout(showApplePayButton, 450);
+      applePayRevealTimer = window.setTimeout(showApplePayIframe, 450);
     }, { once: true });
     clearApplePayFailureTimer();
     applePayFailureTimer = window.setTimeout(failApplePay, 8000);
@@ -145,6 +158,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   applePayObserver?.disconnect();
   applePayObserver = null;
+  watchedApplePayIframe = null;
   clearApplePayFailureTimer();
   clearApplePayRevealTimer();
 });
