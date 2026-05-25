@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { getFlagEmoji } from '@/utils/tools';
 import { showCoinShop } from '@/utils/tools/shopService';
+import HUD from '@/components/HUD';
 
 import icEdit from '@/assets/ic_edit.svg';
 import coinIcon from '@/assets/coin_icon.png';
@@ -19,6 +20,8 @@ import icArrowRight from '@/assets/ic_arrow_right.png';
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
+let titleTapCount = 0;
+let titleTapResetTimer: number | null = null;
 
 onActivated(() => {
     if (!userInfo.value) {
@@ -45,6 +48,29 @@ const handleEdit = () => {
     router.push('/profile/edit');
 };
 
+const handleTitleTap = () => {
+    titleTapCount += 1;
+
+    if (titleTapResetTimer !== null) {
+        window.clearTimeout(titleTapResetTimer);
+    }
+
+    titleTapResetTimer = window.setTimeout(() => {
+        titleTapCount = 0;
+        titleTapResetTimer = null;
+    }, 1600);
+
+    if (titleTapCount < 5) return;
+
+    titleTapCount = 0;
+    if (titleTapResetTimer !== null) {
+        window.clearTimeout(titleTapResetTimer);
+        titleTapResetTimer = null;
+    }
+
+    HUD.showToast(`builtAt: ${__APP_BUILD_INFO__.builtAt}`, 3500);
+};
+
 const goLikeMe = () => {
     router.push({ name: "LikeMe" })
 }
@@ -63,7 +89,7 @@ const goMyLikes = () => {
         <div class="content">
             <!-- Header Section -->
             <header class="page-header">
-                <span class="title">Personal</span>
+                <span class="title" @click="handleTitleTap">Personal</span>
             </header>
 
             <!-- User Info Section -->

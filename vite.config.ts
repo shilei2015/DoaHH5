@@ -105,6 +105,11 @@ function dynamicApiProxyPlugin(): PluginOption {
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_BUILD_INFO__: JSON.stringify({
+      builtAt: new Date().toISOString(),
+    }),
+  },
   assetsInclude: [
     'svga',
     'zz'
