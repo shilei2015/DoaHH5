@@ -56,6 +56,19 @@ const handleEdit = () => {
     router.push('/profile/edit');
 };
 
+const formatLocalBuildTime = (builtAt: string) => {
+    const date = new Date(builtAt);
+    if (Number.isNaN(date.getTime())) return builtAt;
+
+    return new Intl.DateTimeFormat(undefined, {
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).format(date);
+};
+
 const handleTitleTap = () => {
     titleTapCount += 1;
 
@@ -71,7 +84,7 @@ const handleTitleTap = () => {
     if (titleTapCount < 5) return;
 
     resetTitleTapCount();
-    HUD.showToast(`builtAt: ${__APP_BUILD_INFO__.builtAt}`, 3500);
+    HUD.showToast(`builtAt: ${formatLocalBuildTime(__APP_BUILD_INFO__.builtAt)}`, 3500);
 };
 
 onBeforeUnmount(() => {
