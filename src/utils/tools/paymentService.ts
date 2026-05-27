@@ -267,11 +267,6 @@ export const paymentService = {
       return;
     }
 
-    const sdkPromise = loadOnerwaySdk().catch((error) => {
-      console.warn('[Payment] Onerway Apple Pay SDK warmup failed', normalizeErrorForLog(error));
-      return null;
-    });
-
     try {
       const res = await post(API.bj_cashier_pre_order, { ProductId: productId });
 
@@ -306,7 +301,7 @@ export const paymentService = {
       await this.openApplePayOverlay({
         ...applePayOrder,
         price: formatApplePayPrice(product),
-      }, sdkPromise);
+      });
     } catch (error) {
       hidePaymentLoading();
       this.close(false);
