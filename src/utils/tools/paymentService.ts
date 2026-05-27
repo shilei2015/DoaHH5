@@ -257,6 +257,8 @@ export const paymentService = {
     onFinishedCallback = onFinished || null;
     const productId = product.ProductId;
 
+    HUD.showLoading();
+
     if (!canUseApplePayRuntime()) {
       hidePaymentLoading();
       console.warn('[Payment] Apple Pay runtime unavailable', getApplePayRuntimeStatus());

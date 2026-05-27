@@ -42,14 +42,12 @@ let watchedApplePayIframe: HTMLIFrameElement | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
 const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
-const applePayPanelBackground = '#2F2B34';
-
 const stopApplePayLoading = () => {
   isApplePayLoading.value = false;
 };
 
 const hideApplePayIframe = (iframe: HTMLIFrameElement) => {
-  iframe.style.backgroundColor = applePayPanelBackground;
+  iframe.style.backgroundColor = 'transparent';
   iframe.style.opacity = '0';
   iframe.style.visibility = 'hidden';
 };
@@ -443,7 +441,7 @@ defineExpose({
   display: block;
   width: 100% !important;
   height: 44px !important;
-  background: #2F2B34 !important;
+  background: transparent !important;
   color-scheme: dark;
   opacity: 0 !important;
   visibility: hidden !important;
