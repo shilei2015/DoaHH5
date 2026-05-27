@@ -33,11 +33,9 @@ const isPayLoading = ref(true);
 const isApplePayMode = computed(() => Boolean(props.applePayContainerId || props.applePayMock));
 const applePayDisplayPrice = computed(() => props.applePayMockPrice || props.applePayPrice || '');
 const isApplePayLoading = ref(false);
-const isApplePayReady = ref(false);
 const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayFailureTimer: number | null = null;
-let applePayRevealTimer: number | null = null;
 let watchedApplePayIframe: HTMLIFrameElement | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
@@ -46,36 +44,10 @@ const stopApplePayLoading = () => {
   isApplePayLoading.value = false;
 };
 
-const hideApplePayIframe = (iframe: HTMLIFrameElement) => {
-  iframe.style.backgroundColor = 'transparent';
-  iframe.style.opacity = '0';
-  iframe.style.visibility = 'hidden';
-};
-
-const showApplePayIframe = () => {
-  const iframe = applePayContainerRef.value?.querySelector('iframe');
-  if (iframe instanceof HTMLIFrameElement) {
-    iframe.style.opacity = '1';
-    iframe.style.visibility = 'visible';
-  }
-
-  requestAnimationFrame(() => {
-    isApplePayReady.value = true;
-    stopApplePayLoading();
-  });
-};
-
 const clearApplePayFailureTimer = () => {
   if (applePayFailureTimer !== null) {
     window.clearTimeout(applePayFailureTimer);
     applePayFailureTimer = null;
-  }
-};
-
-const clearApplePayRevealTimer = () => {
-  if (applePayRevealTimer !== null) {
-    window.clearTimeout(applePayRevealTimer);
-    applePayRevealTimer = null;
   }
 };
 
@@ -98,7 +70,6 @@ const isApplePayRuntimeAvailable = () => {
 const failApplePay = () => {
   stopApplePayLoading();
   clearApplePayFailureTimer();
-  clearApplePayRevealTimer();
   watchedApplePayIframe = null;
   if (props.onApplePayUnavailable) {
     props.onApplePayUnavailable();
@@ -114,15 +85,13 @@ const watchApplePayIframe = () => {
   const iframe = container.querySelector('iframe');
   if (iframe instanceof HTMLIFrameElement && iframe !== watchedApplePayIframe) {
     watchedApplePayIframe = iframe;
-    hideApplePayIframe(iframe);
     iframe.addEventListener('load', () => {
       if (!isApplePayRuntimeAvailable()) {
         failApplePay();
         return;
       }
       clearApplePayFailureTimer();
-      clearApplePayRevealTimer();
-      applePayRevealTimer = window.setTimeout(showApplePayIframe, 450);
+      stopApplePayLoading();
     }, { once: true });
     clearApplePayFailureTimer();
     applePayFailureTimer = window.setTimeout(failApplePay, 8000);
@@ -132,7 +101,6 @@ const watchApplePayIframe = () => {
 onMounted(() => {
   if (!isApplePayMode.value) return;
   if (props.applePayMock) {
-    isApplePayReady.value = true;
     stopApplePayLoading();
     return;
   }
@@ -143,7 +111,6 @@ onMounted(() => {
   }
 
   isApplePayLoading.value = true;
-  isApplePayReady.value = false;
   nextTick(() => {
     const container = applePayContainerRef.value;
     if (!container) return;
@@ -159,7 +126,6 @@ onBeforeUnmount(() => {
   applePayObserver = null;
   watchedApplePayIframe = null;
   clearApplePayFailureTimer();
-  clearApplePayRevealTimer();
 });
 
 /**
@@ -212,8 +178,7 @@ defineExpose({
               <span class="apple-pay-mock-brand">Pay</span>
             </button>
           </div>
-          <div v-else :id="props.applePayContainerId" ref="applePayContainerRef" class="apple-pay-sdk-container"
-            :class="{ 'is-ready': isApplePayReady }"></div>
+          <div v-else :id="props.applePayContainerId" ref="applePayContainerRef" class="apple-pay-sdk-container"></div>
         </div>
       </div>
     </VanPopup>
@@ -430,11 +395,6 @@ defineExpose({
   overflow: hidden;
   border-radius: 8px;
   background: #000000;
-  visibility: hidden;
-}
-
-.apple-pay-sdk-container.is-ready {
-  visibility: visible;
 }
 
 .apple-pay-sdk-container :deep(iframe) {
@@ -443,13 +403,6 @@ defineExpose({
   height: 44px !important;
   background: transparent !important;
   color-scheme: dark;
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-.apple-pay-sdk-container.is-ready :deep(iframe) {
-  opacity: 1 !important;
-  visibility: visible !important;
 }
 
 .apple-pay-mock {
