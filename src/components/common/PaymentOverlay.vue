@@ -33,6 +33,7 @@ const isPayLoading = ref(true);
 const isApplePayMode = computed(() => Boolean(props.applePayContainerId || props.applePayMock));
 const applePayDisplayPrice = computed(() => props.applePayMockPrice || props.applePayPrice || '');
 const isApplePayLoading = ref(false);
+const isApplePayReady = ref(false);
 const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayFailureTimer: number | null = null;
@@ -91,6 +92,7 @@ const watchApplePayIframe = () => {
         return;
       }
       clearApplePayFailureTimer();
+      isApplePayReady.value = true;
       stopApplePayLoading();
     }, { once: true });
     clearApplePayFailureTimer();
@@ -101,6 +103,7 @@ const watchApplePayIframe = () => {
 onMounted(() => {
   if (!isApplePayMode.value) return;
   if (props.applePayMock) {
+    isApplePayReady.value = true;
     stopApplePayLoading();
     return;
   }
@@ -111,6 +114,7 @@ onMounted(() => {
   }
 
   isApplePayLoading.value = true;
+  isApplePayReady.value = false;
   nextTick(() => {
     const container = applePayContainerRef.value;
     if (!container) return;
@@ -178,7 +182,8 @@ defineExpose({
               <span class="apple-pay-mock-brand">Pay</span>
             </button>
           </div>
-          <div v-else :id="props.applePayContainerId" ref="applePayContainerRef" class="apple-pay-sdk-container"></div>
+          <div v-else :id="props.applePayContainerId" ref="applePayContainerRef" class="apple-pay-sdk-container"
+            :class="{ 'is-ready': isApplePayReady }"></div>
         </div>
       </div>
     </VanPopup>
@@ -383,8 +388,8 @@ defineExpose({
   justify-content: center;
   min-height: 44px;
   border-radius: 8px;
-  background: #000000;
-  pointer-events: none;
+  background: transparent;
+  pointer-events: auto;
 }
 
 .apple-pay-sdk-container {
@@ -394,7 +399,13 @@ defineExpose({
   line-height: 0;
   overflow: hidden;
   border-radius: 8px;
+  background: transparent;
+  visibility: hidden;
+}
+
+.apple-pay-sdk-container.is-ready {
   background: #000000;
+  visibility: visible;
 }
 
 .apple-pay-sdk-container :deep(iframe) {
