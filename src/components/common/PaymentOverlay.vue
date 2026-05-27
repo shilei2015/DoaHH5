@@ -90,6 +90,7 @@ const isApplePayRuntimeAvailable = () => {
   }).ApplePaySession;
 
   return Boolean(
+    window.isSecureContext &&
     ApplePaySessionCtor &&
     ApplePaySessionCtor.supportsVersion?.(3) &&
     ApplePaySessionCtor.canMakePayments?.()

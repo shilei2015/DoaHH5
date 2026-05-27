@@ -226,6 +226,7 @@ function getApplePayRuntimeStatus() {
     hasApplePaySession: Boolean(ApplePaySessionCtor),
     canMakePayments: Boolean(ApplePaySessionCtor?.canMakePayments?.()),
     supportsVersion3: Boolean(ApplePaySessionCtor?.supportsVersion?.(3)),
+    isSecureContext: window.isSecureContext,
     protocol: window.location.protocol,
     host: window.location.host,
     userAgent: navigator.userAgent,
@@ -234,7 +235,7 @@ function getApplePayRuntimeStatus() {
 
 function canUseApplePayRuntime() {
   const status = getApplePayRuntimeStatus();
-  return status.hasApplePaySession && status.supportsVersion3 && status.canMakePayments;
+  return status.isSecureContext && status.hasApplePaySession && status.supportsVersion3 && status.canMakePayments;
 }
 
 export const paymentService = {
@@ -269,14 +270,11 @@ export const paymentService = {
       return null;
     });
 
-    this.mountApplePayOverlay(formatApplePayPrice(product));
-
     try {
       const res = await post(API.bj_cashier_pre_order, { ProductId: productId });
 
       if (String(res.code) !== '0' || !res.data) {
         hidePaymentLoading();
-        this.close(false);
         console.warn('[Payment] bjCashierPreOrder rejected', res.code, res.data);
         HUD.showToast('Unable to start payment. Please try again.');
         this.clearCallback();
@@ -286,7 +284,6 @@ export const paymentService = {
       const applePayOrder = normalizeApplePayOrder(res.data as BjCashierPreOrderData);
       if (!applePayOrder) {
         hidePaymentLoading();
-        this.close(false);
         console.warn('[Payment] bjCashierPreOrder missing TradeNo or PayUrl', res.data);
         HUD.showToast('Something went wrong. Please try again.');
         this.clearCallback();
@@ -304,7 +301,10 @@ export const paymentService = {
       });
 
       hidePaymentLoading();
-      await this.renderApplePaySdk(applePayOrder, sdkPromise);
+      await this.openApplePayOverlay({
+        ...applePayOrder,
+        price: formatApplePayPrice(product),
+      }, sdkPromise);
     } catch (error) {
       hidePaymentLoading();
       this.close(false);
@@ -425,9 +425,9 @@ export const paymentService = {
     orderId: string | null;
     methodId: string | null;
     price?: string;
-  }) {
+  }, sdkPromise?: Promise<PacypayConstructor | null>) {
     this.mountApplePayOverlay(order.price || '');
-    await this.renderApplePaySdk(order);
+    await this.renderApplePaySdk(order, sdkPromise);
   },
 
   async renderApplePaySdk(order: {
