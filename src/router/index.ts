@@ -185,6 +185,23 @@ router.afterEach(() => {
 });
 
 let interactiveRoutesPreloaded = false;
+let discoverRoutesPreloaded = false;
+
+export function preloadDiscoverRoutes(): void {
+    if (discoverRoutesPreloaded) return;
+    discoverRoutesPreloaded = true;
+
+    const preloaders = [
+        loadMainTabView,
+        loadAnchorList,
+    ];
+
+    preloaders.forEach((load) => {
+        load().catch((error) => {
+            console.warn('[Router] discover route preload failed:', error);
+        });
+    });
+}
 
 export function preloadInteractiveRoutes(): void {
     if (interactiveRoutesPreloaded) return;

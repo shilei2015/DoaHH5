@@ -69,7 +69,10 @@ const openProfile = () => {
                     alt="HOT" />
                 <img v-else-if="anchor.IsNewGirls === '1'" src="@/assets/new_badge.png" class="hot-badge-img"
                     alt="NEW" />
-                <div class="name-age">{{ anchor.Nickname }}<template v-if="displayAge">, {{ displayAge }}</template></div>
+                <div class="name-age">
+                    <span class="nickname-text">{{ anchor.Nickname }}</span>
+                    <span v-if="displayAge" class="age-text">, {{ displayAge }}</span>
+                </div>
                 <div class="country-info">
                     <span class="flag">{{ getFlagEmoji(anchor.CountryCode) }}</span>
                     <span class="country-name">{{ anchor.Country }}</span>
@@ -194,7 +197,7 @@ const openProfile = () => {
 .info-area {
     position: absolute;
     left: 10px;
-    right: 64px;
+    right: 78px;
     bottom: 12px;
     z-index: 2;
     display: flex;
@@ -209,11 +212,24 @@ const openProfile = () => {
     font-size: 15px;
     font-weight: 700;
     line-height: 20px;
-    /* 截断过长文字，避免压住右侧按钮 */
+    display: flex;
+    align-items: center;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
     white-space: nowrap;
+}
+
+.nickname-text {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
+    white-space: nowrap;
+}
+
+.age-text {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .country-info {

@@ -1,11 +1,14 @@
 /** 先于桥接解析 URL（含 Bundle 桥标识），再挂载 A0019Bridge */
 import '@/utils/net/config'
 
-import { initOptionalVConsole } from '@/utils/debugConsole'
 import { installSolidImageFallback } from '@/utils/imageFallback'
 import { installFileInputTracker } from '@/utils/native/fileInputTracker'
 
-initOptionalVConsole()
+if (import.meta.env.DEV) {
+    void import('@/utils/debugConsole').then(({ initOptionalVConsole }) => {
+        initOptionalVConsole()
+    })
+}
 installSolidImageFallback()
 installFileInputTracker()
 

@@ -12,6 +12,7 @@ import { showCoinShop } from '@/utils/tools/shopService';
 import { useDiscoverRefreshStore } from '@/stores/discoverRefreshStore';
 import { useUserStore } from '@/stores/userStore';
 import { onBeforeRouteLeave, useRoute } from 'vue-router';
+import { consumeDiscoverPrefetch, waitForDiscoverPrefetch } from '@/utils/discoverPrefetch';
 
 const anchorListScrollState = {
     top: 0,
@@ -76,6 +77,34 @@ const PAGE_LIMIT = 18
 var currentPage = ref(1)
 
 let cateRefreshInFlight = false
+
+const applyPrefetchedDiscoverHome = (prefetch: ReturnType<typeof consumeDiscoverPrefetch>) => {
+    if (!prefetch) return false
+
+    showCategoryTabs.value = prefetch.showCategoryTabs
+    categories.value = prefetch.categories.map((c, i) => ({
+        ...c,
+        active: prefetch.activeNavId ? c.NavId === prefetch.activeNavId : i === 0,
+    }))
+    anchors.value = prefetch.anchors
+    currentPage.value = 1
+    isFinished.value = prefetch.anchors.length < PAGE_LIMIT
+    isCategoryListPending.value = false
+    isAnchorListPending.value = false
+    isSwitchingCate.value = false
+    return true
+}
+
+const applyPrefetchOrRefreshCateList = async () => {
+    if (applyPrefetchedDiscoverHome(consumeDiscoverPrefetch())) return
+
+    isCategoryListPending.value = true
+    isAnchorListPending.value = true
+    const prefetch = await waitForDiscoverPrefetch()
+    if (applyPrefetchedDiscoverHome(prefetch)) return
+
+    await refreshCateList()
+}
 
 /**
  * 进入 Discover 时拉最新分类。
@@ -368,12 +397,12 @@ const showInitialAnchorLoading = computed(
 )
 
 onMounted(() => {
-    refreshCateList()
+    void applyPrefetchOrRefreshCateList()
 })
 
 onActivated(() => {
     if (categories.value.length === 0 && anchors.value.length === 0) {
-        refreshCateList()
+        void applyPrefetchOrRefreshCateList()
     }
     restoreScrollTop()
 })

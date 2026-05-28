@@ -6,6 +6,8 @@ import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
 import HUD from '@/components/HUD';
 import { trackAdjustEvent } from '@/utils/native/A0019Bridge';
+import { preloadDiscoverRoutes } from '@/router';
+import { prefetchDiscoverHome } from '@/utils/discoverPrefetch';
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -30,15 +32,30 @@ const toMainTab = () => {
     router.replace({ name: "anchorList" })
 }
 
+const shouldWarmDiscoverEntry = () => {
+    const redirect = getRedirectTarget()
+    return !redirect || redirect === '/tab'
+}
+
+const warmDiscoverEntry = () => {
+    if (!shouldWarmDiscoverEntry()) return
+
+    preloadDiscoverRoutes()
+    void prefetchDiscoverHome()
+}
+
+const waitLaunchTransition = () => new Promise(resolve => setTimeout(resolve, 1000))
+
 const checkLogin = async () => {
     try {
         const hasCompleteSession = Boolean(userStore.token.length > 0 && userStore.userInfo?.UserId)
 
         if (hasCompleteSession) {
-            loginedMissions.start()
-            // 添加延迟，确保loading能够显示
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            warmDiscoverEntry()
+            // 保持启动页过渡节奏，同时把等待时间用于预加载列表入口和首屏数据。
+            await waitLaunchTransition()
             isLoading.value = false
+            loginedMissions.start()
             toMainTab()
         } else {
             if (userStore.token.length > 0 || userStore.userInfo) {
@@ -47,8 +64,9 @@ const checkLogin = async () => {
                 userStore.rtmToken = ''
             }
             const ok = await userStore.registerGuest()
-            // 添加延迟，确保loading能够显示
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            if (ok) warmDiscoverEntry()
+            // 保持启动页过渡节奏，同时把等待时间用于预加载列表入口和首屏数据。
+            await waitLaunchTransition()
             isLoading.value = false
             if (ok) {
                 loginedMissions.start()
@@ -60,20 +78,17 @@ const checkLogin = async () => {
     } catch (error) {
         console.error("Check login failed:", error);
         // 添加延迟，确保loading能够显示
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await waitLaunchTransition()
         isLoading.value = false
     }
 }
 
 onMounted(() => {
     trackAdjustEvent('launch_app')
-    // 确保页面挂载后再执行初始化
-    setTimeout(() => {
-        checkLogin().catch((error) => {
-            console.error("Launch setup failed:", error);
-            isLoading.value = false
-        })
-    }, 100)
+    checkLogin().catch((error) => {
+        console.error("Launch setup failed:", error);
+        isLoading.value = false
+    })
 })
 </script>
 
