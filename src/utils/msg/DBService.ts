@@ -28,6 +28,7 @@ class MOMODatabase extends Dexie {
 }
 
 let db: MOMODatabase | null = null;
+const dbReadyListeners = new Set<() => void>();
 
 // --- Initialization ---
 
@@ -37,6 +38,7 @@ export function initDB(userId: string): void {
     }
     db = new MOMODatabase(userId);
     console.log(`[DBService] Initialized MOMODB_${userId}`);
+    notifyDBReady();
     // Start maintenance task without blocking the main init
     checkAndMergeDuplicates(userId).catch(err => {
         console.error("[DBService] Maintenance failed:", err);
@@ -49,6 +51,28 @@ export function closeDB(): void {
         db = null;
         console.log('[DBService] Database closed');
     }
+}
+
+export function isDBInitialized(): boolean {
+    return Boolean(db);
+}
+
+export function onDBReady(callback: () => void): () => void {
+    if (db) {
+        queueMicrotask(callback);
+        return () => {};
+    }
+
+    dbReadyListeners.add(callback);
+    return () => {
+        dbReadyListeners.delete(callback);
+    };
+}
+
+function notifyDBReady(): void {
+    const listeners = Array.from(dbReadyListeners);
+    dbReadyListeners.clear();
+    listeners.forEach((callback) => queueMicrotask(callback));
 }
 
 function getDB(): MOMODatabase {
@@ -329,4 +353,3 @@ async function checkAndMergeDuplicates(me: string): Promise<void> {
         }
     }
 }
-

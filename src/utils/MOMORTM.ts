@@ -12,6 +12,7 @@ import { useCallStore } from '@/stores/callStore';
 import router from '@/router';
 import RTCService from './MOMORTC';
 import { notificationService } from './tools/notificationService';
+import { isDBInitialized, onDBReady } from './msg/DBService';
 
 // Singleton client instance
 let rtmClient: RTMClient | null = null;
@@ -24,6 +25,18 @@ interface MOMORtmMessage {
     message?: Object
     data?: Object
 }
+
+interface PendingChatPacket {
+    payload: MOMORtmMessage
+    event: any
+}
+
+type IncomingMessageUser = NonNullable<LHMessage['fromUser']>;
+
+const pendingChatPackets: PendingChatPacket[] = [];
+let isFlushingPendingChatPackets = false;
+let hasRegisteredDBReadyFlush = false;
+const MAX_PENDING_CHAT_PACKETS = 100;
 
 export function useMomoRTM() {
     const userStore = useUserStore();
@@ -92,9 +105,93 @@ export function useMomoRTM() {
         }
     };
 
-    const handlerChatMessage = async (payload: MOMORtmMessage, event: any) => {
-        const message: LHMessage = payload.message as LHMessage;
-        message.serverReceivedTs = event.timestamp / 1000;
+    const normalizeIncomingUser = (user: unknown): IncomingMessageUser | undefined => {
+        if (!user || typeof user !== 'object') return undefined;
+
+        const rawUser = user as Record<string, unknown>;
+        return {
+            ...rawUser,
+            UserId: String(rawUser.UserId ?? ''),
+            HeadImage: String(rawUser.HeadImage ?? ''),
+            Nickname: String(rawUser.Nickname ?? ''),
+            Gender: rawUser.Gender === undefined || rawUser.Gender === null ? undefined : String(rawUser.Gender),
+            OnlineState: rawUser.OnlineState === undefined || rawUser.OnlineState === null
+                ? undefined
+                : String(rawUser.OnlineState) as IncomingMessageUser['OnlineState'],
+        } as IncomingMessageUser;
+    };
+
+    const normalizeIncomingChatMessage = (payload: MOMORtmMessage): LHMessage => {
+        if (!payload.message || typeof payload.message !== 'object') {
+            throw new Error('[RTM] Invalid ChatMessage payload: missing message object');
+        }
+
+        const rawMessage = payload.message as Record<string, unknown>;
+        return {
+            ...rawMessage,
+            messageId: rawMessage.messageId === undefined || rawMessage.messageId === null
+                ? ''
+                : String(rawMessage.messageId),
+            msgType: String(rawMessage.msgType ?? MessageType.Text) as LHMessage['msgType'],
+            toUid: rawMessage.toUid === undefined || rawMessage.toUid === null
+                ? undefined
+                : String(rawMessage.toUid),
+            fromUid: rawMessage.fromUid === undefined || rawMessage.fromUid === null
+                ? undefined
+                : String(rawMessage.fromUid),
+            fromUser: normalizeIncomingUser(rawMessage.fromUser),
+            toUser: normalizeIncomingUser(rawMessage.toUser),
+        } as LHMessage;
+    };
+
+    const enqueuePendingChatPacket = (payload: MOMORtmMessage, event: any) => {
+        if (pendingChatPackets.length >= MAX_PENDING_CHAT_PACKETS) {
+            pendingChatPackets.shift();
+            console.warn('[RTM] Pending chat queue is full. Dropping oldest pending message.');
+        }
+
+        pendingChatPackets.push({ payload, event });
+        console.warn('[RTM] ChatMessage received before DB ready. Queued for retry.', {
+            pendingCount: pendingChatPackets.length,
+        });
+
+        if (!hasRegisteredDBReadyFlush) {
+            hasRegisteredDBReadyFlush = true;
+            onDBReady(() => {
+                hasRegisteredDBReadyFlush = false;
+                void flushPendingChatPackets();
+            });
+        }
+    };
+
+    const flushPendingChatPackets = async () => {
+        if (isFlushingPendingChatPackets || !isDBInitialized()) return;
+
+        isFlushingPendingChatPackets = true;
+        try {
+            while (pendingChatPackets.length > 0 && isDBInitialized()) {
+                const packet = pendingChatPackets.shift()!;
+                try {
+                    await handlerChatMessage(packet.payload, packet.event, true);
+                } catch (error) {
+                    console.error('[RTM] Failed to process queued ChatMessage.', error);
+                }
+            }
+        } finally {
+            isFlushingPendingChatPackets = false;
+        }
+    };
+
+    const handlerChatMessage = async (payload: MOMORtmMessage, event: any, fromPendingQueue = false) => {
+        if (!isDBInitialized()) {
+            if (!fromPendingQueue) {
+                enqueuePendingChatPacket(payload, event);
+            }
+            return;
+        }
+
+        const message = normalizeIncomingChatMessage(payload);
+        message.serverReceivedTs = event.timestamp ? event.timestamp / 1000 : Date.now() / 1000;
         message.isRead = false;
         message.translateState = TranslateState.Noyet;
 
