@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onActivated, onBeforeUnmount } from 'vue';
+import { computed, onActivated, onBeforeUnmount, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
@@ -22,6 +22,7 @@ const { userInfo } = storeToRefs(userStore);
 const router = useRouter();
 let titleTapCount = 0;
 let titleTapResetTimer: number | null = null;
+let isRefreshingUserInfo = false;
 
 const resetTitleTapCount = () => {
     titleTapCount = 0;
@@ -31,10 +32,41 @@ const resetTitleTapCount = () => {
     }
 };
 
-onActivated(() => {
-    if (!userInfo.value) {
-        userStore.updateLoginUserInfo();
+const refreshUserInfo = async () => {
+    if (isRefreshingUserInfo) return;
+
+    isRefreshingUserInfo = true;
+    try {
+        await userStore.updateLoginUserInfo();
+    } finally {
+        isRefreshingUserInfo = false;
     }
+};
+
+const readStatValue = (fields: string[]) => {
+    const profile = userInfo.value as Record<string, unknown> | null;
+    if (!profile) return 0;
+
+    for (const field of fields) {
+        const value = profile[field];
+        if (value !== undefined && value !== null && value !== '') {
+            return value;
+        }
+    }
+
+    return 0;
+};
+
+const likedMeNumber = computed(() => readStatValue(['LikeMeNumber', 'LikeMeCount', 'LikeMeNum']));
+const visitorMeNumber = computed(() => readStatValue(['VisitorMeNumber', 'VisitorMeCount', 'VisitorMeNum']));
+const userLikeNumber = computed(() => readStatValue(['UserLikeNumber', 'UserLikeCount', 'UserLikeNum']));
+
+onMounted(() => {
+    refreshUserInfo();
+});
+
+onActivated(() => {
+    refreshUserInfo();
 });
 
 // 菜单项配置
@@ -132,15 +164,15 @@ const goMyLikes = () => {
             <!-- Statistics Grid -->
             <div class="stats-card">
                 <div class="stat-box" @click="goLikeMe">
-                    <span class="stats-num">{{ userInfo?.LikeMeNumber || 0 }}</span>
+                    <span class="stats-num">{{ likedMeNumber }}</span>
                     <span class="stats-label">Liked me</span>
                 </div>
                 <div class="stat-box" @click="goVisitor">
-                    <span class="stats-num">{{ userInfo?.VisitorMeNumber || 0 }}</span>
+                    <span class="stats-num">{{ visitorMeNumber }}</span>
                     <span class="stats-label">Visitors</span>
                 </div>
                 <div class="stat-box" @click="goMyLikes">
-                    <span class="stats-num">{{ userInfo?.UserLikeNumber || 0 }}</span>
+                    <span class="stats-num">{{ userLikeNumber }}</span>
                     <span class="stats-label">Like</span>
                 </div>
             </div>
