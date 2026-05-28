@@ -111,6 +111,11 @@ const goMessage = () => {
     })
 }
 
+const goVideoCall = () => {
+    if (!anchorInfo.value?.UserId) return
+    MOMORTC.startAnchorCall(anchorInfo.value.UserId)
+}
+
 const clickActionMore = () => {
     showUserActionModal(route.query.id as string, {})
 }
@@ -153,22 +158,6 @@ const clickActionMore = () => {
                     </span>
                 </div>
 
-                <!-- 底部浮动按钮区 -->
-                <div class="action-buttons">
-                    <!-- 私信按钮 -->
-                    <button class="action-btn msg-btn" @click="goMessage">
-                        <div class="msg-circle">
-                            <img class="chat-icon" src="@/assets/anchor_profile_chat.svg" alt="Message" />
-                        </div>
-                        <span>Chat</span>
-                    </button>
-
-                    <!-- 视频通话按钮 (居中大尺寸) -->
-                    <button class="action-btn call-btn" @click="MOMORTC.startAnchorCall(anchorInfo.UserId)">
-                        <img class="video-icon" src="@/assets/anchor_profile_video.svg" alt="Video Call" />
-                        <span>Video Chat</span>
-                    </button>
-                </div>
             </div>
 
             <!-- 底部资料区 -->
@@ -200,6 +189,21 @@ const clickActionMore = () => {
             </div>
 
         </div>
+        <div v-if="anchorInfo" class="action-buttons">
+            <!-- 私信按钮 -->
+            <button class="action-btn msg-btn" @click="goMessage">
+                <div class="msg-circle">
+                    <img class="chat-icon" src="@/assets/anchor_profile_chat.svg" alt="Message" />
+                </div>
+                <span>Chat</span>
+            </button>
+
+            <!-- 视频通话按钮 (居中大尺寸) -->
+            <button class="action-btn call-btn" @click="goVideoCall">
+                <img class="video-icon" src="@/assets/anchor_profile_video.svg" alt="Video Call" />
+                <span>Video Chat</span>
+            </button>
+        </div>
         <template v-else>
             <!-- Lightweight loading state for smooth transition -->
             <div class="inner-loading">
@@ -217,18 +221,21 @@ const clickActionMore = () => {
     background-color: #1a1a1a;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
     padding-top: 0;
 }
 
 .profile-scroll-content {
     width: 100%;
-    min-height: calc(100% + 1px);
+    height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* 导航栏 */
@@ -400,7 +407,7 @@ const clickActionMore = () => {
 
 /* 悬浮操作按钮区 */
 .action-buttons {
-    position: fixed;
+    position: absolute;
     bottom: calc(8px + var(--app-safe-bottom, 0px));
     left: 20px;
     right: 20px;

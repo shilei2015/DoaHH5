@@ -196,6 +196,8 @@ onMounted(async () => {
             <div v-else class="empty-view">
                 <img :src="sessionEmptyIcon" alt="" class="empty-illustration" />
             </div>
+
+            <div v-if="chatList.length" class="bottom-placeholder" aria-hidden="true"></div>
         </main>
     </div>
 </template>
@@ -272,7 +274,14 @@ onMounted(async () => {
 
 .chat-list {
     width: 100%;
-    padding-bottom: var(--app-tabbar-content-offset, 88px);
+    padding-bottom: 0;
+    flex: 0 0 auto;
+}
+
+.bottom-placeholder {
+    height: var(--app-tabbar-content-offset, 88px);
+    flex: 0 0 var(--app-tabbar-content-offset, 88px);
+    width: 100%;
 }
 
 .message-item-wrapper {
