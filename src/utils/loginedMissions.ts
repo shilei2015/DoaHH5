@@ -172,13 +172,15 @@ class LoginedMissions {
     }
 
     private async getUserFlyerDeviceInfo() {
-        return null
         const cached = getCachedA0019DeviceIdentifiers();
         if (cached) return cached;
         if (!isA0019Native()) return null;
 
         try {
-            return await getDeviceIdentifiers();
+            return await Promise.race([
+                Promise.resolve().then(() => getDeviceIdentifiers()),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
+            ]);
         } catch (error) {
             console.warn('[LoginedMissions] getDeviceIdentifiers failed:', error);
             return null;
