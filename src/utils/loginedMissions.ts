@@ -172,6 +172,7 @@ class LoginedMissions {
     }
 
     private async getUserFlyerDeviceInfo() {
+        return null
         const cached = getCachedA0019DeviceIdentifiers();
         if (cached) return cached;
         if (!isA0019Native()) return null;
