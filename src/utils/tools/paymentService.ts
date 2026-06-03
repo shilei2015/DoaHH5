@@ -226,6 +226,7 @@ function getApplePayRuntimeStatus() {
     hasApplePaySession: Boolean(ApplePaySessionCtor),
     canMakePayments: Boolean(ApplePaySessionCtor?.canMakePayments?.()),
     supportsVersion3: Boolean(ApplePaySessionCtor?.supportsVersion?.(3)),
+    isAndroid: /Android/i.test(navigator.userAgent),
     isSecureContext: window.isSecureContext,
     protocol: window.location.protocol,
     host: window.location.host,
@@ -233,9 +234,9 @@ function getApplePayRuntimeStatus() {
   };
 }
 
-function canUseApplePayRuntime() {
+function canAttemptOnerwayApplePay() {
   const status = getApplePayRuntimeStatus();
-  return status.isSecureContext && status.hasApplePaySession && status.supportsVersion3 && status.canMakePayments;
+  return !status.isAndroid;
 }
 
 export const paymentService = {
@@ -259,9 +260,9 @@ export const paymentService = {
 
     HUD.showLoading();
 
-    if (!canUseApplePayRuntime()) {
+    if (!canAttemptOnerwayApplePay()) {
       hidePaymentLoading();
-      console.warn('[Payment] Apple Pay runtime unavailable', getApplePayRuntimeStatus());
+      console.warn('[Payment] Apple Pay unavailable on Android device', getApplePayRuntimeStatus());
       HUD.showToast('Apple Pay is unavailable. Please try again later.');
       this.clearCallback();
       return;

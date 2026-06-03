@@ -52,21 +52,7 @@ const clearApplePayFailureTimer = () => {
   }
 };
 
-const isApplePayRuntimeAvailable = () => {
-  const ApplePaySessionCtor = (window as unknown as {
-    ApplePaySession?: {
-      canMakePayments?: () => boolean;
-      supportsVersion?: (version: number) => boolean;
-    };
-  }).ApplePaySession;
-
-  return Boolean(
-    window.isSecureContext &&
-    ApplePaySessionCtor &&
-    ApplePaySessionCtor.supportsVersion?.(3) &&
-    ApplePaySessionCtor.canMakePayments?.()
-  );
-};
+const canAttemptOnerwayApplePay = () => !/Android/i.test(navigator.userAgent);
 
 const failApplePay = () => {
   stopApplePayLoading();
@@ -87,7 +73,7 @@ const watchApplePayIframe = () => {
   if (iframe instanceof HTMLIFrameElement && iframe !== watchedApplePayIframe) {
     watchedApplePayIframe = iframe;
     iframe.addEventListener('load', () => {
-      if (!isApplePayRuntimeAvailable()) {
+      if (!canAttemptOnerwayApplePay()) {
         failApplePay();
         return;
       }
@@ -108,7 +94,7 @@ onMounted(() => {
     return;
   }
 
-  if (!isApplePayRuntimeAvailable()) {
+  if (!canAttemptOnerwayApplePay()) {
     failApplePay();
     return;
   }

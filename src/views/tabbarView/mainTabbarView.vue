@@ -48,11 +48,17 @@ watch(() => [route.name, route.fullPath] as const, ([pageName]) => {
 }, { immediate: true })
 
 const isShowLimitOfferView = ref(false)
+const limitOfferRef = ref<InstanceType<typeof LimitOfferPage> | null>(null)
+const isDebug = import.meta.env.DEV
+
+const showDebugLimitOffer = () => {
+    limitOfferRef.value?.showDebugLimitOffer()
+}
 </script>
 
 <template>
     <div class="main-tabbar-root">
-        <div class="mainTabView" :style="{ paddingBottom: isShowLimitOfferView ? '120px' : '0', boxSizing: 'border-box' }">
+        <div class="mainTabView">
             <RouterView :route="stableTabRoute" v-slot="{ Component, route }">
                 <KeepAlive>
                     <component :is="Component" :key="route.fullPath" />
@@ -60,7 +66,15 @@ const isShowLimitOfferView = ref(false)
             </RouterView>
         </div>
         <TabbarItemContainerView :tabbarItemList="tabbarItemList" @emitsSwitchTo="switchTo"></TabbarItemContainerView>
-        <LimitOfferPage @isShowLimitOfferView="isShowLimitOfferView = $event" class="limitOffer"></LimitOfferPage>
+        <button
+            v-if="isDebug"
+            class="debug-limit-offer-trigger"
+            type="button"
+            @click="showDebugLimitOffer"
+        >
+            调试：限时优惠入口
+        </button>
+        <LimitOfferPage ref="limitOfferRef" @isShowLimitOfferView="isShowLimitOfferView = $event" class="limitOffer"></LimitOfferPage>
     </div>
 </template>
 
@@ -86,8 +100,25 @@ const isShowLimitOfferView = ref(false)
 .limitOffer {
     height: 86px;
     position: fixed;
-    bottom: calc(var(--app-tabbar-height, 76px) + 21px);
+    bottom: calc(var(--app-tabbar-height, 76px) + 17px);
     left: 17px;
     width: calc(100% - 34px);
+}
+
+.debug-limit-offer-trigger {
+    position: fixed;
+    right: 17px;
+    bottom: calc(var(--app-tabbar-height, 76px) + 17px);
+    z-index: 10001;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid rgba(101, 217, 65, 0.45);
+    border-radius: 18px;
+    background: rgba(26, 26, 26, 0.88);
+    color: #65d941;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 36px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
 }
 </style>

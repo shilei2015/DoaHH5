@@ -29,6 +29,8 @@ class MOMODatabase extends Dexie {
 
 let db: MOMODatabase | null = null;
 const dbReadyListeners = new Set<() => void>();
+let duplicateMergePromise: Promise<void> | null = null;
+let hasMergedDuplicates = false;
 
 // --- Initialization ---
 
@@ -37,10 +39,11 @@ export function initDB(userId: string): void {
         db.close();
     }
     db = new MOMODatabase(userId);
+    hasMergedDuplicates = false;
     console.log(`[DBService] Initialized MOMODB_${userId}`);
     notifyDBReady();
     // Start maintenance task without blocking the main init
-    checkAndMergeDuplicates(userId).catch(err => {
+    ensureDuplicatesMerged(userId).catch(err => {
         console.error("[DBService] Maintenance failed:", err);
     });
 }
@@ -190,10 +193,23 @@ export async function getUser(userId: string): Promise<LHMessageUser | undefined
 // --- Chat Record CRUD ---
 
 export async function upsertChatRecord(record: LHMsgChat): Promise<void> {
-    await getDB().recordTable.put(record);
+    const database = getDB();
+    const sameUserRecords = await database.recordTable.where('userId').equals(record.userId).toArray();
+    const duplicateRecords = sameUserRecords.filter((item) => item.chatId !== record.chatId);
+    if (duplicateRecords.length > 0) {
+        let targetRecord = record;
+        for (const duplicateRecord of duplicateRecords) {
+            targetRecord = await mergeChatRecord(database, duplicateRecord, targetRecord);
+        }
+        await database.recordTable.put(targetRecord);
+        return;
+    }
+
+    await database.recordTable.put(record);
 }
 
 export async function getChatRecordList(): Promise<LHMsgChat[]> {
+    await ensureDuplicatesMerged();
     return await getDB().recordTable.orderBy('lastTime').reverse().toArray();
 }
 
@@ -293,63 +309,83 @@ export async function getChatTask(sessionId: string): Promise<ChatTaskRecord> {
 /**
  * Scan for duplicate/old-format chat records and merge them.
  */
-async function checkAndMergeDuplicates(me: string): Promise<void> {
+function ensureDuplicatesMerged(me?: string): Promise<void> {
+    if (hasMergedDuplicates) {
+        return Promise.resolve();
+    }
+    duplicateMergePromise ??= checkAndMergeDuplicates(me).finally(() => {
+        hasMergedDuplicates = true;
+        duplicateMergePromise = null;
+    });
+    return duplicateMergePromise;
+}
+
+async function checkAndMergeDuplicates(me?: string): Promise<void> {
     const database = getDB();
     const allRecords = await database.recordTable.toArray();
+    const currentUserId = me || database.name.replace(/^MOMODB_/, '');
 
     for (const record of allRecords) {
         // Calculate what the correct ID should be based on current logic
-        const currentChatId = generateSessionId(me, record.userId);
+        const currentChatId = generateSessionId(currentUserId, record.userId);
 
         if (record.chatId !== currentChatId) {
             console.log(`[DBService] Migrating old record: ${record.chatId} -> ${currentChatId}`);
 
-            // 1. Check if a record already exists at the correct ID
-            const existingRecord = await database.recordTable.get(currentChatId);
-
-            if (existingRecord) {
-                // MERGE: Pick the latest one
-                if (record.lastTime > existingRecord.lastTime) {
-                    existingRecord.lastText = record.lastText;
-                    existingRecord.lastTime = record.lastTime;
-                }
-                existingRecord.unreadCount += record.unreadCount;
-                // Preserve whatever user info we have
-                if (!existingRecord.user && record.user) {
-                    existingRecord.user = record.user;
-                }
-                await database.recordTable.put(existingRecord);
-            } else {
-                // MOVE: Copy record to new ID
-                const newRecord = { ...record, chatId: currentChatId };
-                await database.recordTable.put(newRecord);
-            }
-
-            // 2. Migrate all messages linked to the old sessionID
-            await database.msgTable
-                .where('sessionID')
-                .equals(record.chatId)
-                .modify({ sessionID: currentChatId });
-
-            // 3. Migrate task records if any
-            const oldTask = await database.recordTaskTable.get(record.chatId);
-            if (oldTask) {
-                const newTask = { ...oldTask, chatId: currentChatId };
-                // Also check if existing task exists
-                const existingTask = await database.recordTaskTable.get(currentChatId);
-                if (existingTask) {
-                    existingTask.helloCompleted = existingTask.helloCompleted || oldTask.helloCompleted;
-                    existingTask.giftCompleted = existingTask.giftCompleted || oldTask.giftCompleted;
-                    await database.recordTaskTable.put(existingTask);
-                } else {
-                    await database.recordTaskTable.put(newTask);
-                }
-                await database.recordTaskTable.delete(record.chatId);
-            }
-
-            // 4. Delete the old record
-            await database.recordTable.delete(record.chatId);
+            await mergeChatRecord(database, record, { ...record, chatId: currentChatId });
             console.log(`[DBService] Migration of ${record.chatId} completed.`);
         }
     }
+}
+
+async function mergeChatRecord(
+    database: MOMODatabase,
+    sourceRecord: LHMsgChat,
+    targetRecord: LHMsgChat
+): Promise<LHMsgChat> {
+    const existingTarget = await database.recordTable.get(targetRecord.chatId);
+    const mergedRecord = existingTarget ? { ...existingTarget } : { ...targetRecord };
+
+    if (sourceRecord.lastTime > mergedRecord.lastTime) {
+        mergedRecord.lastText = sourceRecord.lastText;
+        mergedRecord.lastTime = sourceRecord.lastTime;
+    }
+    if (targetRecord.lastTime > mergedRecord.lastTime) {
+        mergedRecord.lastText = targetRecord.lastText;
+        mergedRecord.lastTime = targetRecord.lastTime;
+    }
+
+    mergedRecord.unreadCount = await database.msgTable
+        .where('sessionID')
+        .anyOf(sourceRecord.chatId, targetRecord.chatId)
+        .filter((msg) => !msg.isRead)
+        .count();
+
+    mergedRecord.user = targetRecord.user || mergedRecord.user || sourceRecord.user;
+    mergedRecord.userId = targetRecord.userId;
+    mergedRecord.chatId = targetRecord.chatId;
+
+    await database.recordTable.put(mergedRecord);
+
+    await database.msgTable
+        .where('sessionID')
+        .equals(sourceRecord.chatId)
+        .modify({ sessionID: targetRecord.chatId });
+
+    const sourceTask = await database.recordTaskTable.get(sourceRecord.chatId);
+    if (sourceTask) {
+        const targetTask = await database.recordTaskTable.get(targetRecord.chatId);
+        await database.recordTaskTable.put({
+            chatId: targetRecord.chatId,
+            helloCompleted: Boolean(targetTask?.helloCompleted || sourceTask.helloCompleted),
+            giftCompleted: Boolean(targetTask?.giftCompleted || sourceTask.giftCompleted),
+        });
+        await database.recordTaskTable.delete(sourceRecord.chatId);
+    }
+
+    if (sourceRecord.chatId !== targetRecord.chatId) {
+        await database.recordTable.delete(sourceRecord.chatId);
+    }
+
+    return mergedRecord;
 }

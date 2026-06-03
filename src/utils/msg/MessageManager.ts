@@ -338,6 +338,23 @@ export function useMessageManager() {
      * Mirrors Swift processChatMessage.
      */
     async function processIncomingMessage(message: LHMessage): Promise<void> {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId || !message.fromUid) {
+            console.warn('[MessageManager] Incoming message ignored: missing current user or sender.', message);
+            return;
+        }
+        if (!message.toUid && message.fromUid !== currentUserId) {
+            message.toUid = currentUserId;
+        }
+        if (message.fromUid !== currentUserId && message.toUid !== currentUserId) {
+            console.warn('[MessageManager] Incoming message ignored: current user is not sender or receiver.', message);
+            return;
+        }
+        if (message.fromUid === currentUserId && (!message.toUid || message.toUid === currentUserId)) {
+            console.warn('[MessageManager] Incoming message ignored: invalid receiver.', message);
+            return;
+        }
+
         message.saveLocal = true;
         message.sessionID = generateSessionId(message.toUid || '', message.fromUid || '');
         console.log("create message sessionId success:", message.sessionID);

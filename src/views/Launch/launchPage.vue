@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
-import launchLogo from '@/assets/dark-launch-logo.png'
 import { useUserStore } from '@/stores/userStore';
 import loginedMissions from '@/utils/loginedMissions';
 import HUD from '@/components/HUD';
@@ -94,7 +93,6 @@ onMounted(() => {
 
 <template>
     <div class="launchContianer">
-        <img :src="launchLogo" class="launch-logo" alt="Logo">
         <div class="loading-container" v-if="isLoading">
             <div class="loading-spinner"></div>
         </div>
@@ -110,22 +108,9 @@ onMounted(() => {
     background-color: #1a1a1a;
 }
 
-.launch-logo {
-    position: absolute;
-    left: 50%;
-    top: 42.4%;
-    width: 140px;
-    height: auto;
-    transform: translate(-50%, -50%);
-    object-fit: contain;
-    z-index: 2;
-}
-
 .loading-container {
-    position: absolute;
-    left: 50%;
-    top: calc(42.4% + 104px);
-    transform: translateX(-50%);
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;

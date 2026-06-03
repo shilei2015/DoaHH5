@@ -27,6 +27,39 @@ const currentTime = ref(Date.now());
 const limitOffInfo = ref<LimitOffModel | null>(null);
 
 const showFullModal = ref(false); // 控制全屏弹窗显示
+const isDebug = import.meta.env.DEV;
+
+const createDebugLimitOfferInfo = (): LimitOffModel => ({
+    State: '1',
+    FirstStart: '0',
+    LimitTime: '3600',
+    IsBuy: '0',
+    Product: {
+        ProductId: 'debug-limit-offer',
+        ProductName: 'Debug Limited Offer',
+        ProductType: '3',
+        ProductSort: '1',
+        ProductCover: '',
+        ProductImages: '',
+        ProductDesc: '',
+        ExtraCoins: '0',
+        Coins: '200',
+        Days: '0',
+        ProductPower: '',
+        IsValid: '1',
+        PaypalSkuId: '',
+        Position: '',
+        Purpose: '',
+        ApplePrice: '1.99',
+        AppleSkuId: 'debug-limit-offer',
+        AppleOriginalPrice: '3.99',
+        GooglePrice: '0.00',
+        GoogleSkuId: '',
+        GoogleOriginalPrice: '0.00',
+        ShowPrice: '$1.99',
+        ShowOriginalPrice: '$3.99',
+    },
+});
 
 const timerHandler = () => {
     currentTime.value = Date.now();
@@ -76,8 +109,33 @@ watch(isShowLimitOfferView, (newValue) => {
     emits("isShowLimitOfferView", newValue as boolean)
 }, { immediate: true })
 
+const showDebugLimitOffer = () => {
+    if (!isDebug) return;
+
+    const info = limitOffInfo.value || createDebugLimitOfferInfo();
+    limitOffInfo.value = {
+        ...info,
+        State: '1',
+        IsBuy: '0',
+        FirstStart: '0',
+        LimitTime: info.LimitTime || '3600',
+        Product: info.Product || createDebugLimitOfferInfo().Product,
+    };
+
+    const now = Date.now();
+    limitOfferStore.limitOffInfoModel = limitOffInfo.value;
+    limitOfferStore.showTimeRange.startTime = now;
+    limitOfferStore.showTimeRange.endTime = now + Number(limitOffInfo.value.LimitTime || 3600) * 1000;
+    limitOfferStore.lastModalShownStartTime = now;
+    currentTime.value = now;
+    timerHandler();
+    timer?.stop();
+    timer?.start();
+}
+
 defineExpose({
-    isShowLimitOfferView
+    isShowLimitOfferView,
+    showDebugLimitOffer
 });
 
 const getLimitOfferInfo = async () => {

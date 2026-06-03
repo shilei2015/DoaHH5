@@ -207,11 +207,28 @@ export function useMomoRTM() {
         message.chatType = chatType;
 
         const manager = getMessageManager();
-        if (!message.toUid) {
-            message.toUid = manager.getCurrentUserId();
-        }
+        const currentUserId = manager.getCurrentUserId();
         if (!message.fromUid) {
             message.fromUid = (payload as any).FromUserId || (payload as any).UserId;
+        }
+        if (!currentUserId) {
+            console.warn('[RTM] ChatMessage ignored: missing current user id.', message);
+            return;
+        }
+        if (!message.fromUid) {
+            console.warn('[RTM] ChatMessage ignored: missing sender id.', message);
+            return;
+        }
+        if (!message.toUid && message.fromUid !== currentUserId) {
+            message.toUid = currentUserId;
+        }
+        if (message.fromUid !== currentUserId && message.toUid !== currentUserId) {
+            console.warn('[RTM] ChatMessage ignored: current user is not sender or receiver.', message);
+            return;
+        }
+        if (message.fromUid === currentUserId && (!message.toUid || message.toUid === currentUserId)) {
+            console.warn('[RTM] ChatMessage ignored: missing valid receiver id for self-sent message.', message);
+            return;
         }
 
         await manager.processIncomingMessage(message);
