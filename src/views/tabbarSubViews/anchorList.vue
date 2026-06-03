@@ -515,10 +515,13 @@ onBeforeRouteLeave(() => {
     gap: 28px;
     padding: 0 20px 13px;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-y: none;
     scrollbar-width: none;
     margin-bottom: 12px;
     border-bottom: 3px solid #252525;
     flex-shrink: 0;
+    touch-action: pan-x;
 }
 
 .category-tabs::-webkit-scrollbar {
