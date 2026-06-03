@@ -374,7 +374,6 @@ defineExpose({
   justify-content: center;
   min-height: 44px;
   border-radius: 8px;
-  background: transparent;
   pointer-events: auto;
 }
 
@@ -385,12 +384,10 @@ defineExpose({
   line-height: 0;
   overflow: hidden;
   border-radius: 8px;
-  background: transparent;
   visibility: hidden;
 }
 
 .apple-pay-sdk-container.is-ready {
-  background: #000000;
   visibility: visible;
 }
 
@@ -398,7 +395,6 @@ defineExpose({
   display: block;
   width: 100% !important;
   height: 44px !important;
-  background: transparent !important;
   color-scheme: dark;
 }
 
