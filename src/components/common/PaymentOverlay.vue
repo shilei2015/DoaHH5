@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import { Popup as VanPopup, Loading as VanLoading, Icon as VanIcon } from 'vant';
+import { Popup as VanPopup, Icon as VanIcon } from 'vant';
 
 /**
  * PaymentOverlay.vue
@@ -38,9 +38,17 @@ const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayFailureTimer: number | null = null;
 let watchedApplePayIframe: HTMLIFrameElement | null = null;
+let applePayReadyTimer: number | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
 const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
+
+const clearApplePayReadyTimer = () => {
+  if (applePayReadyTimer !== null) {
+    window.clearTimeout(applePayReadyTimer);
+    applePayReadyTimer = null;
+  }
+};
 
 const clearApplePayFailureTimer = () => {
   if (applePayFailureTimer !== null) {
@@ -52,6 +60,7 @@ const clearApplePayFailureTimer = () => {
 const canAttemptOnerwayApplePay = () => !/Android/i.test(navigator.userAgent);
 
 const failApplePay = () => {
+  clearApplePayReadyTimer();
   clearApplePayFailureTimer();
   watchedApplePayIframe = null;
   if (props.onApplePayUnavailable) {
@@ -59,6 +68,24 @@ const failApplePay = () => {
   } else {
     props.onClose();
   }
+};
+
+const markApplePayReadyAfterPaint = (iframe: HTMLIFrameElement) => {
+  clearApplePayReadyTimer();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const iframeRect = iframe.getBoundingClientRect();
+      const containerRect = applePayContainerRef.value?.getBoundingClientRect();
+      if (!containerRect || !iframe.isConnected || iframeRect.width <= 0 || iframeRect.height <= 0) return;
+
+      applePayReadyTimer = window.setTimeout(() => {
+        if (!iframe.isConnected) return;
+        isApplePayReady.value = true;
+        clearApplePayFailureTimer();
+        applePayReadyTimer = null;
+      }, 120);
+    });
+  });
 };
 
 const watchApplePayIframe = () => {
@@ -73,8 +100,7 @@ const watchApplePayIframe = () => {
         failApplePay();
         return;
       }
-      clearApplePayFailureTimer();
-      isApplePayReady.value = true;
+      markApplePayReadyAfterPaint(iframe);
     }, { once: true });
     clearApplePayFailureTimer();
     applePayFailureTimer = window.setTimeout(failApplePay, 8000);
@@ -108,6 +134,7 @@ onBeforeUnmount(() => {
   applePayObserver?.disconnect();
   applePayObserver = null;
   watchedApplePayIframe = null;
+  clearApplePayReadyTimer();
   clearApplePayFailureTimer();
 });
 
@@ -154,7 +181,9 @@ defineExpose({
         <div v-if="applePayDisplayPrice" class="apple-pay-price">{{ applePayDisplayPrice }}</div>
         <div class="apple-pay-body">
           <div v-if="isApplePayLoading" class="apple-pay-loading">
-            <VanLoading color="#FFFFFF" size="22px" />
+            <svg class="apple-pay-spinner" viewBox="0 0 50 50">
+              <circle class="apple-pay-spinner-path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+            </svg>
           </div>
           <div v-if="props.applePayMock" class="apple-pay-mock">
             <button class="apple-pay-mock-button" type="button">
@@ -370,6 +399,18 @@ defineExpose({
   pointer-events: auto;
 }
 
+.apple-pay-spinner {
+  width: 34px;
+  height: 34px;
+  animation: apple-pay-spinner-rotate 2s linear infinite;
+}
+
+.apple-pay-spinner-path {
+  stroke: var(--app-accent, #65d941);
+  stroke-linecap: round;
+  animation: apple-pay-spinner-dash 1.5s ease-in-out infinite;
+}
+
 .apple-pay-sdk-container {
   width: 100%;
   height: 44px;
@@ -426,6 +467,29 @@ defineExpose({
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes apple-pay-spinner-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes apple-pay-spinner-dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
   }
 }
 </style>
