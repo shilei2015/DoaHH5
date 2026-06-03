@@ -32,8 +32,8 @@ const payWebviewUrl = ref(props.initialWebviewUrl || '');
 const isPayLoading = ref(true);
 const isApplePayMode = computed(() => Boolean(props.applePayContainerId || props.applePayMock));
 const applePayDisplayPrice = computed(() => props.applePayMockPrice || props.applePayPrice || '');
-const isApplePayLoading = ref(false);
 const isApplePayReady = ref(false);
+const isApplePayLoading = computed(() => isApplePayMode.value && !props.applePayMock && !isApplePayReady.value);
 const applePayContainerRef = ref<HTMLElement | null>(null);
 let applePayObserver: MutationObserver | null = null;
 let applePayFailureTimer: number | null = null;
@@ -41,9 +41,6 @@ let watchedApplePayIframe: HTMLIFrameElement | null = null;
 const transparentOverlayStyle = { backgroundColor: 'transparent' };
 const overlayStyle = { backgroundColor: 'var(--app-overlay-background)' };
 const strongOverlayStyle = { backgroundColor: 'var(--app-overlay-background-strong)' };
-const stopApplePayLoading = () => {
-  isApplePayLoading.value = false;
-};
 
 const clearApplePayFailureTimer = () => {
   if (applePayFailureTimer !== null) {
@@ -55,7 +52,6 @@ const clearApplePayFailureTimer = () => {
 const canAttemptOnerwayApplePay = () => !/Android/i.test(navigator.userAgent);
 
 const failApplePay = () => {
-  stopApplePayLoading();
   clearApplePayFailureTimer();
   watchedApplePayIframe = null;
   if (props.onApplePayUnavailable) {
@@ -79,7 +75,6 @@ const watchApplePayIframe = () => {
       }
       clearApplePayFailureTimer();
       isApplePayReady.value = true;
-      stopApplePayLoading();
     }, { once: true });
     clearApplePayFailureTimer();
     applePayFailureTimer = window.setTimeout(failApplePay, 8000);
@@ -90,7 +85,6 @@ onMounted(() => {
   if (!isApplePayMode.value) return;
   if (props.applePayMock) {
     isApplePayReady.value = true;
-    stopApplePayLoading();
     return;
   }
 
@@ -99,7 +93,6 @@ onMounted(() => {
     return;
   }
 
-  isApplePayLoading.value = true;
   isApplePayReady.value = false;
   nextTick(() => {
     const container = applePayContainerRef.value;
